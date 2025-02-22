@@ -1,17 +1,20 @@
-import { Controller, Delete, Get, Param } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
+import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { UserDecorator } from 'src/common/decorators/user.decorator';
+import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 
 @Controller('user')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth('JWT-auth')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Get(':userId')
-  async findOne(@Param('userId') userId: string) {
-    return this.userService.findOne(userId);
-  }
-
-  @Delete('delete/:userId')
-  async delete(@Param('userId') userId: string) {
-    return this.userService.delete(userId);
+  @ApiOperation({
+    summary: 'view your own profile',
+  })
+  @Get('me')
+  async me(@UserDecorator('sub') sub: string) {
+    return this.userService.me(sub);
   }
 }

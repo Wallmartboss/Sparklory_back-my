@@ -50,17 +50,19 @@ export class UserService {
     return await this.findOne(newUser.id);
   }
 
+  async saveUser(user: User) {
+    await user.save();
+  }
+
   async verifyUserEmail(payload: VerifyEmailDto) {
     const { email, code } = payload;
 
-    // Знаходимо користувача за email та кодом підтвердження
     const user = await this.userModel.findOne({ email, emailVerifyCode: code });
 
     if (!user) {
       throw new BadRequestException('Invalid token');
     }
 
-    // // Оновлюємо користувача
     user.isVerifyEmail = true;
     user.isLoggedIn = true;
     user.emailVerifyCode = null;
@@ -73,11 +75,6 @@ export class UserService {
     user.devices.push(newDevice);
     user.sessions.push(newSession);
 
-    // Додаємо пристрій та сесію до користувача
-    // user.devices.push(savedDevice);
-    // user.sessions.push(createdSession);
-
-    // Оновлюємо користувача в базі даних
     await user.save();
     return {
       email: user.email,
@@ -87,6 +84,47 @@ export class UserService {
       deviceId: newDevice.deviceId,
       sessionId: newSession.id,
     };
+  }
+
+  async validateUser(email: string, password: string): Promise<User | null> {
+    const user = await this.findOneByParams({ email });
+
+    if (!user?.password) {
+      throw new BadRequestException('You must set a password for your account');
+    }
+
+    if (await bcrypt.compare(password, user.password)) {
+      return user;
+    }
+
+    return null;
+  }
+
+  async addNewDevice(user: User) {
+    const newDevice = await this.deviceService.create(
+      user._id as Types.ObjectId,
+    );
+
+    user.devices.push(newDevice);
+    await user.save();
+
+    await this.emailService.sendEmail(
+      user.email,
+      user.verifyDeviceCode,
+      ECondition.VerifyDevice,
+    );
+
+    return newDevice.id;
+  }
+
+  async me(userId: string) {
+    return await this.findOneByParams({ _id: userId });
+  }
+
+  async findOneByParams(
+    params: Record<string, string | number | boolean>,
+  ): Promise<User | null> {
+    return await this.userModel.findOne(params).exec();
   }
 
   async findOne(userId: string): Promise<User | null> {

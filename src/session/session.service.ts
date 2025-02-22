@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 
 import { Model, Types } from 'mongoose';
 
@@ -16,5 +20,22 @@ export class SessionService {
       user: userId,
     });
     return await newSession.save();
+  }
+
+  async findOneForJwt(userId: string, sessionId: string) {
+    const session = await this.sessionModel
+      .findOne({ _id: sessionId, user: userId })
+      .populate('user')
+      .exec();
+
+    if (!session) {
+      throw new BadRequestException('Session is closed!');
+    }
+
+    if (!session.user.isLoggedIn) {
+      throw new UnauthorizedException();
+    }
+
+    return session;
   }
 }

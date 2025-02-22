@@ -11,6 +11,8 @@ import { DeviceService } from 'src/device/device.service';
 import { Device, DeviceSchema } from 'src/device/schema/device.schema';
 import { SessionService } from 'src/session/session.service';
 import { Session, SessionSchema } from 'src/session/schema/session.schema';
+import { LocalStrategy } from './strategies';
+import { JwtStrategy } from './strategies/jwt';
 
 @Module({
   imports: [
@@ -36,6 +38,8 @@ import { Session, SessionSchema } from 'src/session/schema/session.schema';
     EmailService,
     DeviceService,
     SessionService,
+    LocalStrategy,
+    JwtStrategy,
   ],
 })
 export class AuthModule {}

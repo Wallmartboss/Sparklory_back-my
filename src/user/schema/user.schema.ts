@@ -95,10 +95,11 @@ UserSchema.pre(
 UserSchema.set('toJSON', {
   transform: (doc, ret) => {
     delete ret.password;
-    delete ret.emailVerifyCode;
-    delete ret.verifyDeviceCode;
     delete ret.createdAt;
     delete ret.updatedAt;
+    delete ret.devices;
+    delete ret.sessions;
+
     ret._id = ret._id.toString();
     return ret;
   },
@@ -107,10 +108,11 @@ UserSchema.set('toJSON', {
 UserSchema.set('toObject', {
   transform: (doc, ret) => {
     delete ret.password;
-    delete ret.emailVerifyCode;
-    delete ret.verifyDeviceCode;
     delete ret.createdAt;
     delete ret.updatedAt;
+    delete ret.devices;
+    delete ret.sessions;
+
     ret._id = ret._id.toString();
     return ret;
   },

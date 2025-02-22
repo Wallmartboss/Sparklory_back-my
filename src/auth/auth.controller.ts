@@ -1,4 +1,13 @@
-import { Controller, Post, Body, Patch, Res } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Patch,
+  Res,
+  Request,
+  BadRequestException,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Request as req, Response } from 'express';
 
@@ -8,6 +17,9 @@ import { User } from 'src/user/schema/user.schema';
 import { UserService } from 'src/user/user.service';
 import { VerifyEmailDto } from 'src/user/dto/verify-email.dto';
 import { cookieSetter } from 'src/common/helpers';
+import { LoginDto } from './dto/login.dto';
+import { LocalAuthGuard } from './guards/local.guard';
+import { UserDecorator } from 'src/common/decorators/user.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -38,5 +50,43 @@ export class AuthController {
       await this.authService.verifyUserEmail(payload);
     cookieSetter(response, refreshToken, deviceId);
     return { accessToken };
+  }
+
+  @UseGuards(LocalAuthGuard)
+  @ApiOperation({
+    summary: 'user login',
+  })
+  // @ApiCustomResponse(HttpStatus.OK, responses.login)
+  @Post('login')
+  async login(
+    @UserDecorator() user: User,
+    @Res({ passthrough: true }) response: Response,
+    @Request() request: req,
+    @Body() payload: LoginDto,
+  ) {
+    const cookiesString = request.headers.cookie || '';
+    const cookies = Object.fromEntries(
+      cookiesString.split('; ').map((cookie) => cookie.split('=')),
+    );
+    const existingDeviceId = cookies['device_id'];
+
+    if (!existingDeviceId) {
+      const newDeviceId = await this.authService.createNewDevice(user);
+      cookieSetter(response, null, newDeviceId);
+      throw new BadRequestException(
+        'Device not found or invalid login attempt. Please check your email',
+      );
+    }
+
+    const { loggedInUser, accessToken, refreshToken } =
+      await this.authService.login(
+        user,
+        existingDeviceId,
+        payload.newDeviceCode,
+      );
+
+    cookieSetter(response, refreshToken, existingDeviceId);
+
+    return { loggedInUser, accessToken };
   }
 }
