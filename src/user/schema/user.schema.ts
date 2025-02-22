@@ -99,7 +99,9 @@ UserSchema.set('toJSON', {
     delete ret.updatedAt;
     delete ret.devices;
     delete ret.sessions;
+    delete ret.emailVerifyCode;
 
+    delete ret.__v;
     ret._id = ret._id.toString();
     return ret;
   },
@@ -112,7 +114,9 @@ UserSchema.set('toObject', {
     delete ret.updatedAt;
     delete ret.devices;
     delete ret.sessions;
+    delete ret.emailVerifyCode;
 
+    delete ret.__v;
     ret._id = ret._id.toString();
     return ret;
   },

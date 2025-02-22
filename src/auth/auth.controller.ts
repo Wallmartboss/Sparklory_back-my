@@ -7,6 +7,7 @@ import {
   Request,
   BadRequestException,
   UseGuards,
+  HttpStatus,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Request as req, Response } from 'express';
@@ -21,6 +22,9 @@ import { LoginDto } from './dto/login.dto';
 import { LocalAuthGuard } from './guards/local.guard';
 import { UserDecorator } from 'src/common/decorators/user.decorator';
 
+import * as response from '../response.json';
+import { ApiCustomResponse } from 'src/common/decorators/swagger-res.decorator';
+
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -32,7 +36,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'create new user',
   })
-  // @ApiCustomResponse(HttpStatus.CREATED, responses.register)
+  @ApiCustomResponse(HttpStatus.CREATED, response.register)
   async create(@Body() payload: CreateUserDto): Promise<User> {
     return await this.userService.createUser(payload);
   }
@@ -41,7 +45,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'email verification',
   })
-  // @ApiCustomResponse(HttpStatus.OK, responses.verifyEmail)
+  @ApiCustomResponse(HttpStatus.OK, response.verifyEmail)
   async verifyEmail(
     @Res({ passthrough: true }) response: Response,
     @Body() payload: VerifyEmailDto,
@@ -56,7 +60,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'user login',
   })
-  // @ApiCustomResponse(HttpStatus.OK, responses.login)
+  @ApiCustomResponse(HttpStatus.OK, response.login)
   @Post('login')
   async login(
     @UserDecorator() user: User,
