@@ -9,9 +9,14 @@ jobs:
   check-user:
     runs-on: ubuntu-latest
     steps:
+      - name: Start check
+        run: echo "🔍 Checking who pushed to dev..."
+
       - name: Check if the pusher is allowed
         run: |
           if [[ "${{ github.actor }}" != "innekto" ]]; then
             echo "❌ You are not allowed to push to dev!";
             exit 1;
+          else
+            echo "✅ Push allowed for innekto!"
           fi
