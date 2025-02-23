@@ -5,7 +5,7 @@ import { CreateUserDto } from '../dto/create-user.dto';
 import { Role } from 'src/common/enum';
 import { Device } from 'src/device/schema/device.schema';
 
-@Schema({ collection: 'user' })
+@Schema({ collection: 'user', versionKey: false })
 export class User extends Document {
   @Prop({ unique: true })
   email: string;
