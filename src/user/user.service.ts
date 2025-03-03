@@ -88,7 +88,9 @@ export class UserService {
 
   async validateUser(email: string, password: string): Promise<User | null> {
     const user = await this.findOneByParams({ email });
-
+    if (!user) {
+      throw new NotFoundException('User not found!');
+    }
     if (!user?.password) {
       throw new BadRequestException('You must set a password for your account');
     }
