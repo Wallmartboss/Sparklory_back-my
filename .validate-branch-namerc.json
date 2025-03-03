@@ -1,0 +1,4 @@
+{
+  "pattern": "^(feature|fix|hotfix|release)/[a-z0-9-]+$",
+  "errorMsg": "Branch name must follow the pattern: feature/branch-name, fix/branch-name, etc."
+}
