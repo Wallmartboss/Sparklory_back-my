@@ -40,6 +40,7 @@ export class UserService {
 
     newUser.password = await bcrypt.hash(payload.password, 10);
     newUser.emailVerifyCode = token;
+    console.log(token);
 
     await this.emailService.sendEmail(
       payload.email,

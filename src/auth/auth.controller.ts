@@ -70,7 +70,7 @@ export class AuthController {
   ) {
     const cookiesString = request.headers.cookie || '';
     const cookies = Object.fromEntries(
-      cookiesString.split('; ').map((cookie) => cookie.split('=')),
+      cookiesString.split('; ').map(cookie => cookie.split('=')),
     );
     const existingDeviceId = cookies['device_id'];
 
