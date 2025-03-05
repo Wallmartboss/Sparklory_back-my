@@ -58,7 +58,7 @@ export class User extends Document {
     this.email = payload.email;
     this.name = payload.email
       .split('@')[0]
-      .replace(/^\w/, (c) => c.toUpperCase());
+      .replace(/^\w/, c => c.toUpperCase());
   }
 }
 

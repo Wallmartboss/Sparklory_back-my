@@ -11,7 +11,7 @@ import { map } from 'rxjs/operators';
 export class MongooseTransformInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     return next.handle().pipe(
-      map((data) => {
+      map(data => {
         if (Array.isArray(data)) {
           return data.map(this.transform);
         }
