@@ -32,11 +32,10 @@ export class CreateProductDto {
   @IsNumber()
   price: number;
 
-  @ApiProperty({ example: '12345678.jpg' })
+  @ApiProperty({ example: ['12345678.jpg'] })
   @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  image: string | string[];
+  @IsArray({ each: true })
+  image: string[];
 
   @ApiProperty({ example: 'false' })
   @IsBoolean()

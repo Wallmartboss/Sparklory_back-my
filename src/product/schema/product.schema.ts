@@ -24,8 +24,7 @@ export class Product {
   price: number;
 
   @Prop({ type: [String], required: false })
-  @Prop({ type: String, required: false })
-  image: string | string[];
+  image: string[];
 
   @Prop({ default: true })
   inStock: boolean;

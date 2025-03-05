@@ -28,6 +28,16 @@ export class ProductService {
     return product;
   }
 
+  async findByCategory(category: string): Promise<Product[]> {
+    const products = await this.productModel.find({ category }).exec();
+    if (products.length === 0) {
+      throw new NotFoundException(
+        `There are not products in the category: ${category}`,
+      );
+    }
+    return products;
+  }
+
   async update(
     id: string,
     updateProductDto: UpdateProductDto,
