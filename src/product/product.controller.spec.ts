@@ -43,7 +43,7 @@ describe('ProductController', () => {
         material: 'Test Material',
         engraving: false,
         price: 100,
-        image: 'Test Image',
+        image: ['Test Image'],
         inStock: true,
       };
       const result = { id: '1', ...dto };
@@ -70,7 +70,7 @@ describe('ProductController', () => {
           material: 'Test Material',
           engraving: false,
           price: 100,
-          image: 'Test Image',
+          image: ['Test Image'],
           inStock: true,
         },
       ];
@@ -90,7 +90,7 @@ describe('ProductController', () => {
         material: 'Test Material',
         engraving: false,
         price: 100,
-        image: 'Test Image',
+        image: ['Test Image'],
         inStock: true,
       };
       jest.spyOn(productService, 'findOne').mockResolvedValue(result);
@@ -110,7 +110,7 @@ describe('ProductController', () => {
         material: 'Test Material',
         engraving: false,
         price: 150,
-        image: 'Test Image',
+        image: ['Test Image'],
         inStock: true,
       };
       jest.spyOn(productService, 'update').mockResolvedValue(result);
@@ -129,7 +129,7 @@ describe('ProductController', () => {
         material: 'Test Material',
         engraving: false,
         price: 100,
-        image: 'Test Image',
+        image: ['Test Image'],
         inStock: true,
       };
       jest.spyOn(productService, 'remove').mockResolvedValue(result);
