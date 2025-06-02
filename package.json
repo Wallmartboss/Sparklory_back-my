@@ -6,7 +6,6 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "prepare": "husky",
     "prebuild": "npm install",
     "build": "tsc --incremental",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
