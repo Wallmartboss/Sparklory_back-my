@@ -1,0 +1,28 @@
+{
+  "register": {
+    "_id": "67ba2ccb360ffe935fa9596e",
+    "email": "deudapreroullou-9229@yopmail.com",
+    "role": "user",
+    "image": null,
+    "isLoggedIn": false,
+    "isVerifyEmail": false,
+    "verifyDeviceCode": null
+  },
+
+  "verifyEmail": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cC..."
+  },
+
+  "login": {
+    "loggedInUser": {
+      "_id": "67ba2db2a9669c1073afb1af",
+      "email": "deudapreroullou-9229@yopmail.com",
+      "role": "user",
+      "image": null,
+      "isLoggedIn": true,
+      "isVerifyEmail": true,
+      "verifyDeviceCode": null
+    },
+    "accessToken": "eyJhbGciOiJI..."
+  }
+}

@@ -1,0 +1,122 @@
+[
+  {
+    "name": "Кільце 'Aurora'",
+    "description": "Вишукане золоте кільце з діамантом.",
+    "category": "rings",
+    "material": "gold",
+    "engraving": true,
+    "price": 1200.00,
+    "image": [],
+    "inStock": true
+  },
+  {
+    "name": "Браслет 'Eclipse'",
+    "description": "Стильний браслет зі срібла з сапфірами, що відображає таємничість затемнення. Його унікальний дизайн підкреслить вашу індивідуальність та додасть шарму будь-якому образу.",
+    "category": "bracelets",
+    "material": "silver",
+    "engraving": false,
+    "price": 850.00,
+    "image": [],
+    "inStock": true
+  },
+  {
+    "name": "Кулон 'Luna'",
+    "description": "Срібний кулон із місячним каменем.",
+    "category": "necklaces",
+    "material": "silver",
+    "engraving": true,
+    "price": 700.00,
+    "image": [],
+    "inStock": false
+  },
+  {
+    "name": "Сережки 'Stella'",
+    "description": "Елегантні сережки з білого золота, інкрустовані блискучими діамантами, що нагадують сяйво зірок на нічному небі. Ідеальний вибір для особливих подій.",
+    "category": "earrings",
+    "material": "white gold",
+    "engraving": false,
+    "price": 1500.00,
+    "image": [],
+    "inStock": true
+  },
+  {
+    "name": "Кільце 'Infinity'",
+    "description": "Платинове кільце з безкінечним візерунком.",
+    "category": "rings",
+    "material": "platinum",
+    "engraving": true,
+    "price": 1800.00,
+    "image": [],
+    "inStock": true
+  },
+  {
+    "name": "Браслет 'Harmony'",
+    "description": "Гнучкий браслет з білого золота, що символізує гармонію та баланс. Його мінімалістичний дизайн підходить для щоденного носіння.",
+    "category": "bracelets",
+    "material": "white gold",
+    "engraving": false,
+    "price": 950.00,
+    "image": [],
+    "inStock": false
+  },
+  {
+    "name": "Кулон 'Venus'",
+    "description": "Розкішний кулон із рубіном.",
+    "category": "necklaces",
+    "material": "gold",
+    "engraving": true,
+    "price": 1100.00,
+    "image": [],
+    "inStock": true
+  },
+  {
+    "name": "Сережки 'Pearl'",
+    "description": "Класичні сережки з перлинами, що підкреслюють жіночність та елегантність. Ідеально підходять для будь-якого вбрання.",
+    "category": "earrings",
+    "material": "silver",
+    "engraving": false,
+    "price": 780.00,
+    "image": [],
+    "inStock": true
+  },
+  {
+    "name": "Кільце 'Eternity'",
+    "description": "Золотий обруч із сапфірами.",
+    "category": "rings",
+    "material": "gold",
+    "engraving": true,
+    "price": 1450.00,
+    "image": [],
+    "inStock": false
+  },
+  {
+    "name": "Браслет 'Galaxy'",
+    "description": "Срібний браслет із розсипом цирконіїв, що нагадують зірки в галактиці. Додасть блиску та чарівності вашому образу.",
+    "category": "bracelets",
+    "material": "silver",
+    "engraving": true,
+    "price": 620.00,
+    "image": [],
+    "inStock": true
+  },
+  {
+    "name": "Кулон 'Opal'",
+    "description": "Кулон із чорним опалом.",
+    "category": "necklaces",
+    "material": "gold",
+    "engraving": false,
+    "price": 890.00,
+    "image": [],
+    "inStock": true
+  },
+  {
+    "name": "Сережки 'Amethyst'",
+    "description": "Сережки з білим золотом і аметистами.",
+    "category": "earrings",
+    "material": "white gold",
+    "engraving": false,
+    "price": 1350.00,
+    "image": [],
+    "inStock": false
+  }
+]
