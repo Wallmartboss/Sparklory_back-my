@@ -79,7 +79,7 @@ describe('ProductService', () => {
         material: 'Test Material',
         engraving: false,
         price: 10000,
-        image: ['Test Image'], // Теперь массив
+        image: ['Test Image'],
         inStock: true,
       };
 
@@ -106,7 +106,7 @@ describe('ProductService', () => {
         material: 'Material 1',
         engraving: false,
         price: 10000,
-        image: ['Image 1'], // Массив
+        image: ['Image 1'],
         inStock: true,
       });
 
@@ -117,7 +117,7 @@ describe('ProductService', () => {
         material: 'Material 2',
         engraving: true,
         price: 20000,
-        image: ['Image 2', 'Image 3'], // Массив с несколькими элементами
+        image: ['Image 2', 'Image 3'],
         inStock: false,
       });
 
@@ -141,7 +141,7 @@ describe('ProductService', () => {
         material: 'Test Material',
         engraving: false,
         price: 10000,
-        image: ['Test Image'], // Массив
+        image: ['Test Image'],
         inStock: true,
       });
 
@@ -168,7 +168,7 @@ describe('ProductService', () => {
         material: 'Test Material',
         engraving: false,
         price: 10000,
-        image: ['Test Image'], // Массив
+        image: ['Test Image'],
         inStock: true,
       });
 
@@ -193,7 +193,7 @@ describe('ProductService', () => {
         material: 'Test Material',
         engraving: false,
         price: 10000,
-        image: ['Test Image'], // Массив
+        image: ['Test Image'],
         inStock: true,
       });
 
