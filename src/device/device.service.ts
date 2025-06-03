@@ -10,11 +10,15 @@ export class DeviceService {
   constructor(
     @InjectModel(Device.name) private readonly deviceModel: Model<Device>,
   ) {}
-  async create(userId: Types.ObjectId) {
-    const newDevice = new this.deviceModel({
+  async create(userId: Types.ObjectId): Promise<Device> {
+    return await this.deviceModel.create({
       deviceId: uuidv4(),
       user: userId,
     });
-    return await newDevice.save();
+    // const newDevice = new this.deviceModel({
+    //   deviceId: uuidv4(),
+    //   user: userId,
+    // });
+    // return await newDevice.save();
   }
 }
