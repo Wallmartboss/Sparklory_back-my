@@ -5,7 +5,7 @@ import { VersioningType } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
-  const PORT = process.env.PORT || 5000;
+  const PORT = parseInt(process.env.PORT || '5000', 10);
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('api');
@@ -16,7 +16,11 @@ async function bootstrap() {
   });
 
   app.enableCors({
-    origin: ['http://localhost:3000', 'https://localhost:3000'],
+    origin: [
+      // 'http://localhost:3000',
+      // 'https://localhost:3000',
+      'https://sparklory-back.onrender.com',
+    ],
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
     allowedHeaders: [
       'Origin',
