@@ -16,7 +16,11 @@ async function bootstrap() {
   });
 
   app.enableCors({
-    origin: ['http://localhost:3000', 'https://localhost:3000'],
+    origin: [
+      // 'http://localhost:3000',
+      // 'https://localhost:3000',
+      'https://sparklory-back.onrender.com',
+    ],
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
     allowedHeaders: [
       'Origin',
