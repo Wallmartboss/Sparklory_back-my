@@ -9,7 +9,7 @@ import { DeviceService } from 'src/device/device.service';
 import { SessionService } from 'src/session/session.service';
 import { ConflictException } from '@nestjs/common';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
-import { Role } from 'src/common/enum/user.enum';
+import { Role } from '@/common/enum/user.enum';
 
 describe('UserService', () => {
   let userService: UserService;

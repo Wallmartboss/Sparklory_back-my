@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { UserService } from 'src/user/user.service';
 import { SessionService } from 'src/session/session.service';
 import { User } from 'src/user/schema/user.schema';
-import { Role } from 'src/common/enum/user.enum';
+import { Role } from '@/common/enum/user.enum';
 import { Types } from 'mongoose';
 import { BadRequestException } from '@nestjs/common';
 import { VerifyEmailDto } from 'src/user/dto/verify-email.dto';
