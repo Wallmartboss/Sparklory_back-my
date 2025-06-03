@@ -5,7 +5,7 @@ import { VersioningType } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
-  const PORT = process.env.PORT || 5000;
+  const PORT = parseInt(process.env.PORT || '5000', 10);
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('api');
