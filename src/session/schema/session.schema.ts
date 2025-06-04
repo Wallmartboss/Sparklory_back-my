@@ -1,6 +1,6 @@
+import { User } from '@/user/schema/user.schema';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document } from 'mongoose';
-import { User } from 'src/user/schema/user.schema';
 
 @Schema({ collection: 'session', versionKey: false })
 export class Session extends Document {

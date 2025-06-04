@@ -1,16 +1,14 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { AuthService } from './auth.service';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { UserService } from 'src/user/user.service';
-import { SessionService } from 'src/session/session.service';
-import { User } from 'src/user/schema/user.schema';
+import { InTokensGenerate } from '@/common';
 import { Role } from '@/common/enum/user.enum';
-import { Types } from 'mongoose';
+import { SessionService } from '@/session/session.service';
+import { VerifyEmailDto } from '@/user/dto/verify-email.dto';
+import { User } from '@/user/schema/user.schema';
+import { UserService } from '@/user/user.service';
 import { BadRequestException } from '@nestjs/common';
-import { VerifyEmailDto } from 'src/user/dto/verify-email.dto';
-import { InTokensGenerate } from 'src/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import * as crypto from 'crypto';
+import { Types } from 'mongoose';
 
 jest.mock('crypto', () => ({
   randomBytes: jest.fn().mockReturnValue({
