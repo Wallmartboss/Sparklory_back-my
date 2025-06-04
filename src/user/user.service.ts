@@ -1,21 +1,21 @@
 import {
-  Injectable,
-  ConflictException,
   BadRequestException,
+  ConflictException,
+  Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
+import { Model, Types } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 
-import { User } from './schema/user.schema';
-import { EmailService } from 'src/email/email.service';
-import { ECondition } from 'src/common';
+import { ECondition } from '@/common';
+import { DeviceService } from '@/device/device.service';
+import { EmailService } from '@/email/email.service';
+import { SessionService } from '@/session/session.service';
 import { VerifyEmailDto } from './dto/verify-email.dto';
-import { DeviceService } from 'src/device/device.service';
-import { SessionService } from 'src/session/session.service';
+import { User } from './schema/user.schema';
 
 @Injectable()
 export class UserService {

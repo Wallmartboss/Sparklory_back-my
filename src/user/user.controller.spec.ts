@@ -1,8 +1,8 @@
+import { JwtAuthGuard } from '@/auth/guards/jwt.guard';
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
-import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
-import { ConfigService } from '@nestjs/config';
 
 describe('UserController', () => {
   let controller: UserController;
