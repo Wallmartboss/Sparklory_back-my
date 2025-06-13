@@ -38,6 +38,16 @@ export class ProductService {
     return products;
   }
 
+  async findByAction(action: string) {
+    const products = await this.productModel
+      .find({ action: { $regex: action, $options: 'i' } })
+      .exec();
+    if (!products || products.length === 0) {
+      throw new NotFoundException(`Продукти з акцією "${action}" не знайдені`);
+    }
+    return products;
+  }
+
   async update(
     id: string,
     updateProductDto: UpdateProductDto,
