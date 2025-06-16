@@ -4,9 +4,6 @@ import { Session } from '@/session/schema/session.schema';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document } from 'mongoose';
 import { CreateUserDto } from '../dto/create-user.dto';
-import { Role } from '@/common/enum/user.enum';
-
-
 
 @Schema({ collection: 'user', versionKey: false })
 export class User extends Document {
