@@ -30,8 +30,7 @@
     "commitlint.config.ts",
     "seed.ts",
     "test",
-    "dist"
-  ]
-
-  "exclude": ["node_modules", "dist", "test", "**/*.spec.ts"]
+    "dist",
+    "**/*.spec.ts"
+  ],
 }
