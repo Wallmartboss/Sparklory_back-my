@@ -1,13 +1,14 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
-import { randomBytes } from 'crypto';
-import { Types } from 'mongoose';
 import { InTokensGenerate } from '@/common';
 import { SessionService } from '@/session/session.service';
 import { VerifyEmailDto } from '@/user/dto/verify-email.dto';
 import { User } from '@/user/schema/user.schema';
 import { UserService } from '@/user/user.service';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { randomBytes } from 'crypto';
+import { Types } from 'mongoose';
+
 
 @Injectable()
 export class AuthService {

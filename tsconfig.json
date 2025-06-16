@@ -13,7 +13,8 @@
     "rootDir": "./src",
     "baseUrl": "./",
     "paths": {
-      "@/*": ["src/*"]},
+      "@/*": ["src/*"]
+   },
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": false,
@@ -23,6 +24,7 @@
     "noFallthroughCasesInSwitch": false
   },
   "include": ["src/**/*.ts"],
+
   "exclude": [
     "node_modules",
     "commitlint.config.ts",
@@ -30,4 +32,6 @@
     "test",
     "dist"
   ]
+
+  "exclude": ["node_modules", "dist", "test", "**/*.spec.ts"]
 }

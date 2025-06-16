@@ -1,17 +1,23 @@
 import {
-  Controller,
-  Post,
-  Body,
-  Patch,
-  Res,
-  Request,
   BadRequestException,
-  UseGuards,
+  Body,
+  Controller,
   HttpStatus,
+  Patch,
+  Post,
+  Request,
+  Res,
+  UseGuards,
 } from '@nestjs/common';
-import { AuthService } from './auth.service';
 import { Request as req, Response } from 'express';
+import { AuthService } from './auth.service';
 
+import { UserDecorator } from '@/common/decorators/user.decorator';
+import { cookieSetter } from '@/common/helpers';
+import { CreateUserDto } from '@/user/dto/create-user.dto';
+import { VerifyEmailDto } from '@/user/dto/verify-email.dto';
+import { User } from '@/user/schema/user.schema';
+import { UserService } from '@/user/user.service';
 import { ApiOperation } from '@nestjs/swagger';
 import { CreateUserDto } from '@/user/dto/create-user.dto';
 import { User } from '@/user/schema/user.schema';
@@ -22,8 +28,10 @@ import { LoginDto } from './dto/login.dto';
 import { LocalAuthGuard } from './guards/local.guard';
 import { UserDecorator } from '@/common/decorators/user.decorator';
 
-import * as response from '../response.json';
+
 import { ApiCustomResponse } from '@/common/decorators/swagger-res.decorator';
+import * as response from '../response.json';
+
 
 @Controller('auth')
 export class AuthController {
