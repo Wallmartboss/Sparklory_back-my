@@ -19,11 +19,19 @@ import { VerifyEmailDto } from '@/user/dto/verify-email.dto';
 import { User } from '@/user/schema/user.schema';
 import { UserService } from '@/user/user.service';
 import { ApiOperation } from '@nestjs/swagger';
+import { CreateUserDto } from '@/user/dto/create-user.dto';
+import { User } from '@/user/schema/user.schema';
+import { UserService } from '@/user/user.service';
+import { VerifyEmailDto } from '@/user/dto/verify-email.dto';
+import { cookieSetter } from '@/common/helpers';
 import { LoginDto } from './dto/login.dto';
 import { LocalAuthGuard } from './guards/local.guard';
+import { UserDecorator } from '@/common/decorators/user.decorator';
+
 
 import { ApiCustomResponse } from '@/common/decorators/swagger-res.decorator';
 import * as response from '../response.json';
+
 
 @Controller('auth')
 export class AuthController {
