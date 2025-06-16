@@ -13,17 +13,17 @@ import { AuthService } from './auth.service';
 import { Request as req, Response } from 'express';
 
 import { ApiOperation } from '@nestjs/swagger';
-import { CreateUserDto } from 'src/user/dto/create-user.dto';
-import { User } from 'src/user/schema/user.schema';
-import { UserService } from 'src/user/user.service';
-import { VerifyEmailDto } from 'src/user/dto/verify-email.dto';
-import { cookieSetter } from 'src/common/helpers';
+import { CreateUserDto } from '@/user/dto/create-user.dto';
+import { User } from '@/user/schema/user.schema';
+import { UserService } from '@/user/user.service';
+import { VerifyEmailDto } from '@/user/dto/verify-email.dto';
+import { cookieSetter } from '@/common/helpers';
 import { LoginDto } from './dto/login.dto';
 import { LocalAuthGuard } from './guards/local.guard';
-import { UserDecorator } from 'src/common/decorators/user.decorator';
+import { UserDecorator } from '@/common/decorators/user.decorator';
 
 import * as response from '../response.json';
-import { ApiCustomResponse } from 'src/common/decorators/swagger-res.decorator';
+import { ApiCustomResponse } from '@/common/decorators/swagger-res.decorator';
 
 @Controller('auth')
 export class AuthController {

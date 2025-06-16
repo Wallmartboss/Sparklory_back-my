@@ -1,16 +1,16 @@
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { UserService } from 'src/user/user.service';
+import { UserService } from '@/user/user.service';
 import { MongooseModule } from '@nestjs/mongoose';
-import { User, UserSchema } from 'src/user/schema/user.schema';
-import { EmailService } from 'src/email/email.service';
+import { User, UserSchema } from '@/user/schema/user.schema';
+import { EmailService } from '@/email/email.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { DeviceService } from 'src/device/device.service';
-import { Device, DeviceSchema } from 'src/device/schema/device.schema';
-import { SessionService } from 'src/session/session.service';
-import { Session, SessionSchema } from 'src/session/schema/session.schema';
+import { DeviceService } from '@/device/device.service';
+import { Device, DeviceSchema } from '@/device/schema/device.schema';
+import { SessionService } from '@/session/session.service';
+import { Session, SessionSchema } from '@/session/schema/session.schema';
 import { LocalStrategy } from './strategies';
 import { JwtStrategy } from './strategies/jwt';
 

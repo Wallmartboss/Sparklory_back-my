@@ -1,18 +1,18 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { UserService } from './user.service';
-import { EmailService } from 'src/email/email.service';
-import { DeviceService } from 'src/device/device.service';
-import { SessionService } from 'src/session/session.service';
+import { DeviceService } from '@/device/device.service';
+import { EmailService } from '@/email/email.service';
+import { SessionService } from '@/session/session.service';
 import {
+  BadRequestException,
   ConflictException,
   NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import { Types } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
-import { Types } from 'mongoose';
+import { UserService } from './user.service';
 
 jest.mock('bcrypt', () => ({
   ...jest.requireActual('bcrypt'),

@@ -3,11 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { randomBytes } from 'crypto';
 import { Types } from 'mongoose';
-import { InTokensGenerate } from 'src/common';
-import { SessionService } from 'src/session/session.service';
-import { VerifyEmailDto } from 'src/user/dto/verify-email.dto';
-import { User } from 'src/user/schema/user.schema';
-import { UserService } from 'src/user/user.service';
+import { InTokensGenerate } from '@/common';
+import { SessionService } from '@/session/session.service';
+import { VerifyEmailDto } from '@/user/dto/verify-email.dto';
+import { User } from '@/user/schema/user.schema';
+import { UserService } from '@/user/user.service';
 
 @Injectable()
 export class AuthService {

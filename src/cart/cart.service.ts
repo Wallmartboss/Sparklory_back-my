@@ -8,7 +8,10 @@ export class CartService {
   constructor(@InjectModel(Cart.name) private cartModel: Model<CartDocument>) {}
 
   async getOrCreateCart(userId: string): Promise<CartDocument> {
-    let cart: CartDocument | null = await this.cartModel.findOne({ user: userId, isOrdered: false });
+    let cart: CartDocument | null = await this.cartModel.findOne({
+      user: userId,
+      isOrdered: false,
+    });
     if (!cart) {
       cart = new this.cartModel({ user: userId, items: [] }) as CartDocument;
       await cart.save();
@@ -18,7 +21,9 @@ export class CartService {
 
   async addItem(userId: string, productId: string, quantity = 1) {
     const cart = await this.getOrCreateCart(userId);
-    const existingItem = cart.items.find(item => item.product.toString() === productId);
+    const existingItem = cart.items.find(
+      item => item.product.toString() === productId,
+    );
 
     if (existingItem) {
       existingItem.quantity += quantity;
@@ -31,9 +36,23 @@ export class CartService {
 
   async removeItem(userId: string, productId: string) {
     const cart = await this.getOrCreateCart(userId);
-    cart.items = cart.items.filter(
-      item => item.product.toString() !== productId,
+
+    const itemIndex = cart.items.findIndex(
+      item => item.product.toString() === productId,
     );
+
+    if (itemIndex === -1) {
+      return cart;
+    }
+
+    const item = cart.items[itemIndex];
+
+    if (item.quantity > 1) {
+      item.quantity -= 1;
+    } else {
+      cart.items.splice(itemIndex, 1);
+    }
+
     return cart.save();
   }
 

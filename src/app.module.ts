@@ -6,6 +6,7 @@ import { DeviceModule } from './device/device.module';
 import { SessionModule } from './session/session.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ProductModule } from './product/product.module';
+import { CartModule } from './cart/cart.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { AppLoggerMiddleware } from './common/loggers/app-logger';
@@ -31,6 +32,7 @@ import { AppLoggerMiddleware } from './common/loggers/app-logger';
     SessionModule,
     AuthModule,
     ProductModule,
+    CartModule,
   ],
   controllers: [AppController],
   providers: [AppService],

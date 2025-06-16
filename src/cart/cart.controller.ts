@@ -1,9 +1,18 @@
-import { Controller, Get, Post, Body, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Req,
+  Logger,
+  UseGuards,
+} from '@nestjs/common';
 import { CartService } from './cart.service';
 import { JwtAuthGuard } from '@/auth/guards/jwt.guard';
 
 @Controller('cart')
 export class CartController {
+  private readonly logger = new Logger(CartController.name);
   constructor(private readonly cartService: CartService) {}
 
   @UseGuards(JwtAuthGuard)
