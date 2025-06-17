@@ -1,28 +1,23 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   HttpStatus,
-  Patch,
   Post,
-  Request,
-  Res,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { Request as req, Response } from 'express';
 import { AuthService } from './auth.service';
 
-import { UserDecorator } from '@/common/decorators/user.decorator';
-import { cookieSetter } from '@/common/helpers';
+import { ApiCustomResponse } from '@/common/decorators/swagger-res.decorator';
 import { CreateUserDto } from '@/user/dto/create-user.dto';
 import { VerifyEmailDto } from '@/user/dto/verify-email.dto';
 import { User } from '@/user/schema/user.schema';
 import { UserService } from '@/user/user.service';
 import { ApiOperation } from '@nestjs/swagger';
-import { LoginDto } from './dto/login.dto';
-import { LocalAuthGuard } from './guards/local.guard';
-import { ApiCustomResponse } from '@/common/decorators/swagger-res.decorator';
 import * as response from '../response.json';
+import { LoginDTO } from './dto/login.dto';
+import { LocalAuthGuard } from './guards/local.guard';
+
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -35,23 +30,22 @@ export class AuthController {
     summary: 'create new user',
   })
   @ApiCustomResponse(HttpStatus.CREATED, response.register)
-  async create(@Body() payload: CreateUserDto): Promise<User> {
-    return await this.userService.createUser(payload);
+  async register(@Body() createUserDto: CreateUserDto): Promise<User> {
+    return this.authService.userService.createUser(createUserDto);
   }
 
-  @Patch('verify-email')
+  @Post('verify-email')
   @ApiOperation({
     summary: 'email verification',
   })
   @ApiCustomResponse(HttpStatus.OK, response.verifyEmail)
-  async verifyEmail(
-    @Res({ passthrough: true }) response: Response,
-    @Body() payload: VerifyEmailDto,
-  ) {
-    const { accessToken, refreshToken, deviceId } =
-      await this.authService.verifyUserEmail(payload);
-    cookieSetter(response, refreshToken, deviceId);
-    return { accessToken };
+  async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
+    const result = await this.authService.verifyUserEmail(verifyEmailDto);
+    return {
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      deviceId: result.deviceId,
+    };
   }
 
   @UseGuards(LocalAuthGuard)
@@ -60,35 +54,24 @@ export class AuthController {
   })
   @ApiCustomResponse(HttpStatus.OK, response.login)
   @Post('login')
-  async login(
-    @UserDecorator() user: User,
-    @Res({ passthrough: true }) response: Response,
-    @Request() request: req,
-    @Body() payload: LoginDto,
-  ) {
-    const cookiesString = request.headers.cookie || '';
-    const cookies = Object.fromEntries(
-      cookiesString.split('; ').map(cookie => cookie.split('=')),
+  async login(@Body() loginDto: LoginDTO) {
+    const { email, password, deviceId, verifyDeviceCode } = loginDto;
+    const user = await this.authService.userService.validateUser(
+      email,
+      password,
     );
-    const existingDeviceId = cookies['device_id'];
-
-    if (!existingDeviceId) {
-      const newDeviceId = await this.authService.createNewDevice(user);
-      cookieSetter(response, null, newDeviceId);
-      throw new BadRequestException(
-        'Device not found or invalid login attempt. Please check your email',
-      );
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
     }
-
-    const { loggedInUser, accessToken, refreshToken } =
-      await this.authService.login(
-        user,
-        existingDeviceId,
-        payload.newDeviceCode,
-      );
-
-    cookieSetter(response, refreshToken, existingDeviceId);
-
-    return { loggedInUser, accessToken };
+    const result = await this.authService.login(
+      user,
+      deviceId,
+      verifyDeviceCode,
+    );
+    return {
+      user: result.loggedInUser,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    };
   }
 }

@@ -1,17 +1,19 @@
+import { NotFoundException } from '@nestjs/common';
+import {
+  MongooseModule,
+  getConnectionToken,
+  getModelToken,
+} from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
-import { getModelToken } from '@nestjs/mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import { Connection, Model, Types } from 'mongoose';
+import { CreateProductDto } from './dto/create-product.dto';
 import { ProductService } from './product.service';
 import {
   Product,
   ProductDocument,
   ProductSchema,
 } from './schema/product.schema';
-import { CreateProductDto } from './dto/create-product.dto';
-import { NotFoundException } from '@nestjs/common';
-import { Model, Types } from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
-import { Connection } from 'mongoose';
 
 describe('ProductService', () => {
   let productService: ProductService;

@@ -12,15 +12,19 @@ import { CreateUserDto } from './dto/create-user.dto';
 
 import { ECondition } from '@/common';
 import { DeviceService } from '@/device/device.service';
+import { Device } from '@/device/schema/device.schema';
 import { EmailService } from '@/email/email.service';
+import { Session } from '@/session/schema/session.schema';
 import { SessionService } from '@/session/session.service';
 import { VerifyEmailDto } from './dto/verify-email.dto';
-import { User } from './schema/user.schema';
+import { User, UserDocument } from './schema/user.schema';
 
 @Injectable()
 export class UserService {
   constructor(
-    @InjectModel(User.name) private readonly userModel: Model<User>,
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectModel(Session.name) private readonly sessionModel: Model<Session>,
+    @InjectModel(Device.name) private readonly deviceModel: Model<Device>,
     private readonly emailService: EmailService,
     readonly deviceService: DeviceService,
     readonly sessionService: SessionService,
@@ -51,8 +55,10 @@ export class UserService {
     return await this.findOne(newUser.id);
   }
 
-  async saveUser(user: User) {
-    await user.save();
+  async saveUser(user: User): Promise<User> {
+    return this.userModel
+      .findByIdAndUpdate(user._id, user, { new: true })
+      .exec();
   }
 
   async verifyUserEmail(payload: VerifyEmailDto) {
@@ -104,20 +110,17 @@ export class UserService {
   }
 
   async addNewDevice(user: User) {
-    const newDevice = await this.deviceService.create(
-      user._id as Types.ObjectId,
-    );
-
-    user.devices.push(newDevice);
-    await user.save();
+    const verifyDeviceCode = randomBytes(2).toString('hex');
+    user.verifyDeviceCode = verifyDeviceCode;
+    await this.saveUser(user);
 
     await this.emailService.sendEmail(
       user.email,
-      user.verifyDeviceCode,
+      verifyDeviceCode,
       ECondition.VerifyDevice,
     );
 
-    return newDevice.id;
+    return verifyDeviceCode;
   }
 
   async me(userId: string) {
@@ -132,6 +135,10 @@ export class UserService {
 
   async findOne(userId: string): Promise<User | null> {
     return await this.userModel.findOne({ _id: userId }).exec();
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    return this.userModel.findOne({ email }).exec();
   }
 
   async delete(userId: string): Promise<void> {

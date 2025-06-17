@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ProductController } from './product.controller';
-import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { ProductController } from './product.controller';
+import { ProductService } from './product.service';
 
 describe('ProductController', () => {
   let productController: ProductController;
@@ -46,7 +46,13 @@ describe('ProductController', () => {
         image: ['Test Image'],
         inStock: true,
       };
-      const result = { id: '1', ...dto };
+      const result = {
+        id: '1',
+        ...dto,
+        image: ['Test Image'],
+        action: '',
+        reviews: [],
+      };
       jest.spyOn(productService, 'create').mockResolvedValue(result);
       expect(await productController.create(dto)).toBe(result);
     });
@@ -72,6 +78,8 @@ describe('ProductController', () => {
           price: 100,
           image: ['Test Image'],
           inStock: true,
+          action: '',
+          reviews: [],
         },
       ];
       jest.spyOn(productService, 'findByCategory').mockResolvedValue(result);
@@ -92,6 +100,8 @@ describe('ProductController', () => {
         price: 100,
         image: ['Test Image'],
         inStock: true,
+        action: '',
+        reviews: [],
       };
       jest.spyOn(productService, 'findOne').mockResolvedValue(result);
       expect(await productController.findOne(id)).toBe(result);
@@ -112,6 +122,8 @@ describe('ProductController', () => {
         price: 150,
         image: ['Test Image'],
         inStock: true,
+        action: '',
+        reviews: [],
       };
       jest.spyOn(productService, 'update').mockResolvedValue(result);
       expect(await productController.update(id, dto)).toBe(result);
@@ -131,6 +143,8 @@ describe('ProductController', () => {
         price: 100,
         image: ['Test Image'],
         inStock: true,
+        action: '',
+        reviews: [],
       };
       jest.spyOn(productService, 'remove').mockResolvedValue(result);
       expect(await productController.remove(id)).toBe(result);

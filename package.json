@@ -8,13 +8,13 @@
   "scripts": {
     "clean": "rimraf dist",
     "prebuild": "npm install",
-    "build": "npm run clean && tsc --build && tsc-alias",
+    "build": "tsc --incremental",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "seed": "ts-node -r tsconfig-paths/register seed.ts",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "node --max-old-space-size=512 dist/main.js",
+    "start:prod": "node dist/main.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -77,6 +77,7 @@
     "ts-jest": "^29.1.0",
     "ts-loader": "^9.4.3",
     "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
     "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.8.3"
@@ -87,6 +88,7 @@
       "json",
       "ts"
     ],
+    "rootDir": ".",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
@@ -97,7 +99,12 @@
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
     "moduleNameMapper": {
-      "^src/(.*)$": "<rootDir>/$1"
+      "^@/(.*)$": "<rootDir>/src/$1"
+    },
+    "globals": {
+      "ts-jest": {
+        "tsconfig": "tsconfig.json"
+      }
     }
   }
 }

@@ -5,7 +5,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "baseUrl": "./src",
+    "baseUrl": "./",
     "outDir": "./dist"
   },
   "include": ["src/**/*"]
