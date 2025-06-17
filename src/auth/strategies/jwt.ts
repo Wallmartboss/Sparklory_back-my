@@ -1,29 +1,28 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
-import { getDeviceIdFromCookies, JwtPayload } from '@/common';
+import { JwtPayload } from '@/common';
 import { SessionService } from '@/session/session.service';
 import { Request } from 'express';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private readonly sessionService: SessionService) {
+  constructor(
+    private readonly sessionService: SessionService,
+    private readonly configService: ConfigService,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET,
+      secretOrKey: configService.get<string>('JWT_SECRET'),
       passReqToCallback: true,
     });
   }
 
   async validate(req: Request, payload: JwtPayload) {
     if (!payload) {
-      throw new UnauthorizedException();
-    }
-    const deviceId = getDeviceIdFromCookies(req.headers.cookie);
-
-    if (deviceId !== payload.deviceId) {
       throw new UnauthorizedException();
     }
 

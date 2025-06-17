@@ -3,12 +3,16 @@ import { SessionService } from '@/session/session.service';
 import { VerifyEmailDto } from '@/user/dto/verify-email.dto';
 import { User } from '@/user/schema/user.schema';
 import { UserService } from '@/user/user.service';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { Types } from 'mongoose';
-
 
 @Injectable()
 export class AuthService {
@@ -18,6 +22,20 @@ export class AuthService {
     readonly userService: UserService,
     readonly sessionService: SessionService,
   ) {}
+
+  async validateUser(email: string, password: string): Promise<User> {
+    const user = await this.userService.findByEmail(email);
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    return user;
+  }
 
   async verifyUserEmail(payload: VerifyEmailDto) {
     const { email, role, id, name, sessionId, deviceId } =

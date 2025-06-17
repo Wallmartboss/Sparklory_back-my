@@ -1,22 +1,35 @@
 /* eslint-disable prettier/prettier */
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { VersioningType } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AppModule } from './app.module';
+import { ValidationPipe } from './core/pipes/validation.pipe';
 
 async function bootstrap() {
-  const PORT = parseInt(process.env.PORT || '5000', 10);
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
 
+  // Get configuration from environment
+  const port = configService.get<number>('PORT', 5000);
+  const allowedOrigins = configService.get<string[]>('ALLOWED_ORIGINS', [
+    'http://localhost:3000',
+    'https://localhost:3000',
+  ]);
+
+  // Global prefix and versioning
   app.setGlobalPrefix('api');
-
   app.enableVersioning({
     type: VersioningType.URI,
     defaultVersion: '1',
   });
 
+  // Global pipes
+  app.useGlobalPipes(new ValidationPipe());
+
+  // CORS configuration
   app.enableCors({
-    origin: ['http://localhost:3000', 'https://localhost:3000'],
+    origin: allowedOrigins,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
     allowedHeaders: [
       'Origin',
@@ -31,9 +44,10 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // Swagger documentation
   const config = new DocumentBuilder()
     .setTitle('Sparklory')
-    .setDescription('base URL:')
+    .setDescription('Sparklory API Documentation')
     .setVersion('1.0.1')
     .addBearerAuth(
       {
@@ -50,9 +64,11 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-
   SwaggerModule.setup('/api/docs', app, document);
 
-  await app.listen(PORT, () => console.log(`server started on port:${PORT}`));
+  // Start the server
+  await app.listen(port);
+  console.log(`Server started on port: ${port}`);
 }
+
 bootstrap();

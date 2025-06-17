@@ -2,8 +2,9 @@ import { Role } from '@/common/enum/user.enum';
 import { Device } from '@/device/schema/device.schema';
 import { Session } from '@/session/schema/session.schema';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import mongoose, { Document } from 'mongoose';
-import { CreateUserDto } from '../dto/create-user.dto';
+import { Document, Types } from 'mongoose';
+
+export type UserDocument = User & Document;
 
 @Schema({ collection: 'user', versionKey: false })
 export class User extends Document {
@@ -41,28 +42,27 @@ export class User extends Document {
   updatedAt: string;
 
   @Prop({
-    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Session' }],
+    type: [{ type: Types.ObjectId, ref: 'Session' }],
     default: [],
   })
   sessions: Session[];
 
   @Prop({
-    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Device' }],
+    type: [{ type: Types.ObjectId, ref: 'Device' }],
     default: [],
   })
   devices: Device[];
-
-  constructor(payload?: CreateUserDto) {
-    super();
-    if (!payload) return;
-    this.email = payload.email;
-    this.name = payload.email
-      .split('@')[0]
-      .replace(/^\w/, c => c.toUpperCase());
-  }
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+// Add pre-save middleware to set name from email if not provided
+UserSchema.pre('save', function (next) {
+  if (!this.name && this.email) {
+    this.name = this.email.split('@')[0].replace(/^\w/, c => c.toUpperCase());
+  }
+  next();
+});
 
 UserSchema.pre(
   'deleteOne',
