@@ -1,14 +1,14 @@
+import { JwtAuthGuard } from '@/auth/guards/jwt.guard';
 import {
+  Body,
   Controller,
   Get,
-  Post,
-  Body,
-  Req,
   Logger,
+  Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { CartService } from './cart.service';
-import { JwtAuthGuard } from '@/auth/guards/jwt.guard';
 
 @Controller('cart')
 export class CartController {
