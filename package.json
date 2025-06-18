@@ -8,7 +8,7 @@
   "scripts": {
     "clean": "rimraf dist",
     "prebuild": "npm install",
-    "build": "tsc --incremental",
+    "build": "tsc --incremental && tsc-alias",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "seed": "ts-node -r tsconfig-paths/register seed.ts",
     "start": "nest start",
