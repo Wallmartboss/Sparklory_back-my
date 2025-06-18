@@ -1,27 +1,26 @@
-import {
-  IsString,
-  IsBoolean,
-  IsNumber,
-  IsOptional,
-  IsArray,
-  ValidateNested,
-  IsInt,
-  Min,
-  Max,
-  IsDateString,
-} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsBoolean,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 
 class ReviewDto {
   @ApiProperty({ example: 'Ivan' })
   @IsString()
   name: string;
 
-  @ApiProperty({ example: 'avatar123.jpg' })
-  @IsString()
+  @ApiProperty({ example: 'avatar123.jpg', required: false })
   @IsOptional()
-  avatar: string;
+  @IsString()
+  avatar?: string;
 
   @ApiProperty({ example: 'Чудовий товар!' })
   @IsString()
@@ -34,11 +33,10 @@ class ReviewDto {
   rating: number;
 
   @ApiProperty({
-    example: '20.10.2024',
-    description: 'Дата у форматі дд.мм.рррр',
+    example: '2024-10-20T00:00:00.000Z',
+    description: 'Дата у форматі ISO string',
   })
   @IsString()
-  @IsDateString()
   createdAt: string;
 
   @ApiProperty({ example: ['reviewImage1.jpg'], required: false })
@@ -64,27 +62,32 @@ export class CreateProductDto {
   @IsString()
   material: string;
 
-  @ApiProperty({ example: 'true' })
+  @ApiProperty({ example: true })
   @IsBoolean()
+  @Type(() => Boolean)
   engraving: boolean;
 
-  @ApiProperty({ example: '1250' })
+  @ApiProperty({ example: 1250 })
   @IsNumber()
+  @Type(() => Number)
   price: number;
 
   @ApiProperty({ example: ['12345678.jpg'] })
   @IsOptional()
-  @IsArray({ each: true })
+  @IsArray()
+  @IsString({ each: true })
   image?: string[];
 
-  @ApiProperty({ example: 'false' })
+  @ApiProperty({ example: false })
   @IsBoolean()
+  @Type(() => Boolean)
   inStock: boolean;
 
   // Нове поле action
-  @ApiProperty({ example: 'Spring sale' })
+  @ApiProperty({ example: ['Spring sale'] })
   @IsOptional()
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
   action?: string[];
 
   // Масив відгуків
