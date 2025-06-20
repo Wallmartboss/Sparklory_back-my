@@ -61,4 +61,15 @@ export class CartService {
     cart.items = [];
     return cart.save();
   }
+
+  async updateOrderId(cartId: string, orderId: string): Promise<void> {
+    await this.cartModel.findByIdAndUpdate(cartId, { order_id: orderId });
+  }
+
+  async setOrderedByOrderId(orderId: string): Promise<void> {
+    await this.cartModel.findOneAndUpdate(
+      { order_id: orderId },
+      { isOrdered: true },
+    );
+  }
 }

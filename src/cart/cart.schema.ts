@@ -20,6 +20,9 @@ export class Cart {
 
   @Prop({ default: false })
   isOrdered: boolean;
+
+  @Prop({ type: String, default: '' })
+  order_id: string;
 }
 
 export type CartDocument = Cart & Document;
