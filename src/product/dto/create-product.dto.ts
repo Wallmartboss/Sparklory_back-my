@@ -33,8 +33,8 @@ class ReviewDto {
   rating: number;
 
   @ApiProperty({
-    example: '2024-10-20T00:00:00.000Z',
-    description: 'Дата у форматі ISO string',
+    example: '20.10.2024',
+    description: 'Дата у форматі DD.MM.YYYY',
   })
   @IsString()
   createdAt: string;
