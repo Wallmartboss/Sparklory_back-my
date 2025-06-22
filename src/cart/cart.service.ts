@@ -38,8 +38,12 @@ export class CartService {
     quantity = 1,
     size?: string,
     color?: string,
+    email?: string,
   ) {
     const cart = await this.getOrCreateCart(userId, guestId);
+    if (!userId && guestId && email && !cart.email) {
+      cart.email = email;
+    }
     const existingItem = cart.items.find(
       item =>
         item.product.toString() === productId &&

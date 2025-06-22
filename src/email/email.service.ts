@@ -72,4 +72,67 @@ export class EmailService {
       }
     });
   }
+
+  async sendCartReminder(email: string, cart: any): Promise<void> {
+    const subject = 'Reminder: Your cart is waiting!';
+    const html = `
+      <p>Hello!</p>
+      <p>You have items in your cart:</p>
+      <ul>
+        ${(cart.items || []).map((item: any) => `<li>${item.product} x${item.quantity}</li>`).join('')}
+      </ul>
+      <p>Complete your purchase before your favorites are gone!</p>
+      <br/>
+      <p>Best regards,<br/>Your Sparklory</p>
+    `;
+    await this.transporter.sendMail({
+      from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
+      to: email,
+      subject,
+      html,
+    });
+    this.logger.log(`Cart reminder sent to ${email}`);
+  }
+
+  async sendPaymentCreated(email: string, payment: any): Promise<void> {
+    const subject = 'Your payment has been created';
+    const html = `
+      <p>Hello!</p>
+      <p>Your payment for order <b>${payment.order_id}</b> has been created.</p>
+      <p>Amount: <b>${payment.amount}</b></p>
+      <p>Status: <b>${payment.status}</b></p>
+      <br/>
+      <p>Best regards,<br/>Your Sparklory</p>
+    `;
+    await this.transporter.sendMail({
+      from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
+      to: email,
+      subject,
+      html,
+    });
+    this.logger.log(`Payment created email sent to ${email}`);
+  }
+
+  async sendPaymentResult(
+    email: string,
+    payment: any,
+    success: boolean,
+  ): Promise<void> {
+    const subject = success ? 'Payment successful' : 'Payment failed';
+    const html = `
+      <p>Hello!</p>
+      <p>Your payment for order <b>${payment.order_id}</b> was <b>${success ? 'successful' : 'unsuccessful'}</b>.</p>
+      <p>Amount: <b>${payment.amount}</b></p>
+      <p>Status: <b>${payment.status}</b></p>
+      <br/>
+      <p>Best regards,<br/>Your Sparklory</p>
+    `;
+    await this.transporter.sendMail({
+      from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
+      to: email,
+      subject,
+      html,
+    });
+    this.logger.log(`Payment result email sent to ${email}`);
+  }
 }

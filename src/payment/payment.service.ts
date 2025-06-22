@@ -4,6 +4,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import * as crypto from 'crypto';
 import { Model, Types } from 'mongoose';
 import { CartService } from '../cart/cart.service';
+import { EmailService } from '../email/email.service';
+import { UserService } from '../user/user.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { Payment } from './payment.schema';
 
@@ -28,6 +30,8 @@ export class PaymentService {
     private configService: ConfigService,
     @InjectModel(Payment.name) private paymentModel: Model<Payment>,
     private readonly cartService: CartService,
+    private readonly emailService: EmailService,
+    private readonly userService: UserService,
   ) {
     this.publicKey = this.configService.get('LIQPAY_PUBLIC_KEY');
     this.privateKey = this.configService.get('LIQPAY_PRIVATE_KEY');
@@ -143,6 +147,20 @@ export class PaymentService {
 
     const payment = await this.paymentModel.create(paymentData);
 
+    // Email уведомление о создании платежа
+    if (dto.contactInfo?.email) {
+      await this.emailService.sendPaymentCreated(
+        dto.contactInfo.email,
+        payment,
+      );
+    }
+    if (userId) {
+      const user = await this.userService.findOne(userId);
+      if (user?.email) {
+        await this.emailService.sendPaymentCreated(user.email, payment);
+      }
+    }
+
     const formData = this.generateFormData(
       dto.amount,
       orderId,
@@ -194,7 +212,7 @@ export class PaymentService {
 
     if (!payment) {
       this.logger.error('Payment not found. Search criteria:', { order_id });
-      // Повертаємо успіх, щоб LiqPay не повторював запит
+      // Возвращаем успех, чтобы LiqPay не повторял запрос
       return { status: 'success', orderId: order_id };
     }
 
@@ -208,6 +226,25 @@ export class PaymentService {
     payment.status = status === 'success' ? 'completed' : 'failed';
     payment.transactionId = transaction_id;
     await payment.save();
+
+    // Email повідомлення про результат платежу
+    if (payment.contactInfo?.email) {
+      await this.emailService.sendPaymentResult(
+        payment.contactInfo.email,
+        payment,
+        payment.status === 'completed',
+      );
+    }
+    if (payment.user) {
+      const user = await this.userService.findOne(payment.user.toString());
+      if (user?.email) {
+        await this.emailService.sendPaymentResult(
+          user.email,
+          payment,
+          payment.status === 'completed',
+        );
+      }
+    }
 
     // Якщо оплата успішна, позначаємо корзину як замовлену
     if (status === 'success') {

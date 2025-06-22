@@ -120,6 +120,7 @@ export class CartController {
       addToCartDto.quantity || 1,
       addToCartDto.size,
       addToCartDto.color,
+      addToCartDto.email,
     );
   }
 
