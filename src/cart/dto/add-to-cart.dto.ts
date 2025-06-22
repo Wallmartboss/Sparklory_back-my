@@ -46,4 +46,13 @@ export class AddToCartDto {
   @IsOptional()
   @IsString()
   guestId?: string;
+
+  @ApiProperty({
+    example: 'guest@example.com',
+    required: false,
+    description: 'Guest email for notifications',
+  })
+  @IsOptional()
+  @IsString()
+  email?: string;
 }

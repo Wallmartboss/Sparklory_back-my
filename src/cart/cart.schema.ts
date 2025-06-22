@@ -32,6 +32,15 @@ export class Cart {
 
   @Prop({ type: String, required: false })
   guestId?: string;
+
+  @Prop({ type: String, required: false })
+  email?: string;
+
+  @Prop({ type: Boolean, default: false })
+  reminderSent?: boolean;
+
+  @Prop({ type: Date, default: Date.now })
+  createdAt?: Date;
 }
 
 export type CartDocument = Cart & Document;

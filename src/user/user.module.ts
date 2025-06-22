@@ -21,5 +21,6 @@ import { UserService } from './user.service';
   ],
   controllers: [UserController],
   providers: [UserService, EmailService, DeviceService, SessionService],
+  exports: [UserService],
 })
 export class UserModule {}

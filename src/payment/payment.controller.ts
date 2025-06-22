@@ -6,6 +6,7 @@ import {
   Controller,
   Logger,
   Post,
+  Get,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -62,5 +63,10 @@ export class PaymentController {
       this.logger.error('Callback error:', err.message);
       throw new BadRequestException(err.message);
     }
+  }
+
+  @Get('callback')
+  async getCallbackResult() {
+    return 'Payment result received';
   }
 }
