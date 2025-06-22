@@ -105,27 +105,43 @@ export class PaymentService {
    * @returns Дані форми LiqPay, ідентифікатор платежу та замовлення
    */
   async create(
-    userId: string,
+    userId: string | undefined,
     dto: CreatePaymentDto,
   ): Promise<LiqPayCreateResponse> {
     this.logger.log('Creating payment with server_url:', this.serverUrl);
 
-    const cart = await this.cartService.getOrCreateCart(userId);
+    // Если есть userId — стандартная логика, если guestId — гостевая корзина
+    let cart;
+    if (userId) {
+      cart = await this.cartService.getOrCreateCart(userId, undefined);
+    } else if (dto.guestId) {
+      cart = await this.cartService.getOrCreateCart(undefined, dto.guestId);
+    } else {
+      throw new Error('UserId or guestId must be provided');
+    }
     const orderId = this.generateOrderId();
 
     // Оновлюємо cart, додаючи order_id
     await this.cartService.updateOrderId(cart._id.toString(), orderId);
 
-    const payment = await this.paymentModel.create({
-      user: new Types.ObjectId(userId),
+    const paymentData: any = {
       cart: cart._id,
       amount: dto.amount,
       paymentMethod: 'card',
       status: 'pending',
       order_id: orderId,
-    });
+    };
+    if (userId) {
+      paymentData.user = new Types.ObjectId(userId);
+    }
+    if (dto.guestId) {
+      paymentData.guestId = dto.guestId;
+    }
+    if (dto.contactInfo) {
+      paymentData.contactInfo = dto.contactInfo;
+    }
 
-    // this.logger.log('Payment created in database:', payment);
+    const payment = await this.paymentModel.create(paymentData);
 
     const formData = this.generateFormData(
       dto.amount,

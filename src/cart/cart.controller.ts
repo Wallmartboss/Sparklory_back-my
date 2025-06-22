@@ -1,10 +1,12 @@
 import { JwtAuthGuard } from '@/auth/guards/jwt.guard';
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
   Logger,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -36,7 +38,8 @@ export class CartController {
   })
   addItem(@Req() req, @Body() addToCartDto: AddToCartDto) {
     return this.cartService.addItem(
-      req.user.id,
+      req.user?.id,
+      undefined,
       addToCartDto.productId,
       addToCartDto.quantity || 1,
       addToCartDto.size,
@@ -83,5 +86,60 @@ export class CartController {
   })
   clearCart(@Req() req) {
     return this.cartService.clearCart(req.user.id);
+  }
+
+  @Get('guest')
+  @ApiOperation({ summary: 'Get or create guest cart by guestId' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return the guest cart.',
+    type: Cart,
+  })
+  getGuestCart(@Query('guestId') guestId: string) {
+    if (!guestId) {
+      throw new BadRequestException('guestId is required');
+    }
+    return this.cartService.getOrCreateCart(undefined, guestId);
+  }
+
+  @Post('add-guest')
+  @ApiOperation({ summary: 'Add an item to the guest cart' })
+  @ApiResponse({
+    status: 201,
+    description: 'The item has been successfully added to the guest cart.',
+    type: Cart,
+  })
+  addItemGuest(@Body() addToCartDto: AddToCartDto) {
+    if (!addToCartDto.guestId) {
+      throw new BadRequestException('guestId is required');
+    }
+    return this.cartService.addItem(
+      undefined,
+      addToCartDto.guestId,
+      addToCartDto.productId,
+      addToCartDto.quantity || 1,
+      addToCartDto.size,
+      addToCartDto.color,
+    );
+  }
+
+  @Post('remove-guest')
+  @ApiOperation({ summary: 'Remove an item from the guest cart' })
+  @ApiResponse({
+    status: 200,
+    description: 'The item has been successfully removed from the guest cart.',
+    type: Cart,
+  })
+  removeItemGuest(@Body() removeFromCartDto: RemoveFromCartDto) {
+    if (!removeFromCartDto.guestId) {
+      throw new BadRequestException('guestId is required');
+    }
+    return this.cartService.removeItem(
+      undefined,
+      removeFromCartDto.guestId,
+      removeFromCartDto.productId,
+      removeFromCartDto.size,
+      removeFromCartDto.color,
+    );
   }
 }

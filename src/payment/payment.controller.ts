@@ -15,7 +15,7 @@ import { CreatePaymentDto } from './dto/create-payment.dto';
 import { PaymentService } from './payment.service';
 
 interface RequestWithUser extends Request {
-  user: User;
+  user?: User;
 }
 
 interface PaymentCallbackDto {
@@ -37,8 +37,13 @@ export class PaymentController {
     @Req() req: RequestWithUser,
     @Body() dto: CreatePaymentDto,
   ) {
-    this.logger.log(`User ${req.user.id} is creating a payment`);
-    return this.paymentService.create(req.user.id, dto);
+    const userId = req.user?.id;
+    return this.paymentService.create(userId, dto);
+  }
+
+  @Post('create-guest')
+  async createGuestPayment(@Body() dto: CreatePaymentDto) {
+    return this.paymentService.create(undefined, dto);
   }
 
   @Post('callback')
