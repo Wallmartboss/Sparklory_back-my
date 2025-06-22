@@ -5,7 +5,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Product, ProductDocument } from './schema/product.schema';
 
-// Добавить тип для параметров пагинации
+// Додати тип для параметрів пагінації
 interface FindAllProductsParams {
   limit?: number;
   page?: number;

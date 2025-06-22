@@ -37,4 +37,13 @@ export class AddToCartDto {
   @IsString()
   @IsOptional()
   color?: string;
+
+  @ApiProperty({
+    description: 'Guest cart/session ID',
+    example: 'c0a8012e-7b2a-4c1a-9e2a-123456789abc',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  guestId?: string;
 }

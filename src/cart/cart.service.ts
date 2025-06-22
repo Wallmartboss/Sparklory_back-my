@@ -7,26 +7,39 @@ import { Cart, CartDocument } from './cart.schema';
 export class CartService {
   constructor(@InjectModel(Cart.name) private cartModel: Model<CartDocument>) {}
 
-  async getOrCreateCart(userId: string): Promise<CartDocument> {
-    let cart: CartDocument | null = await this.cartModel.findOne({
-      user: userId,
-      isOrdered: false,
-    });
-    if (!cart) {
-      cart = new this.cartModel({ user: userId, items: [] }) as CartDocument;
-      await cart.save();
+  async getOrCreateCart(
+    userId?: string,
+    guestId?: string,
+  ): Promise<CartDocument> {
+    let cart: CartDocument | null = null;
+    if (userId) {
+      cart = await this.cartModel.findOne({ user: userId, isOrdered: false });
+      if (!cart) {
+        cart = new this.cartModel({ user: userId, items: [] }) as CartDocument;
+        await cart.save();
+      }
+      return cart;
     }
-    return cart;
+    if (guestId) {
+      cart = await this.cartModel.findOne({ guestId, isOrdered: false });
+      if (!cart) {
+        cart = new this.cartModel({ guestId, items: [] }) as CartDocument;
+        await cart.save();
+      }
+      return cart;
+    }
+    throw new Error('Either userId or guestId must be provided');
   }
 
   async addItem(
-    userId: string,
+    userId: string | undefined,
+    guestId: string | undefined,
     productId: string,
     quantity = 1,
     size?: string,
     color?: string,
   ) {
-    const cart = await this.getOrCreateCart(userId);
+    const cart = await this.getOrCreateCart(userId, guestId);
     const existingItem = cart.items.find(
       item =>
         item.product.toString() === productId &&
@@ -49,12 +62,13 @@ export class CartService {
   }
 
   async removeItem(
-    userId: string,
+    userId: string | undefined,
+    guestId: string | undefined,
     productId: string,
     size?: string,
     color?: string,
   ) {
-    const cart = await this.getOrCreateCart(userId);
+    const cart = await this.getOrCreateCart(userId, guestId);
 
     const itemIndex = cart.items.findIndex(
       item =>
@@ -78,8 +92,8 @@ export class CartService {
     return cart.save();
   }
 
-  async clearCart(userId: string) {
-    const cart = await this.getOrCreateCart(userId);
+  async clearCart(userId?: string, guestId?: string) {
+    const cart = await this.getOrCreateCart(userId, guestId);
     cart.items = [];
     return cart.save();
   }

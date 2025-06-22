@@ -27,4 +27,13 @@ export class RemoveFromCartDto {
   @IsString()
   @IsOptional()
   color?: string;
+
+  @ApiProperty({
+    example: 'c0a8012e-7b2a-4c1a-9e2a-123456789abc',
+    required: false,
+    description: 'Guest cart/session ID',
+  })
+  @IsOptional()
+  @IsString()
+  guestId?: string;
 }

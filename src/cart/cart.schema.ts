@@ -29,6 +29,9 @@ export class Cart {
 
   @Prop({ type: String, default: '' })
   order_id: string;
+
+  @Prop({ type: String, required: false })
+  guestId?: string;
 }
 
 export type CartDocument = Cart & Document;
