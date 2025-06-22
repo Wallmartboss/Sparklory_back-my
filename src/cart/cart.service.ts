@@ -19,26 +19,48 @@ export class CartService {
     return cart;
   }
 
-  async addItem(userId: string, productId: string, quantity = 1) {
+  async addItem(
+    userId: string,
+    productId: string,
+    quantity = 1,
+    size?: string,
+    color?: string,
+  ) {
     const cart = await this.getOrCreateCart(userId);
     const existingItem = cart.items.find(
-      item => item.product.toString() === productId,
+      item =>
+        item.product.toString() === productId &&
+        item.size === size &&
+        item.color === color,
     );
 
     if (existingItem) {
       existingItem.quantity += quantity;
     } else {
-      cart.items.push({ product: new Types.ObjectId(productId), quantity });
+      cart.items.push({
+        product: new Types.ObjectId(productId),
+        quantity,
+        size,
+        color,
+      });
     }
 
     return cart.save();
   }
 
-  async removeItem(userId: string, productId: string) {
+  async removeItem(
+    userId: string,
+    productId: string,
+    size?: string,
+    color?: string,
+  ) {
     const cart = await this.getOrCreateCart(userId);
 
     const itemIndex = cart.items.findIndex(
-      item => item.product.toString() === productId,
+      item =>
+        item.product.toString() === productId &&
+        item.size === size &&
+        item.color === color,
     );
 
     if (itemIndex === -1) {

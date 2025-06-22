@@ -21,6 +21,12 @@ export class Product {
   @Prop({ default: false })
   engraving: boolean;
 
+  @Prop()
+  size: string;
+
+  @Prop()
+  color: string;
+
   @Prop({ required: true })
   price: number;
 

@@ -17,11 +17,22 @@ export class CartController {
 
   @UseGuards(JwtAuthGuard)
   @Post('add')
-  addItem(@Req() req, @Body() body: { productId: string; quantity?: number }) {
+  addItem(
+    @Req() req,
+    @Body()
+    body: {
+      productId: string;
+      quantity?: number;
+      size?: string;
+      color?: string;
+    },
+  ) {
     return this.cartService.addItem(
       req.user.id,
       body.productId,
       body.quantity || 1,
+      body.size,
+      body.color,
     );
   }
 
@@ -33,8 +44,16 @@ export class CartController {
 
   @UseGuards(JwtAuthGuard)
   @Post('remove')
-  removeItem(@Req() req, @Body() body: { productId: string }) {
-    return this.cartService.removeItem(req.user.id, body.productId);
+  removeItem(
+    @Req() req,
+    @Body() body: { productId: string; size?: string; color?: string },
+  ) {
+    return this.cartService.removeItem(
+      req.user.id,
+      body.productId,
+      body.size,
+      body.color,
+    );
   }
 
   @UseGuards(JwtAuthGuard)
