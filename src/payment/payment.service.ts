@@ -8,7 +8,7 @@ import { CreatePaymentDto } from './dto/create-payment.dto';
 import { Payment } from './payment.schema';
 
 /**
- * Service for handling payment logic and LiqPay integration.
+ * Сервіс для обробки логіки платежів та інтеграції з LiqPay.
  */
 @Injectable()
 export class PaymentService {
@@ -20,7 +20,7 @@ export class PaymentService {
   private readonly isDevelopment: boolean;
 
   /**
-   * Description for LiqPay payment.
+   * Опис для платежу LiqPay.
    */
   private static readonly ORDER_PAYMENT_DESCRIPTION = 'Order payment';
 
@@ -40,8 +40,8 @@ export class PaymentService {
   }
 
   /**
-   * Generates unique order ID in LiqPay format
-   * @returns string Order ID
+   * Генерує унікальний ідентифікатор замовлення у форматі LiqPay
+   * @returns string Ідентифікатор замовлення
    */
   private generateOrderId(): string {
     const timestamp = Date.now();
@@ -50,11 +50,11 @@ export class PaymentService {
   }
 
   /**
-   * Generates LiqPay form data and signature.
-   * @param amount Payment amount
-   * @param orderId Unique order identifier
-   * @param description Payment description
-   * @returns LiqPay form data and signature
+   * Генерує дані форми LiqPay та підпис.
+   * @param amount Сума платежу
+   * @param orderId Унікальний ідентифікатор замовлення
+   * @param description Опис платежу
+   * @returns Дані форми LiqPay та підпис
    */
   generateFormData(
     amount: number,
@@ -82,11 +82,11 @@ export class PaymentService {
       server_url: this.serverUrl,
     };
 
-    this.logger.log('LiqPay payload:', payload);
+    // this.logger.log('LiqPay payload:', payload);
 
     const data = Buffer.from(JSON.stringify(payload)).toString('base64');
 
-    // Проверяем, что данные корректно кодируются и декодируются
+    // Перевіряємо, що дані коректно кодуються та декодуються
     const decodedData = JSON.parse(Buffer.from(data, 'base64').toString());
     this.logger.log('Decoded data (verification):', decodedData);
 
@@ -99,10 +99,10 @@ export class PaymentService {
   }
 
   /**
-   * Creates a new payment and generates LiqPay form data.
-   * @param userId User identifier
-   * @param dto Payment creation DTO
-   * @returns LiqPay form data, payment id, and order id
+   * Створює новий платіж та генерує дані форми LiqPay.
+   * @param userId Ідентифікатор користувача
+   * @param dto DTO для створення платежу
+   * @returns Дані форми LiqPay, ідентифікатор платежу та замовлення
    */
   async create(
     userId: string,
@@ -113,7 +113,7 @@ export class PaymentService {
     const cart = await this.cartService.getOrCreateCart(userId);
     const orderId = this.generateOrderId();
 
-    // Обновляем cart, добавляя order_id
+    // Оновлюємо cart, додаючи order_id
     await this.cartService.updateOrderId(cart._id.toString(), orderId);
 
     const payment = await this.paymentModel.create({
@@ -125,7 +125,7 @@ export class PaymentService {
       order_id: orderId,
     });
 
-    this.logger.log('Payment created in database:', payment);
+    // this.logger.log('Payment created in database:', payment);
 
     const formData = this.generateFormData(
       dto.amount,
@@ -141,10 +141,10 @@ export class PaymentService {
   }
 
   /**
-   * Verifies LiqPay callback signature.
-   * @param data Base64-encoded data
-   * @param signature Signature to verify
-   * @returns True if signature is valid
+   * Перевіряє підпис зворотного виклику LiqPay.
+   * @param data Данні у форматі Base64
+   * @param signature Підпис для перевірки
+   * @returns true, якщо підпис коректний
    */
   verifyCallback(data: string, signature: string): boolean {
     if (this.isDevelopment) return true;
@@ -156,10 +156,10 @@ export class PaymentService {
   }
 
   /**
-   * Handles LiqPay callback and updates payment status.
-   * @param data Base64-encoded data
-   * @param signature Signature from LiqPay
-   * @returns Callback result
+   * Обробляє зворотний виклик LiqPay та оновлює статус платежу.
+   * @param data Данні у форматі Base64
+   * @param signature Підпис з LiqPay
+   * @returns Результат зворотного виклику
    */
   async handleCallback(
     data: string,
@@ -172,32 +172,28 @@ export class PaymentService {
     const decoded = JSON.parse(Buffer.from(data, 'base64').toString());
     const { order_id, status, transaction_id } = decoded;
 
-    this.logger.log('Looking for payment with order_id:', order_id);
-
-    // Поиск всех платежей для отладки
-    const allPayments = await this.paymentModel.find({}).lean();
-    this.logger.log('All payments in database:', allPayments);
+    // this.logger.log('Looking for payment with order_id:', order_id);
 
     const payment = await this.paymentModel.findOne({ order_id });
 
     if (!payment) {
       this.logger.error('Payment not found. Search criteria:', { order_id });
-      // Возвращаем успех, чтобы LiqPay не повторял запрос
+      // Повертаємо успіх, щоб LiqPay не повторював запит
       return { status: 'success', orderId: order_id };
     }
 
     if (payment.status === 'completed') {
-      // Уже обработан — возвращаем успех
+      // Вже оброблено — повертаємо успіх
       return { status: 'success', orderId: order_id };
     }
 
-    this.logger.log('Found payment:', payment);
+    // this.logger.log('Found payment:', payment);
 
     payment.status = status === 'success' ? 'completed' : 'failed';
     payment.transactionId = transaction_id;
     await payment.save();
 
-    // Если оплата успешна, отмечаем корзину как заказанную
+    // Якщо оплата успішна, позначаємо корзину як замовлену
     if (status === 'success') {
       await this.cartService.setOrderedByOrderId(order_id);
     }
@@ -207,7 +203,7 @@ export class PaymentService {
 }
 
 /**
- * LiqPay form data and signature.
+ * Дані форми LiqPay та підпис.
  */
 export interface LiqPayFormData {
   data: string;
@@ -215,7 +211,7 @@ export interface LiqPayFormData {
 }
 
 /**
- * Response for payment creation (LiqPay form data + ids).
+ * Відповідь на створення платежу (дані форми LiqPay + ідентифікатори).
  */
 export interface LiqPayCreateResponse extends LiqPayFormData {
   paymentId: string;
@@ -223,7 +219,7 @@ export interface LiqPayCreateResponse extends LiqPayFormData {
 }
 
 /**
- * Response for LiqPay callback.
+ * Відповідь на зворотний виклик LiqPay.
  */
 export interface LiqPayCallbackResponse {
   status: string;
