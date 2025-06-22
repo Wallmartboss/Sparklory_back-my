@@ -8,6 +8,12 @@ export class CartItem {
 
   @Prop({ default: 1 })
   quantity: number;
+
+  @Prop({ required: false })
+  size?: string;
+
+  @Prop({ required: false })
+  color?: string;
 }
 
 @Schema({ timestamps: true, versionKey: false })

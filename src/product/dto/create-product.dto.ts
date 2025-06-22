@@ -67,6 +67,16 @@ export class CreateProductDto {
   @Type(() => Boolean)
   engraving: boolean;
 
+  @ApiProperty({ example: '18', required: false })
+  @IsOptional()
+  @IsString()
+  size?: string;
+
+  @ApiProperty({ example: 'gold', required: false })
+  @IsOptional()
+  @IsString()
+  color?: string;
+
   @ApiProperty({ example: 1250 })
   @IsNumber()
   @Type(() => Number)

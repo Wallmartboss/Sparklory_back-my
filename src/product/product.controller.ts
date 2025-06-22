@@ -1,31 +1,45 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
+  BadRequestException,
   Body,
+  Controller,
+  Delete,
+  Get,
   Logger,
-  Param,
   NotFoundException,
+  Param,
+  Patch,
+  Post,
   UploadedFile,
   UseInterceptors,
-  BadRequestException,
 } from '@nestjs/common';
-import { ProductService } from './product.service';
-import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
-import { ApiExcludeEndpoint } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  ApiExcludeEndpoint,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
+import { ProductService } from './product.service';
+import { Product } from './schema/product.schema';
 
+@ApiTags('Products')
 @Controller('products')
 export class ProductController {
   private readonly logger = new Logger(ProductController.name);
   constructor(private readonly productService: ProductService) {}
 
   @Post()
+  @ApiOperation({ summary: 'Create a new product' })
+  @ApiResponse({
+    status: 201,
+    description: 'The product has been successfully created.',
+    type: Product,
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request.' })
   async create(@Body() createProductDto: CreateProductDto) {
     this.logger.log('Received request to create product');
     this.logger.debug(`Action: ${createProductDto.action}`);
@@ -36,11 +50,24 @@ export class ProductController {
   }
 
   @Get()
+  @ApiOperation({ summary: 'Get all products' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return all products.',
+    type: [Product],
+  })
   async findAll() {
     return this.productService.findAll();
   }
 
   @Get('category/:category')
+  @ApiOperation({ summary: 'Get products by category' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return products by category.',
+    type: [Product],
+  })
+  @ApiResponse({ status: 404, description: 'Not Found.' })
   async findByCategory(@Param('category') category: string) {
     this.logger.log(`Отримання продуктів за категорією: ${category}`);
     try {
@@ -58,6 +85,13 @@ export class ProductController {
   }
 
   @Get('action/:action')
+  @ApiOperation({ summary: 'Get products by action' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return products by action.',
+    type: [Product],
+  })
+  @ApiResponse({ status: 404, description: 'Not Found.' })
   async findByAction(@Param('action') action: string) {
     this.logger.log(`Отримання продуктів за акцією: ${action}`);
     try {
@@ -75,6 +109,13 @@ export class ProductController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get a product by ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return a single product.',
+    type: Product,
+  })
+  @ApiResponse({ status: 404, description: 'Not Found.' })
   async findOne(@Param('id') id: string) {
     return this.productService.findOne(id);
   }
@@ -94,6 +135,13 @@ export class ProductController {
   }
 
   @Delete(':id')
+  @ApiOperation({ summary: 'Delete a product' })
+  @ApiResponse({
+    status: 200,
+    description: 'The product has been successfully deleted.',
+    type: Product,
+  })
+  @ApiResponse({ status: 404, description: 'Not Found.' })
   async remove(@Param('id') id: string) {
     return this.productService.remove(id);
   }
