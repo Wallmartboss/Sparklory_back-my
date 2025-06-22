@@ -1,9 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Product, ProductDocument } from './schema/product.schema';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { Product, ProductDocument } from './schema/product.schema';
+
+// Добавить тип для параметров пагинации
+interface FindAllProductsParams {
+  limit?: number;
+  page?: number;
+}
 
 @Injectable()
 export class ProductService {
@@ -16,8 +22,18 @@ export class ProductService {
     return product.save();
   }
 
-  async findAll(): Promise<Product[]> {
-    return this.productModel.find().exec();
+  async findAll(params?: FindAllProductsParams): Promise<Product[]> {
+    if (!params) {
+      return this.productModel.find().exec();
+    }
+    const { limit, page } = params;
+    const parsedLimit = limit ? Number(limit) : undefined;
+    const parsedPage = page ? Number(page) : undefined;
+    if (!parsedLimit || !parsedPage) {
+      return this.productModel.find().exec();
+    }
+    const skip = (parsedPage - 1) * parsedLimit;
+    return this.productModel.find().skip(skip).limit(parsedLimit).exec();
   }
 
   async findOne(id: string): Promise<Product> {

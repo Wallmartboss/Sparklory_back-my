@@ -9,6 +9,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiExcludeEndpoint,
   ApiOperation,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -56,8 +58,20 @@ export class ProductController {
     description: 'Return all products.',
     type: [Product],
   })
-  async findAll() {
-    return this.productService.findAll();
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of products per page',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number',
+  })
+  async findAll(@Query('limit') limit?: number, @Query('page') page?: number) {
+    return this.productService.findAll({ limit, page });
   }
 
   @Get('category/:category')
