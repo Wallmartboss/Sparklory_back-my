@@ -2,51 +2,106 @@ import { Role } from '@/common/enum/user.enum';
 import { Device } from '@/device/schema/device.schema';
 import { Session } from '@/session/schema/session.schema';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { ApiProperty } from '@nestjs/swagger';
 import { Document, Types } from 'mongoose';
 
 export type UserDocument = User & Document;
 
 @Schema({ collection: 'user', versionKey: false })
 export class User extends Document {
+  /**
+   * User full name
+   */
+  @ApiProperty({ example: 'Vasyl Bordanov' })
+  @Prop({ required: true })
+  name: string;
+  /**
+   * User email address
+   */
+  @ApiProperty({ example: 'example@gmail.com' })
   @Prop({ unique: true })
   email: string;
 
-  @Prop()
-  name: string;
-
+  /**
+   * User password (hashed)
+   */
+  @ApiProperty({
+    example: 'hashedPassword',
+    description: 'Hashed user password',
+  })
   @Prop()
   password: string;
 
+  /**
+   * User role
+   */
+  @ApiProperty({ example: 'user', enum: Role, default: Role.User })
   @Prop({ type: String, enum: Role, default: Role.User })
   role: Role;
 
+  /**
+   * User profile image URL
+   */
+  @ApiProperty({ example: 'https://example.com/image.jpg', required: false })
   @Prop({ default: null })
   image: string;
 
+  /**
+   * Is user logged in
+   */
+  @ApiProperty({ example: false })
   @Prop({ default: false })
   isLoggedIn: boolean;
 
+  /**
+   * Is user email verified
+   */
+  @ApiProperty({ example: false })
   @Prop({ default: false })
   isVerifyEmail: boolean;
 
+  /**
+   * Email verification code
+   */
+  @ApiProperty({ example: '1234', required: false })
   @Prop({ default: null })
   emailVerifyCode: string;
 
+  /**
+   * Device verification code
+   */
+  @ApiProperty({ example: '5678', required: false })
   @Prop({ default: null })
   verifyDeviceCode: string;
 
+  /**
+   * User creation date
+   */
+  @ApiProperty({ example: '2024-05-01T12:00:00.000Z' })
   @Prop({ default: () => new Date().toISOString() })
   createdAt: string;
 
+  /**
+   * User update date
+   */
+  @ApiProperty({ example: '2024-05-01T12:00:00.000Z' })
   @Prop({ default: () => new Date().toISOString() })
   updatedAt: string;
 
+  /**
+   * User sessions
+   */
+  @ApiProperty({ type: [Session], required: false })
   @Prop({
     type: [{ type: Types.ObjectId, ref: 'Session' }],
     default: [],
   })
   sessions: Session[];
 
+  /**
+   * User devices
+   */
+  @ApiProperty({ type: [Device], required: false })
   @Prop({
     type: [{ type: Types.ObjectId, ref: 'Device' }],
     default: [],

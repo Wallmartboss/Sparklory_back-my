@@ -87,11 +87,7 @@ export class AuthService {
     return await this.userService.addNewDevice(user);
   }
 
-  async login(
-    user: User,
-    deviceId: string | undefined,
-    verifyDeviceCode?: string,
-  ) {
+  async login(user: User, deviceId?: string, verifyDeviceCode?: string) {
     if (verifyDeviceCode) {
       if (user.verifyDeviceCode !== verifyDeviceCode) {
         throw new BadRequestException('Wrong code!');

@@ -186,6 +186,7 @@ describe('UserService', () => {
       const createUserDto: CreateUserDto = {
         email: 'test@example.com',
         password: 'password123',
+        name: 'Vasyl Bordanov',
       };
 
       const mockUser = new MockUserModel({
@@ -195,6 +196,7 @@ describe('UserService', () => {
         isVerifyEmail: false,
         isLoggedIn: false,
         role: 'user',
+        name: 'Vasyl Bordanov',
         devices: [],
         sessions: [],
       });
@@ -224,6 +226,7 @@ describe('UserService', () => {
       const createUserDto: CreateUserDto = {
         email: 'test@example.com',
         password: 'password123',
+        name: 'Vasyl Bordanov',
       };
 
       MockUserModel.countDocuments.mockResolvedValue(1);

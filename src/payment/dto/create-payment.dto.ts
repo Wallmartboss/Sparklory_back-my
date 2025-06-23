@@ -9,22 +9,38 @@ import {
 } from 'class-validator';
 
 class GuestContactInfoDto {
-  @ApiProperty({ example: 'Ivan Ivanov', required: false })
+  @ApiProperty({
+    example: 'Ivan Ivanov',
+    required: false,
+    description: 'Guest full name',
+  })
   @IsString()
   @IsOptional()
   name?: string;
 
-  @ApiProperty({ example: 'ivan@example.com', required: false })
+  @ApiProperty({
+    example: 'ivan@example.com',
+    required: false,
+    description: 'Guest email address',
+  })
   @IsString()
   @IsOptional()
   email?: string;
 
-  @ApiProperty({ example: '+380123456789', required: false })
+  @ApiProperty({
+    example: '+380123456789',
+    required: false,
+    description: 'Guest phone number',
+  })
   @IsString()
   @IsOptional()
   phone?: string;
 
-  @ApiProperty({ example: 'Kyiv, Ukraine', required: false })
+  @ApiProperty({
+    example: 'Kyiv, Ukraine',
+    required: false,
+    description: 'Guest address',
+  })
   @IsString()
   @IsOptional()
   address?: string;
@@ -45,7 +61,11 @@ export class CreatePaymentDto {
   @IsString()
   guestId?: string;
 
-  @ApiProperty({ type: GuestContactInfoDto, required: false })
+  @ApiProperty({
+    type: GuestContactInfoDto,
+    required: false,
+    description: 'Guest contact information',
+  })
   @IsOptional()
   @ValidateNested()
   @Type(() => GuestContactInfoDto)

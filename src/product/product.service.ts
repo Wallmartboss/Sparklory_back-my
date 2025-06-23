@@ -11,6 +11,13 @@ interface FindAllProductsParams {
   page?: number;
 }
 
+interface ReviewPaginationResult {
+  total: number;
+  page: number;
+  limit: number;
+  reviews: any[];
+}
+
 @Injectable()
 export class ProductService {
   constructor(
@@ -88,5 +95,31 @@ export class ProductService {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
     return deletedProduct;
+  }
+
+  async paginateReviews(
+    productId: string,
+    page = 1,
+    limit = 3,
+  ): Promise<ReviewPaginationResult> {
+    const product = await this.productModel.findById(productId).exec();
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${productId} not found`);
+    }
+    const total = product.reviews.length;
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    const reviews = product.reviews.slice(start, end);
+    return { total, page, limit, reviews };
+  }
+
+  async addReview(productId: string, review: any): Promise<any> {
+    const product = await this.productModel.findById(productId).exec();
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${productId} not found`);
+    }
+    product.reviews.unshift(review);
+    await product.save();
+    return review;
   }
 }

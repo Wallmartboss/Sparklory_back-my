@@ -34,10 +34,16 @@ export class EmailService {
 
       case ECondition.EmailVerify:
         subject = 'Email Verification';
+        const frontendUrl = this.configService.get<string>(
+          'FRONTEND_URL',
+          'http://localhost:3000',
+        );
+        const verifyLink = `${frontendUrl}/verify-email?email=${encodeURIComponent(email)}&code=${token}`;
         html = `
           <p>Hello,</p>
-          <p>Please confirm your email address by entering the following confirmation code:</p>
-          <p style="text-align: center; font-weight: bold; font-size: 30px;">${token}</p>
+          <p>Please confirm your email address by clicking the link below:</p>
+          <p style="text-align: center; font-weight: bold; font-size: 18px;"><a href="${verifyLink}">${verifyLink}</a></p>
+          <p>If you did not register, please ignore this email.</p>
           <p>Thank you!</p>
         `;
         break;

@@ -10,17 +10,12 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import {
-  ApiExcludeEndpoint,
-  ApiOperation,
-  ApiQuery,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -135,7 +130,13 @@ export class ProductController {
   }
 
   @Patch(':id')
-  @ApiExcludeEndpoint()
+  @ApiOperation({ summary: 'Update a product' })
+  @ApiResponse({
+    status: 200,
+    description: 'The product has been successfully updated.',
+    type: Product,
+  })
+  @ApiResponse({ status: 404, description: 'Not Found.' })
   async update(
     @Param('id') id: string,
     @Body() updateProductDto: UpdateProductDto,
@@ -196,5 +197,46 @@ export class ProductController {
       filename: file.filename,
       path: `/uploads/reviews/${file.filename}`,
     };
+  }
+
+  @Get(':id/reviews')
+  @ApiOperation({ summary: 'Get paginated reviews for a product' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of reviews per page',
+  })
+  async getPaginatedReviews(
+    @Param('id') productId: string,
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+  ): Promise<any> {
+    return this.productService.paginateReviews(
+      productId,
+      Number(page),
+      Number(limit),
+    );
+  }
+
+  @Post(':id/reviews')
+  @ApiOperation({ summary: 'Create a review for a product' })
+  async createReview(
+    @Param('id') productId: string,
+    @Body() reviewDto: any,
+    @Req() req: Request,
+  ) {
+    // Если пользователь авторизован, подставляем его имя, если не указано явно
+    const user = (req as any).user;
+    if (user && (!reviewDto.name || reviewDto.name.trim() === '')) {
+      reviewDto.name = user.name;
+    }
+    return this.productService.addReview(productId, reviewDto);
   }
 }
