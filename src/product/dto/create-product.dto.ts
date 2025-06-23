@@ -12,7 +12,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-class ReviewDto {
+export class ReviewDto {
   @ApiProperty({ example: 'Ivan', description: 'Reviewer name' })
   @IsString()
   name: string;
@@ -53,6 +53,7 @@ class ReviewDto {
   @IsString({ each: true })
   image?: string[];
 }
+
 export class CreateProductDto {
   @ApiProperty({ example: 'Сережки Amethyst', description: 'Product name' })
   @IsString()
