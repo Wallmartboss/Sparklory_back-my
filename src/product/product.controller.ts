@@ -15,10 +15,16 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
-import { CreateProductDto } from './dto/create-product.dto';
+import { CreateProductDto, ReviewDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductService } from './product.service';
 import { Product } from './schema/product.schema';
@@ -227,6 +233,32 @@ export class ProductController {
 
   @Post(':id/reviews')
   @ApiOperation({ summary: 'Create a review for a product' })
+  @ApiBody({
+    type: ReviewDto,
+    description: 'Review data',
+    examples: {
+      example1: {
+        summary: 'Review with all fields',
+        value: {
+          name: 'John Doe',
+          avatar: 'avatar123.jpg',
+          text: 'Great product!',
+          rating: 5,
+          createdAt: '20.10.2024',
+          image: ['reviewImage1.jpg'],
+        },
+      },
+      example2: {
+        summary: 'Simple review',
+        value: {
+          name: 'Jane Smith',
+          text: 'Good quality',
+          rating: 4,
+          createdAt: '21.10.2024',
+        },
+      },
+    },
+  })
   async createReview(
     @Param('id') productId: string,
     @Body() reviewDto: any,
