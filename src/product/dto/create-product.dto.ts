@@ -13,20 +13,24 @@ import {
 } from 'class-validator';
 
 class ReviewDto {
-  @ApiProperty({ example: 'Ivan' })
+  @ApiProperty({ example: 'Ivan', description: 'Reviewer name' })
   @IsString()
   name: string;
 
-  @ApiProperty({ example: 'avatar123.jpg', required: false })
+  @ApiProperty({
+    example: 'avatar123.jpg',
+    required: false,
+    description: 'Reviewer avatar image',
+  })
   @IsOptional()
   @IsString()
   avatar?: string;
 
-  @ApiProperty({ example: 'Чудовий товар!' })
+  @ApiProperty({ example: 'Чудовий товар!', description: 'Review text' })
   @IsString()
   text: string;
 
-  @ApiProperty({ example: 5, description: 'Рейтинг від 1 до 5' })
+  @ApiProperty({ example: 5, description: 'Rating from 1 to 5' })
   @IsInt()
   @Min(1)
   @Max(5)
@@ -34,74 +38,95 @@ class ReviewDto {
 
   @ApiProperty({
     example: '20.10.2024',
-    description: 'Дата у форматі DD.MM.YYYY',
+    description: 'Date in DD.MM.YYYY format',
   })
   @IsString()
   createdAt: string;
 
-  @ApiProperty({ example: ['reviewImage1.jpg'], required: false })
+  @ApiProperty({
+    example: ['reviewImage1.jpg'],
+    required: false,
+    description: 'Review images',
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   image?: string[];
 }
 export class CreateProductDto {
-  @ApiProperty({ example: 'Сережки Amethyst' })
+  @ApiProperty({ example: 'Сережки Amethyst', description: 'Product name' })
   @IsString()
   name: string;
 
-  @ApiProperty({ example: 'Сережки з білим золотом і аметистами' })
+  @ApiProperty({
+    example: 'Сережки з білим золотом і аметистами',
+    description: 'Product description',
+  })
   @IsString()
   description: string;
 
-  @ApiProperty({ example: 'earrings' })
+  @ApiProperty({ example: 'earrings', description: 'Product category' })
   @IsString()
   category: string;
 
-  @ApiProperty({ example: 'white gold' })
+  @ApiProperty({ example: 'white gold', description: 'Product material' })
   @IsString()
   material: string;
 
-  @ApiProperty({ example: true })
+  @ApiProperty({ example: true, description: 'Is engraving available' })
   @IsBoolean()
   @Type(() => Boolean)
   engraving: boolean;
 
-  @ApiProperty({ example: '18', required: false })
+  @ApiProperty({ example: '18', required: false, description: 'Product size' })
   @IsOptional()
   @IsString()
   size?: string;
 
-  @ApiProperty({ example: 'gold', required: false })
+  @ApiProperty({
+    example: 'gold',
+    required: false,
+    description: 'Product color',
+  })
   @IsOptional()
   @IsString()
   color?: string;
 
-  @ApiProperty({ example: 1250 })
+  @ApiProperty({ example: 1250, description: 'Product price' })
   @IsNumber()
   @Type(() => Number)
   price: number;
 
-  @ApiProperty({ example: ['12345678.jpg'] })
+  @ApiProperty({
+    example: ['12345678.jpg'],
+    required: false,
+    description: 'Product images',
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   image?: string[];
 
-  @ApiProperty({ example: false })
+  @ApiProperty({ example: false, description: 'Is product in stock' })
   @IsBoolean()
   @Type(() => Boolean)
   inStock: boolean;
 
-  // Нове поле action
-  @ApiProperty({ example: ['Spring sale'] })
+  @ApiProperty({
+    example: ['Spring sale'],
+    required: false,
+    description: 'Product actions',
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   action?: string[];
 
-  // Масив відгуків
-  @ApiProperty({ type: [ReviewDto], required: false })
+  @ApiProperty({
+    type: [ReviewDto],
+    required: false,
+    description: 'Product reviews',
+  })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })

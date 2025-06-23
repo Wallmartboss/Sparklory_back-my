@@ -2,6 +2,7 @@
   "register": {
     "_id": "67ba2ccb360ffe935fa9596e",
     "email": "deudapreroullou-9229@yopmail.com",
+    "name": "Vasyl Bogdanov",
     "role": "user",
     "image": null,
     "isLoggedIn": false,

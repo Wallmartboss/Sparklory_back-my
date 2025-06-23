@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  Get,
   HttpStatus,
   Post,
+  Query,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
@@ -48,6 +50,21 @@ export class AuthController {
     };
   }
 
+  @Get('verify-email')
+  @ApiOperation({ summary: 'email verification by link' })
+  @ApiCustomResponse(HttpStatus.OK, response.verifyEmail)
+  async verifyEmailByLink(
+    @Query('email') email: string,
+    @Query('code') code: string,
+  ) {
+    const result = await this.authService.verifyUserEmail({ email, code });
+    return {
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      deviceId: result.deviceId,
+    };
+  }
+
   @UseGuards(LocalAuthGuard)
   @ApiOperation({
     summary: 'user login',
@@ -55,7 +72,7 @@ export class AuthController {
   @ApiCustomResponse(HttpStatus.OK, response.login)
   @Post('login')
   async login(@Body() loginDto: LoginDTO) {
-    const { email, password, deviceId, verifyDeviceCode } = loginDto;
+    const { email, password } = loginDto;
     const user = await this.authService.userService.validateUser(
       email,
       password,
@@ -63,11 +80,7 @@ export class AuthController {
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    const result = await this.authService.login(
-      user,
-      deviceId,
-      verifyDeviceCode,
-    );
+    const result = await this.authService.login(user);
     return {
       user: result.loggedInUser,
       accessToken: result.accessToken,
