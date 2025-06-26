@@ -241,6 +241,27 @@ export class ProductController {
     type: Number,
     description: 'Number of reviews per page',
   })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated reviews',
+    schema: {
+      example: {
+        total: 1,
+        page: 1,
+        limit: 10,
+        reviews: [
+          {
+            _id: '653e1b2c8f1b2a001e8e4c1a',
+            name: 'Ivan',
+            text: 'Great!',
+            rating: 5,
+            createdAt: '2024-10-20',
+            image: ['reviewImage1.jpg'],
+          },
+        ],
+      },
+    },
+  })
   async getPaginatedReviews(
     @Param('id') productId: string,
     @Query('page') page = 1,
@@ -281,6 +302,7 @@ export class ProductController {
       },
     },
   })
+  @ApiResponse({ status: 201, description: 'Created review', type: ReviewDto })
   async createReview(
     @Param('id') productId: string,
     @Body() reviewDto: any,
@@ -291,6 +313,7 @@ export class ProductController {
     if (user && (!reviewDto.name || reviewDto.name.trim() === '')) {
       reviewDto.name = user.name;
     }
-    return this.productService.addReview(productId, reviewDto);
+    const review = await this.productService.addReview(productId, reviewDto);
+    return review;
   }
 }
