@@ -120,7 +120,9 @@ export class ProductService {
     }
     product.reviews.unshift(review);
     await product.save();
-    return review;
+    // Знаходимо щойно доданий відгук за _id (він буде першим у масиві)
+    const savedReview = product.reviews[0];
+    return savedReview;
   }
 
   /**
