@@ -168,8 +168,8 @@ export class ProductController {
     return this.productService.remove(id);
   }
 
-  @Post(':id/reviews/upload')
-  @ApiOperation({ summary: 'Upload review image' })
+  @Post(':productId/reviews/:reviewId/upload')
+  @ApiOperation({ summary: 'Upload image for a specific review' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -197,7 +197,7 @@ export class ProductController {
       fileFilter: (req, file, callback) => {
         if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
           return callback(
-            new BadRequestException('Дозволені тільки зображення'),
+            new BadRequestException('Only image files are allowed'),
             false,
           );
         }
@@ -207,16 +207,23 @@ export class ProductController {
     }),
   )
   async uploadReviewImage(
-    @Param('id') productId: string,
+    @Param('productId') productId: string,
+    @Param('reviewId') reviewId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
     if (!file) {
-      throw new BadRequestException('Файл не завантажений');
+      throw new BadRequestException('No file uploaded');
     }
+    const imagePath = `/uploads/reviews/${file.filename}`;
+    await this.productService.attachImageToReview(
+      productId,
+      reviewId,
+      imagePath,
+    );
     return {
-      message: 'Файл успішно завантажений',
+      message: 'Image uploaded and attached to review',
       filename: file.filename,
-      path: `/uploads/reviews/${file.filename}`,
+      path: imagePath,
     };
   }
 

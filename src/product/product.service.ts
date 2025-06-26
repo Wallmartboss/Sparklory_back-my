@@ -122,4 +122,31 @@ export class ProductService {
     await product.save();
     return review;
   }
+
+  /**
+   * Attach an image to a specific review of a product
+   */
+  async attachImageToReview(
+    productId: string,
+    reviewId: string,
+    imagePath: string,
+  ): Promise<void> {
+    const product = await this.productModel.findById(productId).exec();
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${productId} not found`);
+    }
+    const review = product.reviews.find(
+      (r: any) => r._id?.toString() === reviewId,
+    );
+    if (!review) {
+      throw new NotFoundException(
+        `Review with ID ${reviewId} not found in product ${productId}`,
+      );
+    }
+    if (!Array.isArray(review.image)) {
+      review.image = [];
+    }
+    review.image.push(imagePath);
+    await product.save();
+  }
 }

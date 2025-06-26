@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import { Review } from './review.schema';
+import { Review, ReviewSchema } from './review.schema';
 
 export type ProductDocument = Product & Document;
 
@@ -37,9 +37,9 @@ export class Product {
   inStock: boolean;
 
   @Prop({ type: [String], default: null, required: false })
-  action: string;
+  action: string[];
 
-  @Prop({ type: [Object], default: [] })
+  @Prop({ type: [ReviewSchema], default: [] })
   reviews: Review[];
 }
 
