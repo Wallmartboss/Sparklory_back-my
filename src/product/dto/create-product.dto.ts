@@ -13,6 +13,12 @@ import {
 } from 'class-validator';
 
 export class ReviewDto {
+  @ApiProperty({
+    example: '653e1b2c8f1b2a001e8e4c1a',
+    description: 'Review unique identifier',
+  })
+  readonly _id?: string;
+
   @ApiProperty({ example: 'Ivan', description: 'Reviewer name' })
   @IsString()
   name: string;
@@ -126,7 +132,8 @@ export class CreateProductDto {
   @ApiProperty({
     type: [ReviewDto],
     required: false,
-    description: 'Product reviews',
+    description:
+      'Product reviews (each review contains _id, name, text, rating, createdAt, image, etc.)',
   })
   @IsOptional()
   @IsArray()
