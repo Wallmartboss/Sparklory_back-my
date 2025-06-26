@@ -1,7 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Types } from 'mongoose';
 
-@Schema({ _id: false }) // схема без _id
+@Schema() // тепер схема з _id
 export class Review {
+  @Prop({ type: Types.ObjectId, default: () => new Types.ObjectId() })
+  _id: Types.ObjectId;
+
   @Prop({ required: true })
   name: string;
 
