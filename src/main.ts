@@ -15,7 +15,7 @@ async function bootstrap() {
   const allowedOrigins = configService.get<string[]>('ALLOWED_ORIGINS', [
     'http://localhost:3000',
     'https://localhost:3000',
-    'https://frontend-sparklory.onrender.com/',
+    'https://frontend-sparklory.onrender.com',
   ]);
 
   // Global prefix and versioning
