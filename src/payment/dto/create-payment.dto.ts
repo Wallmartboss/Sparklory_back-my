@@ -46,20 +46,21 @@ class GuestContactInfoDto {
   address?: string;
 }
 
-export class CreatePaymentDto {
+export class CreatePaymentUserDto {
   @ApiProperty({ example: 12900, description: 'Payment amount' })
   @IsNotEmpty()
   @IsNumber()
   amount: number;
+}
 
+export class CreatePaymentGuestDto extends CreatePaymentUserDto {
   @ApiProperty({
     example: 'c0a8012e-7b2a-4c1a-9e2a-123456789abc',
-    required: false,
+    required: true,
     description: 'Guest cart/session ID',
   })
-  @IsOptional()
   @IsString()
-  guestId?: string;
+  guestId: string;
 
   @ApiProperty({
     type: GuestContactInfoDto,

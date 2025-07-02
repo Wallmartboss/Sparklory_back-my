@@ -4,24 +4,22 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   Logger,
   Post,
-  Get,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
-import { CreatePaymentDto } from './dto/create-payment.dto';
+import {
+  CreatePaymentGuestDto,
+  CreatePaymentUserDto,
+} from './dto/create-payment.dto';
 import { PaymentService } from './payment.service';
 
 interface RequestWithUser extends Request {
   user?: User;
-}
-
-interface PaymentCallbackDto {
-  data: string;
-  signature: string;
 }
 
 @ApiTags('Payment')
@@ -36,29 +34,32 @@ export class PaymentController {
   @Post('create')
   async createPayment(
     @Req() req: RequestWithUser,
-    @Body() dto: CreatePaymentDto,
+    @Body() dto: CreatePaymentUserDto,
   ) {
     const userId = req.user?.id;
     return this.paymentService.create(userId, dto);
   }
 
   @Post('create-guest')
-  async createGuestPayment(@Body() dto: CreatePaymentDto) {
+  async createGuestPayment(@Body() dto: CreatePaymentGuestDto) {
     return this.paymentService.create(undefined, dto);
   }
 
   @Post('callback')
-  async handleCallback(@Body() body: PaymentCallbackDto) {
-    this.logger.log('LiqPay callback body:', JSON.stringify(body));
-    if (!body.data || !body.signature) {
+  async handleCallback(@Req() req: Request) {
+    this.logger.log('LiqPay callback raw body:', JSON.stringify(req.body));
+    const data =
+      req.body.data ||
+      (typeof req.body === 'string' && req.body.match(/data=([^&]*)/)?.[1]);
+    const signature =
+      req.body.signature ||
+      (typeof req.body === 'string' &&
+        req.body.match(/signature=([^&]*)/)?.[1]);
+    if (!data || !signature) {
       throw new BadRequestException('Missing data or signature');
     }
-
     try {
-      return await this.paymentService.handleCallback(
-        body.data,
-        body.signature,
-      );
+      return await this.paymentService.handleCallback(data, signature);
     } catch (err) {
       this.logger.error('Callback error:', err.message);
       throw new BadRequestException(err.message);

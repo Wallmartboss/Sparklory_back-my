@@ -17,6 +17,7 @@ export class LoyaltyService {
 
   /**
    * Додає покупку, нараховує бонуси та оновлює рахунок користувача
+   * Якщо сума покупки 0 або менше — бонуси не нараховуються
    */
   async addPurchase(
     userId: string | Types.ObjectId,
@@ -26,6 +27,10 @@ export class LoyaltyService {
     const idStr = typeof userId === 'string' ? userId : userId?.toString();
     if (!idStr || idStr.length !== 24) {
       throw new Error('Некорректный userId');
+    }
+    if (!amount || amount <= 0) {
+      // Не додаємо покупку з нульовою сумою
+      return;
     }
     const account = await this.loyaltyModel
       .findOne({ userId: new Types.ObjectId(idStr) })
@@ -40,12 +45,17 @@ export class LoyaltyService {
       bonusPercent = (account.levelId as any).bonusPercent;
     }
     const bonus = amount * bonusPercent;
-    await this.purchaseModel.create({
-      userId,
-      amount,
-      date: new Date(),
-      description,
-    });
+    try {
+      const purchase = await this.purchaseModel.create({
+        userId: new Types.ObjectId(idStr),
+        amount,
+        date: new Date(),
+        description,
+      });
+      console.log('[DEBUG] Purchase created:', purchase);
+    } catch (err) {
+      console.error('[ERROR] Failed to create purchase:', err);
+    }
     account.totalAmount += amount;
     account.bonusBalance += bonus;
     await account.save();
@@ -59,8 +69,14 @@ export class LoyaltyService {
   /**
    * Повертає історію покупок користувача
    */
-  async getHistory(userId: string) {
-    return this.purchaseModel.find({ userId }).sort({ date: -1 });
+  async getHistory(userId: string | Types.ObjectId) {
+    const idStr = typeof userId === 'string' ? userId : userId?.toString();
+    if (!idStr || idStr.length !== 24) {
+      throw new Error('Некорректный userId');
+    }
+    return this.purchaseModel
+      .find({ userId: new Types.ObjectId(idStr) })
+      .sort({ date: -1 });
   }
 
   /**
