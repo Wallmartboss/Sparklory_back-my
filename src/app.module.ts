@@ -9,6 +9,7 @@ import { CartModule } from './cart/cart.module';
 import { AppLoggerMiddleware } from './common/loggers/app-logger';
 import { CoreModule } from './core/core.module';
 import { DeviceModule } from './device/device.module';
+import { LoyaltyModule } from './loyalty/loyalty.module';
 import { PaymentModule } from './payment/payment.module';
 import { ProductModule } from './product/product.module';
 import { SessionModule } from './session/session.module';
@@ -40,6 +41,7 @@ import { UserModule } from './user/user.module';
     CartModule,
     PaymentModule,
     ScheduleModule.forRoot(),
+    LoyaltyModule,
   ],
   controllers: [AppController],
   providers: [AppService],

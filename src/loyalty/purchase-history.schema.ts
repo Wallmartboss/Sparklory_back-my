@@ -1,0 +1,23 @@
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document, Types } from 'mongoose';
+
+/**
+ * PurchaseHistory - история покупок пользователя
+ */
+@Schema({ timestamps: true })
+export class PurchaseHistory extends Document {
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  userId: Types.ObjectId;
+
+  @Prop({ required: true })
+  amount: number;
+
+  @Prop({ required: true })
+  date: Date;
+
+  @Prop({ default: null })
+  description?: string;
+}
+
+export const PurchaseHistorySchema =
+  SchemaFactory.createForClass(PurchaseHistory);
