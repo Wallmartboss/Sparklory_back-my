@@ -4,7 +4,7 @@ import { Document, Types } from 'mongoose';
 /**
  * PurchaseHistory - история покупок пользователя
  */
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, versionKey: false })
 export class PurchaseHistory extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId;
@@ -21,3 +21,10 @@ export class PurchaseHistory extends Document {
 
 export const PurchaseHistorySchema =
   SchemaFactory.createForClass(PurchaseHistory);
+
+PurchaseHistorySchema.set('toJSON', {
+  transform: function (doc, ret) {
+    delete ret.__v;
+    return ret;
+  },
+});

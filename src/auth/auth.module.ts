@@ -13,6 +13,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { LocalStrategy } from './strategies';
 import { JwtStrategy } from './strategies/jwt';
+import {
+  LoyaltyAccount,
+  LoyaltyAccountSchema,
+} from '../loyalty/loyalty-account.schema';
+import {
+  LoyaltyLevel,
+  LoyaltyLevelSchema,
+} from '../loyalty/loyalty-level.schema';
 
 @Module({
   imports: [
@@ -20,6 +28,8 @@ import { JwtStrategy } from './strategies/jwt';
       { name: User.name, schema: UserSchema },
       { name: Device.name, schema: DeviceSchema },
       { name: Session.name, schema: SessionSchema },
+      { name: LoyaltyAccount.name, schema: LoyaltyAccountSchema },
+      { name: LoyaltyLevel.name, schema: LoyaltyLevelSchema },
     ]),
     ConfigModule.forRoot(),
     JwtModule.registerAsync({

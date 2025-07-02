@@ -16,6 +16,8 @@ import { Device } from '@/device/schema/device.schema';
 import { EmailService } from '@/email/email.service';
 import { Session } from '@/session/schema/session.schema';
 import { SessionService } from '@/session/session.service';
+import { LoyaltyAccount } from '../loyalty/loyalty-account.schema';
+import { LoyaltyLevel } from '../loyalty/loyalty-level.schema';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { User, UserDocument } from './schema/user.schema';
 
@@ -25,6 +27,10 @@ export class UserService {
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(Session.name) private readonly sessionModel: Model<Session>,
     @InjectModel(Device.name) private readonly deviceModel: Model<Device>,
+    @InjectModel(LoyaltyAccount.name)
+    private readonly loyaltyModel: Model<LoyaltyAccount>,
+    @InjectModel(LoyaltyLevel.name)
+    private readonly loyaltyLevelModel: Model<LoyaltyLevel>,
     private readonly emailService: EmailService,
     readonly deviceService: DeviceService,
     readonly sessionService: SessionService,
@@ -52,6 +58,24 @@ export class UserService {
       ECondition.EmailVerify,
     );
     await newUser.save();
+
+    // Назначать всем пользователям один и тот же уровень 'Default' (создавать только если его нет)
+    let defaultLevel = await this.loyaltyLevelModel.findOne({
+      name: 'Default',
+    });
+    if (!defaultLevel) {
+      defaultLevel = await this.loyaltyLevelModel.create({
+        name: 'Default',
+        bonusPercent: 0,
+      });
+    }
+    await this.loyaltyModel.create({
+      userId: newUser._id,
+      levelId: defaultLevel._id,
+      totalAmount: 0,
+      bonusBalance: 0,
+    });
+
     return await this.findOne(newUser.id);
   }
 

@@ -18,9 +18,17 @@ export class LoyaltyService {
   /**
    * Додає покупку, нараховує бонуси та оновлює рахунок користувача
    */
-  async addPurchase(userId: string, amount: number, description?: string) {
+  async addPurchase(
+    userId: string | Types.ObjectId,
+    amount: number,
+    description?: string,
+  ) {
+    const idStr = typeof userId === 'string' ? userId : userId?.toString();
+    if (!idStr || idStr.length !== 24) {
+      throw new Error('Некорректный userId');
+    }
     const account = await this.loyaltyModel
-      .findOne({ userId })
+      .findOne({ userId: new Types.ObjectId(idStr) })
       .populate('levelId');
     if (!account) throw new NotFoundException('Loyalty account not found');
     let bonusPercent = 0;
@@ -58,8 +66,14 @@ export class LoyaltyService {
   /**
    * Повертає баланс бонусів користувача
    */
-  async getBonusBalance(userId: string) {
-    const account = await this.loyaltyModel.findOne({ userId });
+  async getBonusBalance(userId: string | Types.ObjectId) {
+    const idStr = typeof userId === 'string' ? userId : userId?.toString();
+    if (!idStr || idStr.length !== 24) {
+      throw new Error('Некорректный userId');
+    }
+    const account = await this.loyaltyModel.findOne({
+      userId: new Types.ObjectId(idStr),
+    });
     if (!account) throw new NotFoundException('Loyalty account not found');
     return { bonusBalance: account.bonusBalance };
   }
@@ -67,8 +81,14 @@ export class LoyaltyService {
   /**
    * Додає або оновлює номер карти лояльності користувача
    */
-  async addCard(userId: string, cardNumber: string) {
-    const account = await this.loyaltyModel.findOne({ userId });
+  async addCard(userId: string | Types.ObjectId, cardNumber: string) {
+    const idStr = typeof userId === 'string' ? userId : userId?.toString();
+    if (!idStr || idStr.length !== 24) {
+      throw new Error('Некорректный userId');
+    }
+    const account = await this.loyaltyModel.findOne({
+      userId: new Types.ObjectId(idStr),
+    });
     if (!account) throw new NotFoundException('Loyalty account not found');
     account.cardNumber = cardNumber;
     await account.save();
@@ -105,8 +125,14 @@ export class LoyaltyService {
   /**
    * Призначає рівень лояльності користувачу
    */
-  async assignLevel(userId: string, levelId: string) {
-    const account = await this.loyaltyModel.findOne({ userId });
+  async assignLevel(userId: string | Types.ObjectId, levelId: string) {
+    const idStr = typeof userId === 'string' ? userId : userId?.toString();
+    if (!idStr || idStr.length !== 24) {
+      throw new Error('Некорректный userId');
+    }
+    const account = await this.loyaltyModel.findOne({
+      userId: new Types.ObjectId(idStr),
+    });
     if (!account) throw new NotFoundException('Loyalty account not found');
     account.levelId = new Types.ObjectId(levelId);
     await account.save();
