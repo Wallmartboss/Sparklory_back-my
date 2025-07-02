@@ -4,7 +4,7 @@ import { Document, Types } from 'mongoose';
 /**
  * LoyaltyAccount — бонусний рахунок користувача
  */
-@Schema()
+@Schema({ versionKey: false })
 export class LoyaltyAccount extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, unique: true })
   userId: Types.ObjectId;
@@ -24,3 +24,10 @@ export class LoyaltyAccount extends Document {
 
 export const LoyaltyAccountSchema =
   SchemaFactory.createForClass(LoyaltyAccount);
+
+LoyaltyAccountSchema.set('toJSON', {
+  transform: function (doc, ret) {
+    delete ret.__v;
+    return ret;
+  },
+});

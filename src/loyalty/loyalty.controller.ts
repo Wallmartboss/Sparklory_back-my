@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -6,13 +15,14 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { UserDecorator } from '../common/decorators/user.decorator';
 import { AddCardDto } from './dto/add-card.dto';
 import { CreateLoyaltyLevelDto } from './dto/create-loyalty-level.dto';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
 import { LoyaltyService } from './loyalty.service';
-// import { JwtAuthGuard } from '../auth/guards/jwt.guard'; // якщо потрібен guard
 
+@UseGuards(JwtAuthGuard)
 @ApiTags('Loyalty')
 @ApiBearerAuth('JWT-auth')
 @Controller('loyalty')
@@ -23,7 +33,7 @@ export class LoyaltyController {
   @ApiOperation({ summary: 'Додати покупку та нарахувати бонус' })
   @ApiResponse({ status: 201, description: 'Покупку додано, бонус нараховано' })
   async addPurchase(
-    @UserDecorator('id') userId: string,
+    @UserDecorator('_id') userId: string,
     @Body() dto: CreatePurchaseDto,
   ) {
     return this.loyaltyService.addPurchase(userId, dto.amount, dto.description);
@@ -32,21 +42,21 @@ export class LoyaltyController {
   @Get('history')
   @ApiOperation({ summary: 'Отримати історію покупок' })
   @ApiResponse({ status: 200, description: 'Історія покупок' })
-  async getHistory(@UserDecorator('id') userId: string) {
+  async getHistory(@UserDecorator('_id') userId: string) {
     return this.loyaltyService.getHistory(userId);
   }
 
   @Get('bonus')
   @ApiOperation({ summary: 'Отримати баланс бонусів' })
   @ApiResponse({ status: 200, description: 'Баланс бонусів' })
-  async getBonus(@UserDecorator('id') userId: string) {
+  async getBonus(@UserDecorator('_id') userId: string, @Req() req) {
     return this.loyaltyService.getBonusBalance(userId);
   }
 
   @Post('card')
   @ApiOperation({ summary: 'Прив\u2019язати карту лояльності' })
   @ApiResponse({ status: 201, description: 'Карту прив\u2019язано' })
-  async addCard(@UserDecorator('id') userId: string, @Body() dto: AddCardDto) {
+  async addCard(@UserDecorator('_id') userId: string, @Body() dto: AddCardDto) {
     return this.loyaltyService.addCard(userId, dto.cardNumber);
   }
 
