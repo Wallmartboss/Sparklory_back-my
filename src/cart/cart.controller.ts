@@ -18,7 +18,8 @@ import {
 } from '@nestjs/swagger';
 import { Cart } from './cart.schema';
 import { CartService } from './cart.service';
-import { AddToCartDto } from './dto/add-to-cart.dto';
+import { AddToCartDto, AddToCartGuestDto } from './dto/add-to-cart.dto';
+import { CartDto } from './dto/cart.dto';
 import { RemoveFromCartDto } from './dto/remove-from-cart.dto';
 
 @ApiTags('Cart')
@@ -34,16 +35,18 @@ export class CartController {
   @ApiResponse({
     status: 201,
     description: 'The item has been successfully added to the cart.',
-    type: Cart,
+    type: CartDto,
   })
   addItem(@Req() req, @Body() addToCartDto: AddToCartDto) {
     return this.cartService.addItem(
       req.user?.id,
       undefined,
       addToCartDto.productId,
+      addToCartDto.price,
       addToCartDto.quantity || 1,
       addToCartDto.size,
       addToCartDto.color,
+      undefined,
     );
   }
 
@@ -53,10 +56,15 @@ export class CartController {
   @ApiResponse({
     status: 200,
     description: 'Return the user cart.',
-    type: Cart,
+    type: CartDto,
   })
-  getCart(@Req() req) {
-    return this.cartService.getOrCreateCart(req.user.id);
+  async getCart(@Req() req) {
+    const cart = await this.cartService.getOrCreateCart(req.user.id);
+    const total = cart.items.reduce(
+      (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
+      0,
+    );
+    return { ...cart.toObject(), total };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -93,13 +101,18 @@ export class CartController {
   @ApiResponse({
     status: 200,
     description: 'Return the guest cart.',
-    type: Cart,
+    type: CartDto,
   })
-  getGuestCart(@Query('guestId') guestId: string) {
+  async getGuestCart(@Query('guestId') guestId: string) {
     if (!guestId) {
       throw new BadRequestException('guestId is required');
     }
-    return this.cartService.getOrCreateCart(undefined, guestId);
+    const cart = await this.cartService.getOrCreateCart(undefined, guestId);
+    const total = cart.items.reduce(
+      (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
+      0,
+    );
+    return { ...cart.toObject(), total };
   }
 
   @Post('add-guest')
@@ -107,9 +120,9 @@ export class CartController {
   @ApiResponse({
     status: 201,
     description: 'The item has been successfully added to the guest cart.',
-    type: Cart,
+    type: CartDto,
   })
-  addItemGuest(@Body() addToCartDto: AddToCartDto) {
+  addItemGuest(@Body() addToCartDto: AddToCartGuestDto) {
     if (!addToCartDto.guestId) {
       throw new BadRequestException('guestId is required');
     }
@@ -117,6 +130,7 @@ export class CartController {
       undefined,
       addToCartDto.guestId,
       addToCartDto.productId,
+      addToCartDto.price,
       addToCartDto.quantity || 1,
       addToCartDto.size,
       addToCartDto.color,

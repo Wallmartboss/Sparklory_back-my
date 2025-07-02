@@ -5,8 +5,12 @@ import * as crypto from 'crypto';
 import { Model, Types } from 'mongoose';
 import { CartService } from '../cart/cart.service';
 import { EmailService } from '../email/email.service';
+import { LoyaltyService } from '../loyalty/loyalty.service';
 import { UserService } from '../user/user.service';
-import { CreatePaymentDto } from './dto/create-payment.dto';
+import {
+  CreatePaymentGuestDto,
+  CreatePaymentUserDto,
+} from './dto/create-payment.dto';
 import { Payment } from './payment.schema';
 
 /**
@@ -32,6 +36,7 @@ export class PaymentService {
     private readonly cartService: CartService,
     private readonly emailService: EmailService,
     private readonly userService: UserService,
+    private readonly loyaltyService: LoyaltyService,
   ) {
     this.publicKey = this.configService.get('LIQPAY_PUBLIC_KEY');
     this.privateKey = this.configService.get('LIQPAY_PRIVATE_KEY');
@@ -110,22 +115,20 @@ export class PaymentService {
    */
   async create(
     userId: string | undefined,
-    dto: CreatePaymentDto,
+    dto: CreatePaymentUserDto | CreatePaymentGuestDto,
   ): Promise<LiqPayCreateResponse> {
     this.logger.log('Creating payment with server_url:', this.serverUrl);
 
-    // Если есть userId — стандартная логика, если guestId — гостевая корзина
     let cart;
     if (userId) {
       cart = await this.cartService.getOrCreateCart(userId, undefined);
-    } else if (dto.guestId) {
+    } else if ('guestId' in dto && dto.guestId) {
       cart = await this.cartService.getOrCreateCart(undefined, dto.guestId);
     } else {
       throw new Error('UserId or guestId must be provided');
     }
     const orderId = this.generateOrderId();
 
-    // Оновлюємо cart, додаючи order_id
     await this.cartService.updateOrderId(cart._id.toString(), orderId);
 
     const paymentData: any = {
@@ -138,17 +141,16 @@ export class PaymentService {
     if (userId) {
       paymentData.user = new Types.ObjectId(userId);
     }
-    if (dto.guestId) {
+    if ('guestId' in dto && dto.guestId) {
       paymentData.guestId = dto.guestId;
     }
-    if (dto.contactInfo) {
+    if ('contactInfo' in dto && dto.contactInfo) {
       paymentData.contactInfo = dto.contactInfo;
     }
 
     const payment = await this.paymentModel.create(paymentData);
 
-    // Email уведомление о создании платежа
-    if (dto.contactInfo?.email) {
+    if ('contactInfo' in dto && dto.contactInfo?.email) {
       await this.emailService.sendPaymentCreated(
         dto.contactInfo.email,
         payment,
@@ -249,6 +251,38 @@ export class PaymentService {
     // Якщо оплата успішна, позначаємо корзину як замовлену
     if (status === 'success') {
       await this.cartService.setOrderedByOrderId(order_id);
+      // Додаємо товари до історії покупок користувача
+      if (payment.user) {
+        const cart = await this.cartService.getCartByOrderId(order_id);
+        this.logger.log(`[Лояльність] Корзина: ${JSON.stringify(cart)}`);
+        this.logger.log(
+          `[Лояльність] Товары в корзине: ${JSON.stringify(cart?.items)}`,
+        );
+        if (cart && cart.items && cart.items.length > 0) {
+          this.logger.log(
+            `[Лояльність] В корзине ${cart.items.length} товаров`,
+          );
+          for (const item of cart.items) {
+            this.logger.log(
+              `[Лояльність] Додаємо покупку: userId=${payment.user.toString()}, товар=${item.product}, кількість=${item.quantity}, ціна=${item.price}`,
+            );
+            const result = await this.loyaltyService.addPurchase(
+              payment.user.toString(),
+              (item.price || 0) * (item.quantity || 1),
+              `Товар: ${item.product}, Кількість: ${item.quantity}, Розмір: ${item.size || ''}, Колір: ${item.color || ''}`,
+            );
+            this.logger.log(
+              `[Лояльність] Результат додавання покупки: ${JSON.stringify(result)}`,
+            );
+          }
+        } else {
+          this.logger.warn(`[Лояльність] В корзине нет товаров!`);
+        }
+      } else {
+        this.logger.warn(
+          `[Лояльність] Не вказано payment.user для order_id ${order_id}`,
+        );
+      }
     }
 
     return { status: 'success', orderId: order_id };

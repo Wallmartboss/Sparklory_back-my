@@ -14,12 +14,15 @@ export class CartItem {
 
   @Prop({ required: false })
   color?: string;
+
+  @Prop({ required: true })
+  price: number;
 }
 
 @Schema({ timestamps: true, versionKey: false })
 export class Cart {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  user: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'User', required: false })
+  user?: Types.ObjectId;
 
   @Prop({ type: [CartItem], default: [] })
   items: CartItem[];

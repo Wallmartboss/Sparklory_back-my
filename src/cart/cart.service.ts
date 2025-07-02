@@ -1,11 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { Product, ProductDocument } from '../product/schema/product.schema';
 import { Cart, CartDocument } from './cart.schema';
 
 @Injectable()
 export class CartService {
-  constructor(@InjectModel(Cart.name) private cartModel: Model<CartDocument>) {}
+  constructor(
+    @InjectModel(Cart.name) private cartModel: Model<CartDocument>,
+    @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+  ) {}
 
   async getOrCreateCart(
     userId?: string,
@@ -35,6 +39,7 @@ export class CartService {
     userId: string | undefined,
     guestId: string | undefined,
     productId: string,
+    price: number,
     quantity = 1,
     size?: string,
     color?: string,
@@ -59,6 +64,7 @@ export class CartService {
         quantity,
         size,
         color,
+        price,
       });
     }
 
@@ -111,5 +117,9 @@ export class CartService {
       { order_id: orderId },
       { isOrdered: true },
     );
+  }
+
+  async getCartByOrderId(orderId: string): Promise<CartDocument | null> {
+    return this.cartModel.findOne({ order_id: orderId });
   }
 }

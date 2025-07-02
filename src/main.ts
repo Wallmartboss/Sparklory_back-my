@@ -3,6 +3,7 @@ import { VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as bodyParser from 'body-parser';
 import { AppModule } from './app.module';
 import { ValidationPipe } from './core/pipes/validation.pipe';
 
@@ -43,6 +44,16 @@ async function bootstrap() {
     preflightContinue: false,
     optionsSuccessStatus: 204,
     credentials: true,
+  });
+
+  // Добавляю парсер для form-urlencoded
+  app.use(bodyParser.urlencoded({ extended: true }));
+  app.use(bodyParser.json());
+
+  // Глобальный логгер всех запросов
+  app.use((req, res, next) => {
+    console.log('[GLOBAL REQUEST]', req.method, req.url, 'body:', req.body);
+    next();
   });
 
   // Swagger documentation

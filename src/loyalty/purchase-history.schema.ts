@@ -22,6 +22,9 @@ export class PurchaseHistory extends Document {
 export const PurchaseHistorySchema =
   SchemaFactory.createForClass(PurchaseHistory);
 
+// ЯВНО указываю имя коллекции, чтобы избежать проблем с pluralization
+PurchaseHistorySchema.set('collection', 'purchasehistories');
+
 PurchaseHistorySchema.set('toJSON', {
   transform: function (doc, ret) {
     delete ret.__v;
