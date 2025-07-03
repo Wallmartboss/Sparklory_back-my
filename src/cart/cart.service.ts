@@ -1,6 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { CouponService } from '../coupon/coupon.service';
+import { LoyaltyService } from '../loyalty/loyalty.service';
 import { Product, ProductDocument } from '../product/schema/product.schema';
 import { Cart, CartDocument } from './cart.schema';
 
@@ -9,6 +11,9 @@ export class CartService {
   constructor(
     @InjectModel(Cart.name) private cartModel: Model<CartDocument>,
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+    @Inject(forwardRef(() => LoyaltyService))
+    private readonly loyaltyService: LoyaltyService,
+    private readonly couponService: CouponService,
   ) {}
 
   async getOrCreateCart(
@@ -113,13 +118,95 @@ export class CartService {
   }
 
   async setOrderedByOrderId(orderId: string): Promise<void> {
-    await this.cartModel.findOneAndUpdate(
+    console.log('[DEBUG][CartService.setOrderedByOrderId] orderId:', orderId);
+    const cart = await this.cartModel.findOneAndUpdate(
       { order_id: orderId },
       { isOrdered: true },
+      { new: true },
     );
+    console.log(
+      '[DEBUG][CartService.setOrderedByOrderId] cart:',
+      JSON.stringify(cart, null, 2),
+    );
+    if (cart && cart.user && cart.items && cart.items.length > 0) {
+      const totalAmount = cart.items.reduce(
+        (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
+        0,
+      );
+      console.log(
+        '[DEBUG][CartService.setOrderedByOrderId] user:',
+        cart.user.toString(),
+      );
+      console.log(
+        '[DEBUG][CartService.setOrderedByOrderId] items:',
+        JSON.stringify(cart.items, null, 2),
+      );
+      await this.loyaltyService.addOrderToHistory(
+        cart.user.toString(),
+        orderId,
+        cart.items,
+        totalAmount,
+        new Date(),
+        `Замовлення з ${cart.items.length} товарів`,
+      );
+    }
   }
 
   async getCartByOrderId(orderId: string): Promise<CartDocument | null> {
     return this.cartModel.findOne({ order_id: orderId });
+  }
+
+  /**
+   * Оновлює підсумкову суму корзини з урахуванням купона та бонусів
+   */
+  async recalculateTotals(cart: CartDocument): Promise<void> {
+    // Рахуємо попередню суму
+    const preTotal = cart.items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
+    let discountedTotal = preTotal;
+    let coupon = null;
+    if (cart.appliedCoupon) {
+      coupon = await this.couponService.findValidCoupon(cart.appliedCoupon);
+      if (coupon.amount) {
+        discountedTotal = Math.max(0, discountedTotal - coupon.amount);
+      } else if (coupon.percent) {
+        discountedTotal = Math.max(0, discountedTotal * (1 - coupon.percent));
+      }
+    }
+    const finalTotal = Math.max(0, discountedTotal - (cart.appliedBonus || 0));
+    cart.preTotal = preTotal;
+    cart.finalTotal = finalTotal;
+  }
+
+  /**
+   * Застосовує купон до корзини
+   */
+  async applyCoupon(userId: string, code: string): Promise<CartDocument> {
+    // Отримуємо корзину користувача
+    const cart = await this.getOrCreateCart(userId);
+    // Знаходимо та перевіряємо купон
+    const coupon = await this.couponService.findValidCoupon(code);
+    // Зберігаємо застосований купон
+    cart.appliedCoupon = coupon.code;
+    // Перераховуємо підсумкову суму
+    await this.recalculateTotals(cart);
+    await cart.save();
+    return cart;
+  }
+
+  /**
+   * Застосовує бонуси до корзини
+   */
+  async applyBonus(userId: string, amount: number): Promise<CartDocument> {
+    // Отримуємо корзину користувача
+    const cart = await this.getOrCreateCart(userId);
+    // Зберігаємо застосовану суму бонусів
+    cart.appliedBonus = amount;
+    // Перераховуємо підсумкову суму
+    await this.recalculateTotals(cart);
+    await cart.save();
+    return cart;
   }
 }

@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { CartModule } from './cart/cart.module';
 import { AppLoggerMiddleware } from './common/loggers/app-logger';
 import { CoreModule } from './core/core.module';
+import { CouponModule } from './coupon/coupon.module';
 import { DeviceModule } from './device/device.module';
 import { LoyaltyModule } from './loyalty/loyalty.module';
 import { PaymentModule } from './payment/payment.module';
@@ -42,6 +43,7 @@ import { UserModule } from './user/user.module';
     PaymentModule,
     ScheduleModule.forRoot(),
     LoyaltyModule,
+    CouponModule,
   ],
   controllers: [AppController],
   providers: [AppService],

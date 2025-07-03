@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -19,6 +20,8 @@ import {
 import { Cart } from './cart.schema';
 import { CartService } from './cart.service';
 import { AddToCartDto, AddToCartGuestDto } from './dto/add-to-cart.dto';
+import { ApplyBonusDto } from './dto/apply-bonus.dto';
+import { ApplyCouponDto } from './dto/apply-coupon.dto';
 import { CartDto } from './dto/cart.dto';
 import { RemoveFromCartDto } from './dto/remove-from-cart.dto';
 
@@ -156,5 +159,32 @@ export class CartController {
       removeFromCartDto.size,
       removeFromCartDto.color,
     );
+  }
+
+  @Post('apply-coupon')
+  @ApiOperation({ summary: 'Застосувати купон до корзини' })
+  @ApiBody({ type: ApplyCouponDto })
+  @ApiResponse({ status: 200, description: 'Купон застосовано', type: CartDto })
+  async applyCoupon(
+    @Req() req,
+    @Body() body: ApplyCouponDto,
+  ): Promise<CartDto> {
+    // Застосовує купон до корзини користувача
+    const cart = await this.cartService.applyCoupon(req.user.id, body.code);
+    return cart;
+  }
+
+  @Post('apply-bonus')
+  @ApiOperation({ summary: 'Застосувати бонуси до корзини' })
+  @ApiBody({ type: ApplyBonusDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Бонуси застосовано',
+    type: CartDto,
+  })
+  async applyBonus(@Req() req, @Body() body: ApplyBonusDto): Promise<CartDto> {
+    // Застосовує бонуси до корзини користувача
+    const cart = await this.cartService.applyBonus(req.user.id, body.amount);
+    return cart;
   }
 }

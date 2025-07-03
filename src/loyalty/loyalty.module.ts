@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { CartModule } from '../cart/cart.module';
 import { LoyaltyAccount, LoyaltyAccountSchema } from './loyalty-account.schema';
 import { LoyaltyLevel, LoyaltyLevelSchema } from './loyalty-level.schema';
 import { LoyaltyController } from './loyalty.controller';
@@ -13,9 +14,10 @@ import {
   imports: [
     MongooseModule.forFeature([
       { name: LoyaltyAccount.name, schema: LoyaltyAccountSchema },
-      { name: LoyaltyLevel.name, schema: LoyaltyLevelSchema },
       { name: PurchaseHistory.name, schema: PurchaseHistorySchema },
+      { name: LoyaltyLevel.name, schema: LoyaltyLevelSchema },
     ]),
+    forwardRef(() => CartModule),
   ],
   controllers: [LoyaltyController],
   providers: [LoyaltyService],

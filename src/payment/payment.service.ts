@@ -251,7 +251,7 @@ export class PaymentService {
     // Якщо оплата успішна, позначаємо корзину як замовлену
     if (status === 'success') {
       await this.cartService.setOrderedByOrderId(order_id);
-      // Додаємо товари до історії покупок користувача
+      // Додаємо заказ до історії покупок користувача
       if (payment.user) {
         const cart = await this.cartService.getCartByOrderId(order_id);
         this.logger.log(`[Лояльність] Корзина: ${JSON.stringify(cart)}`);
@@ -262,19 +262,18 @@ export class PaymentService {
           this.logger.log(
             `[Лояльність] В корзине ${cart.items.length} товаров`,
           );
-          for (const item of cart.items) {
-            this.logger.log(
-              `[Лояльність] Додаємо покупку: userId=${payment.user.toString()}, товар=${item.product}, кількість=${item.quantity}, ціна=${item.price}`,
-            );
-            const result = await this.loyaltyService.addPurchase(
-              payment.user.toString(),
-              (item.price || 0) * (item.quantity || 1),
-              `Товар: ${item.product}, Кількість: ${item.quantity}, Розмір: ${item.size || ''}, Колір: ${item.color || ''}`,
-            );
-            this.logger.log(
-              `[Лояльність] Результат додавання покупки: ${JSON.stringify(result)}`,
-            );
-          }
+          const totalAmount = cart.items.reduce(
+            (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
+            0,
+          );
+          await this.loyaltyService.addOrderToHistory(
+            payment.user.toString(),
+            order_id,
+            cart.items,
+            totalAmount,
+            new Date(),
+            `Заказ из ${cart.items.length} товаров`,
+          );
         } else {
           this.logger.warn(`[Лояльність] В корзине нет товаров!`);
         }

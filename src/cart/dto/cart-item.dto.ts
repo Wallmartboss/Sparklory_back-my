@@ -1,22 +1,21 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Types } from 'mongoose';
 
 export class CartItemDto {
-  @ApiProperty({ type: String, description: 'ID товара' })
-  product: Types.ObjectId;
+  @ApiProperty({
+    description: 'Product ID',
+    example: '60d21b4667d0d8992e610c85',
+  })
+  product: string;
 
-  @ApiProperty({ example: 1, description: 'Количество' })
+  @ApiProperty({ description: 'Quantity', example: 1 })
   quantity: number;
 
-  @ApiProperty({ example: 'M', required: false, description: 'Размер' })
+  @ApiProperty({ description: 'Size', example: '17.5', required: false })
   size?: string;
 
-  @ApiProperty({ example: 'red', required: false, description: 'Цвет' })
+  @ApiProperty({ description: 'Color', example: 'gold', required: false })
   color?: string;
 
-  @ApiProperty({
-    example: 1000,
-    description: 'Цена товара на момент добавления',
-  })
+  @ApiProperty({ description: 'Price per item', example: 1000 })
   price: number;
 }
