@@ -1,6 +1,7 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { EmailService } from '../email/email.service';
+import { LoyaltyModule } from '../loyalty/loyalty.module';
 import { Product, ProductSchema } from '../product/schema/product.schema';
 import { CartReminderService } from './cart-reminder.service';
 import { CartController } from './cart.controller';
@@ -13,6 +14,7 @@ import { CartService } from './cart.service';
       { name: Cart.name, schema: CartSchema },
       { name: Product.name, schema: ProductSchema },
     ]),
+    forwardRef(() => LoyaltyModule),
   ],
   controllers: [CartController],
   providers: [CartService, EmailService, CartReminderService],

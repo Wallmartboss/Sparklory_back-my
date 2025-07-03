@@ -1,10 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { CartItem } from '../cart/cart.schema';
+import { CartService } from '../cart/cart.service';
 import { LoyaltyAccount } from './loyalty-account.schema';
 import { LoyaltyLevel } from './loyalty-level.schema';
 import { PurchaseHistory } from './purchase-history.schema';
 
+/**
+ * Service for loyalty program logic, including purchase history and bonus management.
+ */
 @Injectable()
 export class LoyaltyService {
   constructor(
@@ -13,61 +18,12 @@ export class LoyaltyService {
     @InjectModel(PurchaseHistory.name)
     private purchaseModel: Model<PurchaseHistory>,
     @InjectModel(LoyaltyLevel.name) private levelModel: Model<LoyaltyLevel>,
+    private readonly cartService: CartService,
   ) {}
 
   /**
-   * Додає покупку, нараховує бонуси та оновлює рахунок користувача
-   * Якщо сума покупки 0 або менше — бонуси не нараховуються
-   */
-  async addPurchase(
-    userId: string | Types.ObjectId,
-    amount: number,
-    description?: string,
-  ) {
-    const idStr = typeof userId === 'string' ? userId : userId?.toString();
-    if (!idStr || idStr.length !== 24) {
-      throw new Error('Некорректный userId');
-    }
-    if (!amount || amount <= 0) {
-      // Не додаємо покупку з нульовою сумою
-      return;
-    }
-    const account = await this.loyaltyModel
-      .findOne({ userId: new Types.ObjectId(idStr) })
-      .populate('levelId');
-    if (!account) throw new NotFoundException('Loyalty account not found');
-    let bonusPercent = 0;
-    if (
-      account.levelId &&
-      typeof account.levelId === 'object' &&
-      'bonusPercent' in account.levelId
-    ) {
-      bonusPercent = (account.levelId as any).bonusPercent;
-    }
-    const bonus = amount * bonusPercent;
-    try {
-      const purchase = await this.purchaseModel.create({
-        userId: new Types.ObjectId(idStr),
-        amount,
-        date: new Date(),
-        description,
-      });
-      console.log('[DEBUG] Purchase created:', purchase);
-    } catch (err) {
-      console.error('[ERROR] Failed to create purchase:', err);
-    }
-    account.totalAmount += amount;
-    account.bonusBalance += bonus;
-    await account.save();
-    return {
-      totalAmount: account.totalAmount,
-      bonusBalance: account.bonusBalance,
-      bonusAdded: bonus,
-    };
-  }
-
-  /**
-   * Повертає історію покупок користувача
+   * Returns the user's purchase history.
+   * @param userId User identifier
    */
   async getHistory(userId: string | Types.ObjectId) {
     const idStr = typeof userId === 'string' ? userId : userId?.toString();
@@ -80,7 +36,8 @@ export class LoyaltyService {
   }
 
   /**
-   * Повертає баланс бонусів користувача
+   * Returns the user's bonus balance.
+   * @param userId User identifier
    */
   async getBonusBalance(userId: string | Types.ObjectId) {
     const idStr = typeof userId === 'string' ? userId : userId?.toString();
@@ -95,7 +52,9 @@ export class LoyaltyService {
   }
 
   /**
-   * Додає або оновлює номер карти лояльності користувача
+   * Adds or updates the user's loyalty card number.
+   * @param userId User identifier
+   * @param cardNumber Loyalty card number
    */
   async addCard(userId: string | Types.ObjectId, cardNumber: string) {
     const idStr = typeof userId === 'string' ? userId : userId?.toString();
@@ -111,17 +70,108 @@ export class LoyaltyService {
     return { cardNumber: account.cardNumber };
   }
 
+  /**
+   * Adds an order to the user's purchase history (orderId + items).
+   * @param userId User identifier
+   * @param orderId Order identifier
+   * @param items Array of cart items
+   * @param amount Total order amount
+   * @param date Order date
+   * @param description Optional description
+   */
+  async addOrderToHistory(
+    userId: string | Types.ObjectId,
+    orderId: string,
+    items: CartItem[],
+    amount: number,
+    date: Date,
+    description?: string,
+  ) {
+    console.log('[DEBUG][LoyaltyService.addOrderToHistory] userId:', userId);
+    console.log('[DEBUG][LoyaltyService.addOrderToHistory] orderId:', orderId);
+    console.log(
+      '[DEBUG][LoyaltyService.addOrderToHistory] items:',
+      JSON.stringify(items, null, 2),
+    );
+    console.log('[DEBUG][LoyaltyService.addOrderToHistory] amount:', amount);
+    console.log('[DEBUG][LoyaltyService.addOrderToHistory] date:', date);
+    console.log(
+      '[DEBUG][LoyaltyService.addOrderToHistory] description:',
+      description,
+    );
+    const idStr = typeof userId === 'string' ? userId : userId?.toString();
+    if (!idStr || idStr.length !== 24) {
+      throw new Error('Некорректный userId');
+    }
+    if (!amount || amount <= 0) {
+      // Не добавляем заказ с нулевой суммой
+      return;
+    }
+    try {
+      // Проверка на дублирование заказа
+      const existing = await this.purchaseModel.findOne({
+        userId: new Types.ObjectId(idStr),
+        orderId,
+      });
+      if (existing) {
+        console.warn(
+          '[WARN][addOrderToHistory] Duplicate order, skipping:',
+          orderId,
+        );
+        return;
+      }
+      // Валидация структуры items
+      if (
+        !Array.isArray(items) ||
+        items.length === 0 ||
+        !items.every(
+          item => item.product && item.quantity && item.price !== undefined,
+        )
+      ) {
+        console.error(
+          '[ERROR][addOrderToHistory] Invalid items structure:',
+          JSON.stringify(items, null, 2),
+        );
+        return;
+      }
+      console.log('[DEBUG][addOrderToHistory] orderId:', orderId);
+      console.log('[DEBUG][addOrderToHistory] userId:', idStr);
+      console.log('[DEBUG][addOrderToHistory] amount:', amount);
+      console.log(
+        '[DEBUG][addOrderToHistory] items:',
+        JSON.stringify(items, null, 2),
+      );
+      console.log('[DEBUG][addOrderToHistory] date:', date);
+      console.log('[DEBUG][addOrderToHistory] description:', description);
+      const purchase = await this.purchaseModel.create({
+        userId: new Types.ObjectId(idStr),
+        orderId,
+        items,
+        amount,
+        date,
+        description,
+      });
+      console.log('[DEBUG] Order added to history:', purchase);
+    } catch (err) {
+      console.error('[ERROR] Failed to add order to history:', err);
+    }
+  }
+
   // --- CRUD для рівнів лояльності (адмін) ---
 
   /**
-   * Створює новий рівень лояльності
+   * Creates a new loyalty level.
+   * @param name Level name
+   * @param bonusPercent Bonus percent
    */
   async createLevel(name: string, bonusPercent: number) {
     return this.levelModel.create({ name, bonusPercent });
   }
 
   /**
-   * Оновлює відсоток бонусу для рівня лояльності
+   * Updates the bonus percent for a loyalty level.
+   * @param levelId Level identifier
+   * @param bonusPercent Bonus percent
    */
   async updateLevel(levelId: string, bonusPercent: number) {
     const level = await this.levelModel.findById(levelId);
@@ -132,14 +182,16 @@ export class LoyaltyService {
   }
 
   /**
-   * Повертає всі рівні лояльності
+   * Returns all loyalty levels.
    */
   async getLevels() {
     return this.levelModel.find();
   }
 
   /**
-   * Призначає рівень лояльності користувачу
+   * Assigns a loyalty level to a user.
+   * @param userId User identifier
+   * @param levelId Level identifier
    */
   async assignLevel(userId: string | Types.ObjectId, levelId: string) {
     const idStr = typeof userId === 'string' ? userId : userId?.toString();
