@@ -171,7 +171,19 @@ export class CartController {
   ): Promise<CartDto> {
     // Застосовує купон до корзини користувача
     const cart = await this.cartService.applyCoupon(req.user.id, body.code);
-    return cart;
+    return {
+      items: cart.items.map(item => ({
+        product: item.product.toString(),
+        quantity: item.quantity,
+        size: item.size,
+        color: item.color,
+        price: item.price,
+      })),
+      preTotal: cart.preTotal,
+      finalTotal: cart.finalTotal,
+      appliedCoupon: cart.appliedCoupon,
+      appliedBonus: cart.appliedBonus,
+    };
   }
 
   @Post('apply-bonus')
@@ -185,6 +197,18 @@ export class CartController {
   async applyBonus(@Req() req, @Body() body: ApplyBonusDto): Promise<CartDto> {
     // Застосовує бонуси до корзини користувача
     const cart = await this.cartService.applyBonus(req.user.id, body.amount);
-    return cart;
+    return {
+      items: cart.items.map(item => ({
+        product: item.product.toString(),
+        quantity: item.quantity,
+        size: item.size,
+        color: item.color,
+        price: item.price,
+      })),
+      preTotal: cart.preTotal,
+      finalTotal: cart.finalTotal,
+      appliedCoupon: cart.appliedCoupon,
+      appliedBonus: cart.appliedBonus,
+    };
   }
 }
