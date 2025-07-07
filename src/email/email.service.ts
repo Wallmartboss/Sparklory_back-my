@@ -19,14 +19,21 @@ export class EmailService {
   async sendEmail(email: string, token: string, condition: ECondition) {
     let subject: string;
     let html: string;
+    const frontendUrl = this.configService.get<string>(
+      'FRONTEND_URL',
+      'http://localhost:3000',
+    );
 
     switch (condition) {
       case ECondition.ResetPassword:
         subject = 'Password Reset Request';
+        const resetLink = `${frontendUrl}/reset-password?email=${encodeURIComponent(email)}&code=${token}`;
         html = `
           <p>Hello,</p>
           <p>We received a request to reset your password. Please use the following confirmation code to proceed:</p>
           <p style="text-align: center; font-weight: bold; font-size: 30px;">${token}</p>
+          <p>Or click the link below to reset your password:</p>
+          <p style="text-align: center; font-weight: bold; font-size: 18px;"><a href="${resetLink}">${resetLink}</a></p>
           <p>If you did not request a password reset, please ignore this email.</p>
           <p>Thank you!</p>
         `;
@@ -34,10 +41,6 @@ export class EmailService {
 
       case ECondition.EmailVerify:
         subject = 'Email Verification';
-        const frontendUrl = this.configService.get<string>(
-          'FRONTEND_URL',
-          'http://localhost:3000',
-        );
         const verifyLink = `${frontendUrl}/api/v1/auth/verify-email?email=${encodeURIComponent(email)}&code=${token}`;
         html = `
           <p>Hello,</p>

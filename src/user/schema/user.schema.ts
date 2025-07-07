@@ -121,6 +121,13 @@ export class User extends Document {
   @ApiProperty({ example: 'abcdefg123456', required: false })
   @Prop({ default: null, unique: true })
   googleId?: string;
+
+  /**
+   * Код для сброса пароля (если был запрошен)
+   */
+  @ApiProperty({ example: '123456', required: false })
+  @Prop({ default: null })
+  resetPasswordCode?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

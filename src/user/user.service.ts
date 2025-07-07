@@ -80,6 +80,10 @@ export class UserService {
   }
 
   async saveUser(user: User): Promise<User> {
+    // Если пароль не захеширован, хешируем
+    if (user.password && !user.password.startsWith('$2b$')) {
+      user.password = await bcrypt.hash(user.password, 10);
+    }
     return this.userModel
       .findByIdAndUpdate(user._id, user, { new: true })
       .exec();
