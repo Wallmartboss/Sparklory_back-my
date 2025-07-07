@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -11,24 +12,55 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiProperty,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 
 import { ApiCustomResponse } from '@/common/decorators/swagger-res.decorator';
+import { ECondition } from '@/common/enum/email.enum';
+import { EmailService } from '@/email/email.service';
 import { CreateUserDto } from '@/user/dto/create-user.dto';
 import { VerifyEmailDto } from '@/user/dto/verify-email.dto';
 import { User } from '@/user/schema/user.schema';
 import { UserService } from '@/user/user.service';
+import { randomBytes } from 'crypto';
 import * as response from '../response.json';
 import { LoginDTO } from './dto/login.dto';
 import { LocalAuthGuard } from './guards/local.guard';
+
+class ForgotPasswordDto {
+  @ApiProperty({
+    example: 'user@example.com',
+    description: 'Email пользователя',
+  })
+  email: string;
+}
+
+class ResetPasswordDto {
+  @ApiProperty({
+    example: 'user@example.com',
+    description: 'Email пользователя',
+  })
+  email: string;
+
+  @ApiProperty({ example: 'a1b2c3', description: 'Код из письма' })
+  code: string;
+
+  @ApiProperty({ example: 'newStrongPassword123', description: 'Новый пароль' })
+  newPassword: string;
+}
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly userService: UserService,
+    private readonly emailService: EmailService,
   ) {}
 
   @Post('register')
@@ -134,5 +166,40 @@ export class AuthController {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
     });
+  }
+
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Request password reset (send code to email)' })
+  @ApiBody({ type: ForgotPasswordDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Password reset code sent to email',
+  })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    const { email } = dto;
+    const user = await this.userService.findByEmail(email);
+    if (!user)
+      throw new BadRequestException('Пользователь с таким email не найден');
+    const code = randomBytes(3).toString('hex');
+    user.resetPasswordCode = code;
+    await this.userService.saveUser(user);
+    await this.emailService.sendEmail(email, code, ECondition.ResetPassword);
+    return { message: 'Код для сброса пароля отправлен на email' };
+  }
+
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Reset password using code from email' })
+  @ApiBody({ type: ResetPasswordDto })
+  @ApiResponse({ status: 200, description: 'Password successfully reset' })
+  async resetPassword(@Body() body: ResetPasswordDto) {
+    const { email, code, newPassword } = body;
+    const user = await this.userService.findByEmail(email);
+    if (!user || user.resetPasswordCode !== code) {
+      throw new BadRequestException('Неверный email или код');
+    }
+    user.password = newPassword;
+    user.resetPasswordCode = null;
+    await this.userService.saveUser(user);
+    return { message: 'Пароль успешно сброшен' };
   }
 }
