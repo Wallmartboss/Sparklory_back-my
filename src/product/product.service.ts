@@ -151,4 +151,11 @@ export class ProductService {
     review.image.push(imagePath);
     await product.save();
   }
+
+  /**
+   * Get all unique product categories
+   */
+  async getAllCategories(): Promise<string[]> {
+    return this.productModel.distinct('category').exec();
+  }
 }

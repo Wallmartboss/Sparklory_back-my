@@ -21,6 +21,7 @@ describe('ProductController', () => {
             findOne: jest.fn(),
             update: jest.fn(),
             remove: jest.fn(),
+            getAllCategories: jest.fn().mockResolvedValue(['cat1', 'cat2']), // mock for categories
           },
         },
       ],
@@ -148,6 +149,14 @@ describe('ProductController', () => {
       };
       jest.spyOn(productService, 'remove').mockResolvedValue(result);
       expect(await productController.remove(id)).toBe(result);
+    });
+  });
+
+  describe('getAllCategories', () => {
+    it('should return an array of categories', async () => {
+      const result = ['cat1', 'cat2'];
+      jest.spyOn(productService, 'getAllCategories').mockResolvedValue(result);
+      expect(await productController.getAllCategories()).toBe(result);
     });
   });
 });

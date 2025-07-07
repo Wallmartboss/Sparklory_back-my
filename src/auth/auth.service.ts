@@ -121,4 +121,53 @@ export class AuthService {
       refreshToken,
     };
   }
+
+  /**
+   * Validate or create user via OAuth (Facebook/Google)
+   */
+  async validateOAuthLogin({
+    provider,
+    providerId,
+    email,
+    name,
+    photo,
+  }: {
+    provider: 'facebook' | 'google';
+    providerId: string;
+    email?: string;
+    name?: string;
+    photo?: string;
+  }): Promise<User> {
+    let user: User | null = null;
+    if (provider === 'facebook') {
+      user = await this.userService.findOneByParams({ facebookId: providerId });
+    } else if (provider === 'google') {
+      user = await this.userService.findOneByParams({ googleId: providerId });
+    }
+    if (!user && email) {
+      user = await this.userService.findByEmail(email);
+    }
+    if (!user) {
+      // Создать нового пользователя
+      user = await this.userService.createUser({
+        email,
+        name: name || email?.split('@')[0],
+        image: photo,
+        facebookId: provider === 'facebook' ? providerId : undefined,
+        googleId: provider === 'google' ? providerId : undefined,
+        isVerifyEmail: true,
+        password: '',
+      });
+    } else {
+      // Привязать соц. ID если не был сохранён
+      if (provider === 'facebook' && !user.facebookId) {
+        user.facebookId = providerId;
+      }
+      if (provider === 'google' && !user.googleId) {
+        user.googleId = providerId;
+      }
+      await this.userService.saveUser(user);
+    }
+    return user;
+  }
 }
