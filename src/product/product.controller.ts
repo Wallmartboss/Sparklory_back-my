@@ -124,6 +124,17 @@ export class ProductController {
     }
   }
 
+  @Get('categories')
+  @ApiOperation({ summary: 'Get all unique product categories' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return all unique product categories.',
+    type: [String],
+  })
+  async getAllCategories() {
+    return this.productService.getAllCategories();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a product by ID' })
   @ApiResponse({
