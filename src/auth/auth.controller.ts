@@ -5,9 +5,14 @@ import {
   HttpStatus,
   Post,
   Query,
+  Req,
+  Res,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 
 import { ApiCustomResponse } from '@/common/decorators/swagger-res.decorator';
@@ -15,7 +20,6 @@ import { CreateUserDto } from '@/user/dto/create-user.dto';
 import { VerifyEmailDto } from '@/user/dto/verify-email.dto';
 import { User } from '@/user/schema/user.schema';
 import { UserService } from '@/user/user.service';
-import { ApiOperation } from '@nestjs/swagger';
 import * as response from '../response.json';
 import { LoginDTO } from './dto/login.dto';
 import { LocalAuthGuard } from './guards/local.guard';
@@ -86,5 +90,49 @@ export class AuthController {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
     };
+  }
+
+  @Get('facebook')
+  @ApiOperation({ summary: 'Facebook OAuth login' })
+  @ApiResponse({ status: 302, description: 'Redirects to Facebook login' })
+  @UseGuards(AuthGuard('facebook'))
+  async facebookLogin() {
+    // Guard handles redirect
+  }
+
+  @Get('facebook/redirect')
+  @ApiOperation({ summary: 'Facebook OAuth callback' })
+  @ApiResponse({ status: 200, description: 'Returns JWT tokens and user info' })
+  @UseGuards(AuthGuard('facebook'))
+  async facebookLoginCallback(@Req() req: Request, @Res() res: Response) {
+    // req.user содержит пользователя
+    // Вернуть JWT токены и пользователя
+    const result = await this.authService.login(req.user as any);
+    return res.json({
+      user: result.loggedInUser,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    });
+  }
+
+  @Get('google')
+  @ApiOperation({ summary: 'Google OAuth login' })
+  @ApiResponse({ status: 302, description: 'Redirects to Google login' })
+  @UseGuards(AuthGuard('google'))
+  async googleLogin() {
+    // Guard handles redirect
+  }
+
+  @Get('google/redirect')
+  @ApiOperation({ summary: 'Google OAuth callback' })
+  @ApiResponse({ status: 200, description: 'Returns JWT tokens and user info' })
+  @UseGuards(AuthGuard('google'))
+  async googleLoginCallback(@Req() req: Request, @Res() res: Response) {
+    const result = await this.authService.login(req.user as any);
+    return res.json({
+      user: result.loggedInUser,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    });
   }
 }

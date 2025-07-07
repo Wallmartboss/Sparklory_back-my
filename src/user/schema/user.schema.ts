@@ -107,6 +107,20 @@ export class User extends Document {
     default: [],
   })
   devices: Device[];
+
+  /**
+   * Facebook ID (social login)
+   */
+  @ApiProperty({ example: '1234567890', required: false })
+  @Prop({ default: null, unique: true })
+  facebookId?: string;
+
+  /**
+   * Google ID (social login)
+   */
+  @ApiProperty({ example: 'abcdefg123456', required: false })
+  @Prop({ default: null, unique: true })
+  googleId?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

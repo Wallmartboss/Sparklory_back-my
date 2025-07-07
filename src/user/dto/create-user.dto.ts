@@ -32,4 +32,28 @@ export class CreateUserDto {
   @IsString()
   @IsNotEmpty()
   password: string;
+
+  /**
+   * User profile image URL (optional)
+   */
+  @ApiProperty({ example: 'https://example.com/image.jpg', required: false })
+  image?: string;
+
+  /**
+   * Facebook ID (optional)
+   */
+  @ApiProperty({ example: '1234567890', required: false })
+  facebookId?: string;
+
+  /**
+   * Google ID (optional)
+   */
+  @ApiProperty({ example: 'abcdefg123456', required: false })
+  googleId?: string;
+
+  /**
+   * Is email verified (optional)
+   */
+  @ApiProperty({ example: true, required: false })
+  isVerifyEmail?: boolean;
 }

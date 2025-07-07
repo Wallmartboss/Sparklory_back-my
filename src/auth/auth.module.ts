@@ -6,13 +6,9 @@ import { SessionService } from '@/session/session.service';
 import { User, UserSchema } from '@/user/schema/user.schema';
 import { UserService } from '@/user/user.service';
 import { Module } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
-import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { LocalStrategy } from './strategies';
-import { JwtStrategy } from './strategies/jwt';
+import { MongooseModule } from '@nestjs/mongoose';
 import {
   LoyaltyAccount,
   LoyaltyAccountSchema,
@@ -21,6 +17,12 @@ import {
   LoyaltyLevel,
   LoyaltyLevelSchema,
 } from '../loyalty/loyalty-level.schema';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
+import { LocalStrategy } from './strategies';
+import { FacebookStrategy } from './strategies/facebook.strategy';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { JwtStrategy } from './strategies/jwt';
 
 @Module({
   imports: [
@@ -50,6 +52,8 @@ import {
     SessionService,
     LocalStrategy,
     JwtStrategy,
+    FacebookStrategy,
+    GoogleStrategy,
   ],
 })
 export class AuthModule {}
