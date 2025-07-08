@@ -31,8 +31,8 @@ class MockUserModel {
   role: string = 'user';
   name?: string;
   email: string;
-  devices: any[] = []; // Инициализированы по умолчанию
-  sessions: any[] = []; // Инициализированы по умолчанию
+  devices: any[] = []; // Ініціалізовані за замовчуванням
+  sessions: any[] = []; // Ініціалізовані за замовчуванням
 
   constructor(data: any) {
     Object.assign(this, data);
@@ -40,7 +40,7 @@ class MockUserModel {
     this.password = data.password || '';
     this.emailVerifyCode = data.emailVerifyCode || '';
     this.email = data.email || '';
-    // Убеждаемся, что массивы всегда определены
+    // Переконуємось, що масиви завжди визначені
     this.devices = data.devices || [];
     this.sessions = data.sessions || [];
   }
@@ -111,7 +111,7 @@ describe('UserService', () => {
         isVerifyEmail: false,
         isLoggedIn: false,
         _id: new Types.ObjectId(),
-        devices: [], // Явно передаем пустые массивы
+        devices: [], // Явно передаємо порожні масиви
         sessions: [],
       });
 

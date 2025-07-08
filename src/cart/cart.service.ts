@@ -40,11 +40,31 @@ export class CartService {
     throw new Error('Either userId or guestId must be provided');
   }
 
+  /**
+   * Обчислює актуальну ціну продукту з урахуванням знижки
+   */
+  private getDiscountedPrice(
+    product: ProductDocument,
+    now: Date = new Date(),
+  ): number {
+    if (
+      product.discount &&
+      product.discount > 0 &&
+      product.discountStart &&
+      product.discountEnd &&
+      now >= product.discountStart &&
+      now <= product.discountEnd
+    ) {
+      return Math.round((product.price * (100 - product.discount)) / 100);
+    }
+    return product.price;
+  }
+
   async addItem(
     userId: string | undefined,
     guestId: string | undefined,
     productId: string,
-    price: number,
+    // price: number, // убираем, цена вычисляется на сервере
     quantity = 1,
     size?: string,
     color?: string,
@@ -61,8 +81,14 @@ export class CartService {
         item.color === color,
     );
 
+    // Получаем продукт и рассчитываем цену с учетом скидки
+    const product = await this.productModel.findById(productId);
+    if (!product) throw new Error('Product not found');
+    const price = this.getDiscountedPrice(product);
+
     if (existingItem) {
       existingItem.quantity += quantity;
+      existingItem.price = price; // обновляем цену, если скидка изменилась
     } else {
       cart.items.push({
         product: new Types.ObjectId(productId),

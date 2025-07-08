@@ -34,10 +34,14 @@ export class CartController {
 
   @UseGuards(JwtAuthGuard)
   @Post('add')
-  @ApiOperation({ summary: 'Add an item to the cart' })
+  @ApiOperation({
+    summary:
+      'Add an item to the cart (price is calculated automatically, including discount if active)',
+  })
   @ApiResponse({
     status: 201,
-    description: 'The item has been successfully added to the cart.',
+    description:
+      'The item has been successfully added to the cart. Price is calculated on the server, including discount if active.',
     type: CartDto,
   })
   addItem(@Req() req, @Body() addToCartDto: AddToCartDto) {
@@ -45,7 +49,7 @@ export class CartController {
       req.user?.id,
       undefined,
       addToCartDto.productId,
-      addToCartDto.price,
+      // addToCartDto.price, // убрано, цена вычисляется на сервере
       addToCartDto.quantity || 1,
       addToCartDto.size,
       addToCartDto.color,
@@ -119,10 +123,14 @@ export class CartController {
   }
 
   @Post('add-guest')
-  @ApiOperation({ summary: 'Add an item to the guest cart' })
+  @ApiOperation({
+    summary:
+      'Add an item to the guest cart (price is calculated automatically, including discount if active)',
+  })
   @ApiResponse({
     status: 201,
-    description: 'The item has been successfully added to the guest cart.',
+    description:
+      'The item has been successfully added to the guest cart. Price is calculated on the server, including discount if active.',
     type: CartDto,
   })
   addItemGuest(@Body() addToCartDto: AddToCartGuestDto) {
@@ -133,7 +141,7 @@ export class CartController {
       undefined,
       addToCartDto.guestId,
       addToCartDto.productId,
-      addToCartDto.price,
+      // addToCartDto.price, // убрано, цена вычисляется на сервере
       addToCartDto.quantity || 1,
       addToCartDto.size,
       addToCartDto.color,

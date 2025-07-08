@@ -130,6 +130,48 @@ export class CreateProductDto {
   action?: string[];
 
   @ApiProperty({
+    example: 'Spring 2025',
+    required: false,
+    description: 'Collection name for grouping products',
+  })
+  @IsOptional()
+  @IsString()
+  collection?: string;
+
+  @ApiProperty({
+    example: 30,
+    required: false,
+    description: 'Discount percentage (0-100)',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  discount?: number;
+
+  @ApiProperty({
+    example: '2025-07-10T00:00:00.000Z',
+    required: false,
+    description: 'Discount start date (ISO 8601)',
+    type: String,
+    format: 'date-time',
+  })
+  @IsOptional()
+  @Type(() => Date)
+  discountStart?: Date;
+
+  @ApiProperty({
+    example: '2025-07-20T23:59:59.000Z',
+    required: false,
+    description: 'Discount end date (ISO 8601)',
+    type: String,
+    format: 'date-time',
+  })
+  @IsOptional()
+  @Type(() => Date)
+  discountEnd?: Date;
+
+  @ApiProperty({
     type: [ReviewDto],
     required: false,
     description:
