@@ -46,7 +46,7 @@ export class ProductService {
   async findOne(id: string): Promise<Product> {
     const product = await this.productModel.findById(id).exec();
     if (!product) {
-      throw new NotFoundException(`Product with ID ${id} not found`);
+      throw new NotFoundException(`Продукт з ID ${id} не знайдений`);
     }
     return product;
   }
@@ -54,9 +54,7 @@ export class ProductService {
   async findByCategory(category: string): Promise<Product[]> {
     const products = await this.productModel.find({ category }).exec();
     if (products.length === 0) {
-      throw new NotFoundException(
-        `There are not products in the category: ${category}`,
-      );
+      throw new NotFoundException(`В категорії "${category}" немає продуктів`);
     }
     return products;
   }
@@ -83,7 +81,7 @@ export class ProductService {
       .exec();
 
     if (!updatedProduct) {
-      throw new NotFoundException(`Product with ID ${id} not found`);
+      throw new NotFoundException(`Продукт з ID ${id} не знайдений`);
     }
 
     return updatedProduct;
@@ -92,7 +90,7 @@ export class ProductService {
   async remove(id: string): Promise<Product> {
     const deletedProduct = await this.productModel.findByIdAndDelete(id).exec();
     if (!deletedProduct) {
-      throw new NotFoundException(`Product with ID ${id} not found`);
+      throw new NotFoundException(`Продукт з ID ${id} не знайдений`);
     }
     return deletedProduct;
   }
@@ -104,7 +102,7 @@ export class ProductService {
   ): Promise<ReviewPaginationResult> {
     const product = await this.productModel.findById(productId).exec();
     if (!product) {
-      throw new NotFoundException(`Product with ID ${productId} not found`);
+      throw new NotFoundException(`Продукт з ID ${productId} не знайдений`);
     }
     const total = product.reviews.length;
     const start = (page - 1) * limit;
@@ -116,7 +114,7 @@ export class ProductService {
   async addReview(productId: string, review: any): Promise<any> {
     const product = await this.productModel.findById(productId).exec();
     if (!product) {
-      throw new NotFoundException(`Product with ID ${productId} not found`);
+      throw new NotFoundException(`Продукт з ID ${productId} не знайдений`);
     }
     product.reviews.unshift(review);
     await product.save();
@@ -126,7 +124,7 @@ export class ProductService {
   }
 
   /**
-   * Attach an image to a specific review of a product
+   * Прикріпити зображення до конкретного відгуку продукту
    */
   async attachImageToReview(
     productId: string,
@@ -135,14 +133,14 @@ export class ProductService {
   ): Promise<void> {
     const product = await this.productModel.findById(productId).exec();
     if (!product) {
-      throw new NotFoundException(`Product with ID ${productId} not found`);
+      throw new NotFoundException(`Продукт з ID ${productId} не знайдений`);
     }
     const review = product.reviews.find(
       (r: any) => r._id?.toString() === reviewId,
     );
     if (!review) {
       throw new NotFoundException(
-        `Review with ID ${reviewId} not found in product ${productId}`,
+        `Відгук з ID ${reviewId} не знайдений у продукті ${productId}`,
       );
     }
     if (!Array.isArray(review.image)) {
@@ -153,9 +151,16 @@ export class ProductService {
   }
 
   /**
-   * Get all unique product categories
+   * Отримати всі унікальні категорії продуктів
    */
   async getAllCategories(): Promise<string[]> {
     return this.productModel.distinct('category').exec();
+  }
+
+  /**
+   * Повертає всі продукти зі знижкою (discount > 0)
+   */
+  async findDiscounted(): Promise<Product[]> {
+    return this.productModel.find({ discount: { $gt: 0 } }).exec();
   }
 }

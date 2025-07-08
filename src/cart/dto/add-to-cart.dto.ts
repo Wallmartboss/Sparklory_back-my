@@ -24,13 +24,6 @@ export class AddToCartDto {
   @IsString()
   @IsOptional()
   color?: string;
-
-  @ApiProperty({
-    example: 1000,
-    required: true,
-    description: 'Product price at the time of adding',
-  })
-  price: number;
 }
 
 export class AddToCartGuestDto extends AddToCartDto {

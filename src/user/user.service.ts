@@ -59,7 +59,7 @@ export class UserService {
     );
     await newUser.save();
 
-    // Назначать всем пользователям один и тот же уровень 'Default' (создавать только если его нет)
+    // Призначати всім користувачам один і той самий рівень 'Default' (створювати тільки якщо його немає)
     let defaultLevel = await this.loyaltyLevelModel.findOne({
       name: 'Default',
     });
@@ -80,7 +80,7 @@ export class UserService {
   }
 
   async saveUser(user: User): Promise<User> {
-    // Если пароль не захеширован, хешируем
+    // Якщо пароль не захешований, хешуємо
     if (user.password && !user.password.startsWith('$2b$')) {
       user.password = await bcrypt.hash(user.password, 10);
     }
