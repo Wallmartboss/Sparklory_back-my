@@ -80,13 +80,10 @@ export class UserService {
   }
 
   async saveUser(user: User): Promise<User> {
-    // Якщо пароль не захешований, хешуємо
     if (user.password && !user.password.startsWith('$2b$')) {
       user.password = await bcrypt.hash(user.password, 10);
     }
-    return this.userModel
-      .findByIdAndUpdate(user._id, user, { new: true })
-      .exec();
+    return user.save();
   }
 
   async verifyUserEmail(payload: VerifyEmailDto) {
