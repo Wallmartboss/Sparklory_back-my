@@ -11,6 +11,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { Gender } from '../../common/enum';
 
 export class ReviewDto {
   @ApiProperty({
@@ -170,6 +171,32 @@ export class CreateProductDto {
   @IsOptional()
   @Type(() => Date)
   discountEnd?: Date;
+
+  /**
+   * Підкатегорії продукту (опціонально)
+   */
+  @ApiProperty({
+    example: ['casual', 'sport'],
+    required: false,
+    description: 'Product subcategories',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  subcategory?: string[];
+
+  /**
+   * Стать продукту (male, female, unisex, kids)
+   */
+  @ApiProperty({
+    example: Gender.Unisex,
+    enum: Gender,
+    required: true,
+    description: 'Product gender',
+    type: String,
+  })
+  gender: Gender;
 
   @ApiProperty({
     type: [ReviewDto],

@@ -36,7 +36,7 @@ import { LocalAuthGuard } from './guards/local.guard';
 class ForgotPasswordDto {
   @ApiProperty({
     example: 'user@example.com',
-    description: 'Email пользователя',
+    description: 'Email користувача',
   })
   email: string;
 }
@@ -44,14 +44,14 @@ class ForgotPasswordDto {
 class ResetPasswordDto {
   @ApiProperty({
     example: 'user@example.com',
-    description: 'Email пользователя',
+    description: 'Email користувача',
   })
   email: string;
 
-  @ApiProperty({ example: 'a1b2c3', description: 'Код из письма' })
+  @ApiProperty({ example: 'a1b2c3', description: 'Код з листа' })
   code: string;
 
-  @ApiProperty({ example: 'newStrongPassword123', description: 'Новый пароль' })
+  @ApiProperty({ example: 'newStrongPassword123', description: 'Новий пароль' })
   newPassword: string;
 }
 
@@ -137,8 +137,8 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Returns JWT tokens and user info' })
   @UseGuards(AuthGuard('facebook'))
   async facebookLoginCallback(@Req() req: Request, @Res() res: Response) {
-    // req.user содержит пользователя
-    // Вернуть JWT токены и пользователя
+    // req.user містить користувача
+    // Повернути JWT токени та користувача
     const result = await this.authService.login(req.user as any);
     return res.json({
       user: result.loggedInUser,
@@ -179,12 +179,12 @@ export class AuthController {
     const { email } = dto;
     const user = await this.userService.findByEmail(email);
     if (!user)
-      throw new BadRequestException('Пользователь с таким email не найден');
+      throw new BadRequestException('Користувача з таким email не знайдено');
     const code = randomBytes(3).toString('hex');
     user.resetPasswordCode = code;
     await this.userService.saveUser(user);
     await this.emailService.sendEmail(email, code, ECondition.ResetPassword);
-    return { message: 'Код для сброса пароля отправлен на email' };
+    return { message: 'Код для скидання пароля надіслано на email' };
   }
 
   @Post('reset-password')
@@ -195,11 +195,11 @@ export class AuthController {
     const { email, code, newPassword } = body;
     const user = await this.userService.findByEmail(email);
     if (!user || user.resetPasswordCode !== code) {
-      throw new BadRequestException('Неверный email или код');
+      throw new BadRequestException('Невірний email або код');
     }
     user.password = newPassword;
     user.resetPasswordCode = null;
     await this.userService.saveUser(user);
-    return { message: 'Пароль успешно сброшен' };
+    return { message: 'Пароль успішно скинуто' };
   }
 }
