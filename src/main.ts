@@ -46,11 +46,11 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // Добавляю парсер для form-urlencoded
+  // Додаю парсер для form-urlencoded
   app.use(bodyParser.urlencoded({ extended: true }));
   app.use(bodyParser.json());
 
-  // Глобальный логгер всех запросов
+  // Глобальний логгер всіх запитів
   app.use((req, res, next) => {
     console.log('[GLOBAL REQUEST]', req.method, req.url, 'body:', req.body);
     next();

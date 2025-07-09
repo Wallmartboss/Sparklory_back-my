@@ -28,7 +28,7 @@ export class LoyaltyService {
   async getHistory(userId: string | Types.ObjectId) {
     const idStr = typeof userId === 'string' ? userId : userId?.toString();
     if (!idStr || idStr.length !== 24) {
-      throw new Error('Некорректный userId');
+      throw new Error('Некорректний userId');
     }
     return this.purchaseModel
       .find({ userId: new Types.ObjectId(idStr) })
@@ -42,7 +42,7 @@ export class LoyaltyService {
   async getBonusBalance(userId: string | Types.ObjectId) {
     const idStr = typeof userId === 'string' ? userId : userId?.toString();
     if (!idStr || idStr.length !== 24) {
-      throw new Error('Некорректный userId');
+      throw new Error('Некорректний userId');
     }
     const account = await this.loyaltyModel.findOne({
       userId: new Types.ObjectId(idStr),
@@ -59,7 +59,7 @@ export class LoyaltyService {
   async addCard(userId: string | Types.ObjectId, cardNumber: string) {
     const idStr = typeof userId === 'string' ? userId : userId?.toString();
     if (!idStr || idStr.length !== 24) {
-      throw new Error('Некорректный userId');
+      throw new Error('Некорректний userId');
     }
     const account = await this.loyaltyModel.findOne({
       userId: new Types.ObjectId(idStr),
@@ -101,14 +101,14 @@ export class LoyaltyService {
     );
     const idStr = typeof userId === 'string' ? userId : userId?.toString();
     if (!idStr || idStr.length !== 24) {
-      throw new Error('Некорректный userId');
+      throw new Error('Некорректний userId');
     }
     if (!amount || amount <= 0) {
-      // Не добавляем заказ с нулевой суммой
+      // Не додаємо замовлення з нулевою сумою
       return;
     }
     try {
-      // Проверка на дублирование заказа
+      // Перевірка на дублювання замовлення
       const existing = await this.purchaseModel.findOne({
         userId: new Types.ObjectId(idStr),
         orderId,
@@ -120,7 +120,7 @@ export class LoyaltyService {
         );
         return;
       }
-      // Валидация структуры items
+      // Валідація структури items
       if (
         !Array.isArray(items) ||
         items.length === 0 ||
@@ -196,7 +196,7 @@ export class LoyaltyService {
   async assignLevel(userId: string | Types.ObjectId, levelId: string) {
     const idStr = typeof userId === 'string' ? userId : userId?.toString();
     if (!idStr || idStr.length !== 24) {
-      throw new Error('Некорректный userId');
+      throw new Error('Некорректний userId');
     }
     const account = await this.loyaltyModel.findOne({
       userId: new Types.ObjectId(idStr),

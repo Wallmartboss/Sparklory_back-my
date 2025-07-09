@@ -49,7 +49,7 @@ export class CartController {
       req.user?.id,
       undefined,
       addToCartDto.productId,
-      // addToCartDto.price, // убрано, цена вычисляется на сервере
+      // addToCartDto.price, // видалено, ціна обчислюється на сервері
       addToCartDto.quantity || 1,
       addToCartDto.size,
       addToCartDto.color,
@@ -141,7 +141,7 @@ export class CartController {
       undefined,
       addToCartDto.guestId,
       addToCartDto.productId,
-      // addToCartDto.price, // убрано, цена вычисляется на сервере
+      // addToCartDto.price, // видалено, ціна обчислюється на сервері
       addToCartDto.quantity || 1,
       addToCartDto.size,
       addToCartDto.color,
@@ -177,7 +177,7 @@ export class CartController {
     @Req() req,
     @Body() body: ApplyCouponDto,
   ): Promise<CartDto> {
-    // Застосовує купон до корзини користувача
+    // Застосовує купон до кошику користувача
     const cart = await this.cartService.applyCoupon(req.user.id, body.code);
     return {
       items: cart.items.map(item => ({
@@ -195,7 +195,7 @@ export class CartController {
   }
 
   @Post('apply-bonus')
-  @ApiOperation({ summary: 'Застосувати бонуси до корзини' })
+  @ApiOperation({ summary: 'Застосувати бонуси до кошику' })
   @ApiBody({ type: ApplyBonusDto })
   @ApiResponse({
     status: 200,
@@ -203,7 +203,7 @@ export class CartController {
     type: CartDto,
   })
   async applyBonus(@Req() req, @Body() body: ApplyBonusDto): Promise<CartDto> {
-    // Застосовує бонуси до корзини користувача
+    // Застосовує бонуси до кошику користувача
     const cart = await this.cartService.applyBonus(req.user.id, body.amount);
     return {
       items: cart.items.map(item => ({

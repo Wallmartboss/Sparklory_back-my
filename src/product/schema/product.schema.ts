@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { ApiProperty } from '@nestjs/swagger';
 import { Document } from 'mongoose';
+import { Gender } from '../../common/enum';
 import { Review, ReviewSchema } from './review.schema';
 
 export type ProductDocument = Product & Document;
@@ -22,6 +23,14 @@ export class Product {
   /** Product category */
   @Prop({ required: true })
   category: string;
+
+  /** Підкатегорії продукту (опціонально) */
+  @Prop({ type: [String], required: false })
+  subcategory?: string[];
+
+  /** Стать продукту (male, female, unisex, kids) */
+  @Prop({ type: String, enum: Gender, required: true })
+  gender: Gender;
 
   /** Product material */
   @Prop()
