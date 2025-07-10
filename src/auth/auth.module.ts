@@ -17,6 +17,7 @@ import {
   LoyaltyLevel,
   LoyaltyLevelSchema,
 } from '../loyalty/loyalty-level.schema';
+import { ProductModule } from '../product/product.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { LocalStrategy } from './strategies';
@@ -42,6 +43,7 @@ import { JwtStrategy } from './strategies/jwt';
       }),
       inject: [ConfigService],
     }),
+    ProductModule, // Import ProductModule for ProductService
   ],
   controllers: [AuthController],
   providers: [

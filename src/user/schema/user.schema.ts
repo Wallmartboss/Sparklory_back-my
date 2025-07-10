@@ -109,6 +109,18 @@ export class User extends Document {
   devices: Device[];
 
   /**
+   * Wishlist - array of product IDs liked by the user
+   */
+  @ApiProperty({
+    example: ['60d21b4667d0d8992e610c85', '60d21b4967d0d8992e610c86'],
+    description: 'Array of product IDs liked by the user',
+    type: [String],
+    required: false,
+  })
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'Product' }], default: [] })
+  wishlist: Types.ObjectId[];
+
+  /**
    * Facebook ID (social login)
    */
   @ApiProperty({ example: '1234567890', required: false })

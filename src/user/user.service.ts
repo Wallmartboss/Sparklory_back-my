@@ -18,6 +18,7 @@ import { Session } from '@/session/schema/session.schema';
 import { SessionService } from '@/session/session.service';
 import { LoyaltyAccount } from '../loyalty/loyalty-account.schema';
 import { LoyaltyLevel } from '../loyalty/loyalty-level.schema';
+import { ProductService } from '../product/product.service';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { User, UserDocument } from './schema/user.schema';
 
@@ -34,6 +35,7 @@ export class UserService {
     private readonly emailService: EmailService,
     readonly deviceService: DeviceService,
     readonly sessionService: SessionService,
+    private readonly productService: ProductService,
   ) {}
 
   async createUser(payload: CreateUserDto): Promise<User> {
@@ -173,5 +175,55 @@ export class UserService {
     }
 
     await user.deleteOne();
+  }
+
+  /**
+   * Add a product to the user's wishlist
+   */
+  async addToWishlist(userId: string, productId: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+    // Check if product exists
+    await this.productService.findOne(productId);
+    if (user.wishlist.some(id => id.toString() === productId)) {
+      return user; // Already in wishlist
+    }
+    user.wishlist.push(new Types.ObjectId(productId));
+    await user.save();
+    return user;
+  }
+
+  /**
+   * Remove a product from the user's wishlist
+   */
+  async removeFromWishlist(userId: string, productId: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+    user.wishlist = user.wishlist.filter(id => id.toString() !== productId);
+    await user.save();
+    return user;
+  }
+
+  /**
+   * Get all products from the user's wishlist
+   */
+  async getWishlist(userId: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+    // Populate products
+    const wishlistIds = user.wishlist.map(id => id.toString());
+    const products = await this.productService.findAll();
+    return products.filter((p: any) => wishlistIds.includes(p._id.toString()));
+  }
+
+  /**
+   * Clear the user's wishlist
+   */
+  async clearWishlist(userId: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+    user.wishlist = [];
+    await user.save();
+    return user;
   }
 }

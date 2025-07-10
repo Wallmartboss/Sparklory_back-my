@@ -50,6 +50,10 @@ export class UserDTO {
   @Transform(({ value }) => value?.map(id => id.toString()))
   devices: Types.ObjectId[];
 
+  @Expose()
+  @Transform(({ value }) => value?.map(id => id.toString()))
+  wishlist: Types.ObjectId[];
+
   constructor(partial: Partial<UserDTO>) {
     Object.assign(this, partial);
   }
