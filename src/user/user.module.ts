@@ -14,6 +14,7 @@ import {
   LoyaltyLevel,
   LoyaltyLevelSchema,
 } from '../loyalty/loyalty-level.schema';
+import { ProductModule } from '../product/product.module';
 import { User, UserSchema } from './schema/user.schema';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
@@ -28,6 +29,7 @@ import { UserService } from './user.service';
       { name: LoyaltyAccount.name, schema: LoyaltyAccountSchema },
       { name: LoyaltyLevel.name, schema: LoyaltyLevelSchema },
     ]),
+    ProductModule, // Import ProductModule for ProductService
   ],
   controllers: [UserController],
   providers: [UserService, EmailService, DeviceService, SessionService],

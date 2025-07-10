@@ -16,4 +16,5 @@ export interface IUser {
   updatedAt: string;
   sessions: Types.ObjectId[];
   devices: Types.ObjectId[];
+  wishlist: Types.ObjectId[];
 }
