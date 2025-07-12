@@ -49,10 +49,10 @@ export class CartController {
       req.user?.id,
       undefined,
       addToCartDto.productId,
-      // addToCartDto.price, // видалено, ціна обчислюється на сервері
       addToCartDto.quantity || 1,
       addToCartDto.size,
-      addToCartDto.color,
+      addToCartDto.material,
+      addToCartDto.insert,
       undefined,
     );
   }
@@ -141,10 +141,10 @@ export class CartController {
       undefined,
       addToCartDto.guestId,
       addToCartDto.productId,
-      // addToCartDto.price, // видалено, ціна обчислюється на сервері
       addToCartDto.quantity || 1,
       addToCartDto.size,
-      addToCartDto.color,
+      addToCartDto.material,
+      addToCartDto.insert,
       addToCartDto.email,
     );
   }
@@ -184,7 +184,8 @@ export class CartController {
         product: item.product.toString(),
         quantity: item.quantity,
         size: item.size,
-        color: item.color,
+        material: item.material,
+        insert: item.insert,
         price: item.price,
       })),
       preTotal: cart.preTotal,
@@ -210,7 +211,8 @@ export class CartController {
         product: item.product.toString(),
         quantity: item.quantity,
         size: item.size,
-        color: item.color,
+        material: item.material,
+        insert: item.insert,
         price: item.price,
       })),
       preTotal: cart.preTotal,

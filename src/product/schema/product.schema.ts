@@ -7,8 +7,38 @@ import { Review, ReviewSchema } from './review.schema';
 export type ProductDocument = Product & Document;
 
 /**
+ * Product variant subdocument
+ * Contains material, size, stock, price, and insert for each variant
+ */
+@Schema({ _id: false })
+export class ProductVariant {
+  /** Material type (e.g., gold, silver, platinum) */
+  @Prop({ required: true })
+  material: string;
+
+  /** Product size (optional) */
+  @Prop({ required: false })
+  size?: string;
+
+  /** Stock quantity for this variant */
+  @Prop({ required: true, type: Number })
+  stock: number;
+
+  /** Price for this variant (optional, overrides product price if set) */
+  @Prop({ required: false, type: Number })
+  price?: number;
+
+  /** Insert type (optional, e.g., diamond, sapphire) */
+  @Prop({ required: false })
+  insert?: string;
+}
+
+export const ProductVariantSchema =
+  SchemaFactory.createForClass(ProductVariant);
+
+/**
  * Product document
- * Contains product info, images, actions, and reviews (each review has _id, name, text, etc.)
+ * Contains product info, images, actions, reviews, and variants
  */
 @Schema({ collection: 'products', versionKey: false })
 export class Product {
@@ -24,51 +54,31 @@ export class Product {
   @Prop({ required: true })
   category: string;
 
-  /** Підкатегорії продукту (опціонально) */
+  /** Product subcategories (optional) */
   @Prop({ type: [String], required: false })
   subcategory?: string[];
 
-  /** Стать продукту (male, female, unisex, kids) */
+  /** Product gender (male, female, unisex, kids) */
   @Prop({ type: String, enum: Gender, required: true })
   gender: Gender;
-
-  /** Product material */
-  @Prop()
-  material: string;
 
   /** Is engraving available */
   @Prop({ default: false })
   engraving: boolean;
 
-  /** Product size */
-  @Prop()
-  size: string;
-
-  /** Product color */
-  @Prop()
-  color: string;
-
-  /** Product price */
-  @Prop({ required: true })
-  price: number;
-
   /** Product images */
   @Prop({ type: [String], required: false })
   image: string[];
-
-  /** Is product in stock */
-  @Prop({ default: true })
-  inStock: boolean;
 
   /** Product actions */
   @Prop({ type: [String], default: null, required: false })
   action: string[];
 
-  /** Product reviews (each review contains _id, name, text, rating, createdAt, image, etc.) */
+  /** Product reviews */
   @Prop({ type: [ReviewSchema], default: [] })
   reviews: Review[];
 
-  /** Назва колекції, до якої належить продукт */
+  /** Collection name for grouping products */
   @ApiProperty({
     example: 'Spring 2025',
     required: false,
@@ -77,7 +87,7 @@ export class Product {
   @Prop({ required: false })
   prod_collection: string;
 
-  /** Відсоток знижки (0-100) */
+  /** Discount percentage (0-100) */
   @ApiProperty({
     example: 30,
     required: false,
@@ -86,7 +96,7 @@ export class Product {
   @Prop({ type: Number, default: 0 })
   discount: number;
 
-  /** Дата початку дії знижки */
+  /** Discount start date (ISO 8601) */
   @ApiProperty({
     example: '2025-07-10T00:00:00.000Z',
     required: false,
@@ -97,7 +107,7 @@ export class Product {
   @Prop({ type: Date, required: false })
   discountStart: Date;
 
-  /** Дата завершення дії знижки */
+  /** Discount end date (ISO 8601) */
   @ApiProperty({
     example: '2025-07-20T23:59:59.000Z',
     required: false,
@@ -107,6 +117,10 @@ export class Product {
   })
   @Prop({ type: Date, required: false })
   discountEnd: Date;
+
+  /** Product variants (each with its own material, size, stock, price) */
+  @Prop({ type: [ProductVariantSchema], required: true })
+  variants: ProductVariant[];
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

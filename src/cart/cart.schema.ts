@@ -13,7 +13,10 @@ export class CartItem {
   size?: string; // Розмір
 
   @Prop({ required: false })
-  color?: string; // Колір
+  material?: string;
+
+  @Prop({ required: false })
+  insert?: string;
 
   @Prop({ required: true })
   price: number; // Ціна

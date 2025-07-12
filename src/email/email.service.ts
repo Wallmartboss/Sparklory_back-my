@@ -41,7 +41,7 @@ export class EmailService {
 
       case ECondition.EmailVerify:
         subject = 'Email Verification';
-        const verifyLink = `${frontendUrl}/api/v1/auth/verify-email?email=${encodeURIComponent(email)}&code=${token}`;
+        const verifyLink = `${frontendUrl}/verify-email?email=${encodeURIComponent(email)}&code=${token}`;
         html = `
           <p>Hello,</p>
           <p>Please confirm your email address by clicking the link below:</p>

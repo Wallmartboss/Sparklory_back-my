@@ -38,55 +38,55 @@ export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Створити новий продукт' })
+  @ApiOperation({ summary: 'Create a new product' })
   @ApiResponse({
     status: 201,
-    description: 'Продукт успішно створено.',
+    description: 'Product successfully created.',
     type: Product,
   })
-  @ApiResponse({ status: 400, description: 'Поганий запит.' })
+  @ApiResponse({ status: 400, description: 'Bad request.' })
   async create(@Body() createProductDto: CreateProductDto) {
-    this.logger.log('Отримано запит на створення продукту');
-    this.logger.debug(`Дія: ${createProductDto.action}`);
+    this.logger.log('Received request to create product');
+    this.logger.debug(`Action: ${createProductDto.action}`);
     this.logger.debug(
-      `Кількість відгуків: ${createProductDto.reviews?.length || 0}`,
+      `Number of reviews: ${createProductDto.reviews?.length || 0}`,
     );
     return this.productService.create(createProductDto);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Отримати всі продукти' })
+  @ApiOperation({ summary: 'Get all products' })
   @ApiResponse({
     status: 200,
-    description: 'Повертає всі продукти.',
+    description: 'Returns all products.',
     type: [ProductDto],
   })
   @ApiQuery({
     name: 'limit',
     required: false,
     type: Number,
-    description: 'Кількість продуктів на сторінку',
+    description: 'Number of products per page',
   })
   @ApiQuery({
     name: 'page',
     required: false,
     type: Number,
-    description: 'Номер сторінки',
+    description: 'Page number',
   })
   async findAll(@Query('limit') limit?: number, @Query('page') page?: number) {
     return this.productService.findAll({ limit, page });
   }
 
   @Get('category/:category')
-  @ApiOperation({ summary: 'Отримати продукти за категорією' })
+  @ApiOperation({ summary: 'Get products by category' })
   @ApiResponse({
     status: 200,
-    description: 'Повертає продукти за категорією.',
+    description: 'Returns products by category.',
     type: [Product],
   })
-  @ApiResponse({ status: 404, description: 'Не знайдено.' })
+  @ApiResponse({ status: 404, description: 'Not found.' })
   async findByCategory(@Param('category') category: string) {
-    this.logger.log(`Отримання продуктів за категорією: ${category}`);
+    this.logger.log(`Getting products by category: ${category}`);
     try {
       return await this.productService.findByCategory(category);
     } catch (error) {
@@ -94,23 +94,21 @@ export class ProductController {
         this.logger.warn(error.message);
         throw error;
       }
-      this.logger.error(
-        `Помилка при отриманні продуктів за категорією: ${error.message}`,
-      );
-      throw new Error('Помилка при отриманні продуктів за категорією');
+      this.logger.error(`Error getting products by category: ${error.message}`);
+      throw new Error('Error getting products by category');
     }
   }
 
   @Get('action/:action')
-  @ApiOperation({ summary: 'Отримати продукти за дією' })
+  @ApiOperation({ summary: 'Get products by action' })
   @ApiResponse({
     status: 200,
-    description: 'Повертає продукти за дією.',
+    description: 'Returns products by action.',
     type: [Product],
   })
-  @ApiResponse({ status: 404, description: 'Не знайдено.' })
+  @ApiResponse({ status: 404, description: 'Not found.' })
   async findByAction(@Param('action') action: string) {
-    this.logger.log(`Отримання продуктів за акцією: ${action}`);
+    this.logger.log(`Getting products by action: ${action}`);
     try {
       return await this.productService.findByAction(action);
     } catch (error) {
@@ -118,18 +116,16 @@ export class ProductController {
         this.logger.warn(error.message);
         throw error;
       }
-      this.logger.error(
-        `Помилка при отриманні продуктів за акцією: ${error.message}`,
-      );
-      throw new Error('Помилка при отриманні продуктів за акцією');
+      this.logger.error(`Error getting products by action: ${error.message}`);
+      throw new Error('Error getting products by action');
     }
   }
 
   @Get('discounts')
-  @ApiOperation({ summary: 'Отримати всі продукти зі знижкою (discount > 0)' })
+  @ApiOperation({ summary: 'Get all products with a discount (discount > 0)' })
   @ApiResponse({
     status: 200,
-    description: 'Повертає всі продукти зі знижкою.',
+    description: 'Returns all products with a discount.',
     type: [ProductDto],
   })
   async findDiscountedProducts() {
@@ -137,10 +133,10 @@ export class ProductController {
   }
 
   @Get('categories')
-  @ApiOperation({ summary: 'Отримати всі унікальні категорії продуктів' })
+  @ApiOperation({ summary: 'Get all unique product categories' })
   @ApiResponse({
     status: 200,
-    description: 'Повертає всі унікальні категорії продуктів.',
+    description: 'Returns all unique product categories.',
     type: [String],
   })
   async getAllCategories() {
@@ -148,51 +144,51 @@ export class ProductController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Отримати продукт за ID' })
+  @ApiOperation({ summary: 'Get product by ID' })
   @ApiResponse({
     status: 200,
-    description: 'Повертає один продукт.',
+    description: 'Returns one product.',
     type: Product,
   })
-  @ApiResponse({ status: 404, description: 'Не знайдено.' })
+  @ApiResponse({ status: 404, description: 'Not found.' })
   async findOne(@Param('id') id: string) {
     return this.productService.findOne(id);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Оновити продукт' })
+  @ApiOperation({ summary: 'Update product' })
   @ApiResponse({
     status: 200,
-    description: 'Продукт успішно оновлено.',
+    description: 'Product successfully updated.',
     type: Product,
   })
-  @ApiResponse({ status: 404, description: 'Не знайдено.' })
+  @ApiResponse({ status: 404, description: 'Not found.' })
   async update(
     @Param('id') id: string,
     @Body() updateProductDto: UpdateProductDto,
   ) {
-    this.logger.log(`Отримано запит на оновлення продукту ${id}`);
-    this.logger.debug(`Дія: ${updateProductDto.action}`);
+    this.logger.log(`Received request to update product ${id}`);
+    this.logger.debug(`Action: ${updateProductDto.action}`);
     this.logger.debug(
-      `Кількість відгуків: ${updateProductDto.reviews?.length || 0}`,
+      `Number of reviews: ${updateProductDto.reviews?.length || 0}`,
     );
     return this.productService.update(id, updateProductDto);
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Видалити продукт' })
+  @ApiOperation({ summary: 'Delete product' })
   @ApiResponse({
     status: 200,
-    description: 'Продукт успішно видалено.',
+    description: 'Product successfully deleted.',
     type: Product,
   })
-  @ApiResponse({ status: 404, description: 'Не знайдено.' })
+  @ApiResponse({ status: 404, description: 'Not found.' })
   async remove(@Param('id') id: string) {
     return this.productService.remove(id);
   }
 
   @Post(':productId/reviews/:reviewId/upload')
-  @ApiOperation({ summary: 'Завантажити зображення для конкретного відгуку' })
+  @ApiOperation({ summary: 'Upload image for a specific review' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -201,7 +197,7 @@ export class ProductController {
         file: {
           type: 'string',
           format: 'binary',
-          description: 'Зображення відгуку (jpg, jpeg, png, gif, max 5MB)',
+          description: 'Review image (jpg, jpeg, png, gif, max 5MB)',
         },
       },
     },
@@ -220,7 +216,7 @@ export class ProductController {
       fileFilter: (req, file, callback) => {
         if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
           return callback(
-            new BadRequestException('Дозволені тільки зображення'),
+            new BadRequestException('Only images are allowed'),
             false,
           );
         }
@@ -235,7 +231,7 @@ export class ProductController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     if (!file) {
-      throw new BadRequestException('Файл не завантажено');
+      throw new BadRequestException('File not uploaded');
     }
     const imagePath = `/uploads/reviews/${file.filename}`;
     await this.productService.attachImageToReview(
@@ -244,7 +240,7 @@ export class ProductController {
       imagePath,
     );
     return {
-      message: 'Зображення завантажено та прикріплено до відгуку',
+      message: 'Image uploaded and attached to review',
       filename: file.filename,
       path: imagePath,
     };
@@ -252,23 +248,23 @@ export class ProductController {
 
   @Get(':id/reviews')
   @ApiOperation({
-    summary: 'Отримати сторінковану інформацію про відгуки для продукту',
+    summary: 'Get paginated information about reviews for a product',
   })
   @ApiQuery({
     name: 'page',
     required: false,
     type: Number,
-    description: 'Номер сторінки',
+    description: 'Page number',
   })
   @ApiQuery({
     name: 'limit',
     required: false,
     type: Number,
-    description: 'Кількість відгуків на сторінку',
+    description: 'Number of reviews per page',
   })
   @ApiResponse({
     status: 200,
-    description: 'Сторінкована інформація про відгуки',
+    description: 'Paginated review information',
     schema: {
       example: {
         total: 1,
@@ -300,13 +296,13 @@ export class ProductController {
   }
 
   @Post(':id/reviews')
-  @ApiOperation({ summary: 'Створити відгук для продукту' })
+  @ApiOperation({ summary: 'Create a review for a product' })
   @ApiBody({
     type: ReviewDto,
-    description: 'Дані відгуку',
+    description: 'Review data',
     examples: {
       example1: {
-        summary: 'Відгук з усіма полями',
+        summary: 'Review with all fields',
         value: {
           name: 'John Doe',
           avatar: 'avatar123.jpg',
@@ -317,7 +313,7 @@ export class ProductController {
         },
       },
       example2: {
-        summary: 'Простий відгук',
+        summary: 'Simple review',
         value: {
           name: 'Jane Smith',
           text: 'Good quality',
@@ -327,13 +323,13 @@ export class ProductController {
       },
     },
   })
-  @ApiResponse({ status: 201, description: 'Створено відгук', type: ReviewDto })
+  @ApiResponse({ status: 201, description: 'Review created', type: ReviewDto })
   async createReview(
     @Param('id') productId: string,
     @Body() reviewDto: any,
     @Req() req: Request,
   ) {
-    // Якщо користувач авторизований, підставляємо його ім'я, якщо не вказано явно
+    // If user is authenticated, use their name, otherwise use the provided name
     const user = (req as any).user;
     if (user && (!reviewDto.name || reviewDto.name.trim() === '')) {
       reviewDto.name = user.name;
