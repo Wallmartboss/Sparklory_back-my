@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { CartModule } from './cart/cart.module';
+import { CategoryModule } from './category/category.module';
 import { AppLoggerMiddleware } from './common/loggers/app-logger';
 import { CoreModule } from './core/core.module';
 import { CouponModule } from './coupon/coupon.module';
@@ -40,6 +41,7 @@ import { UserModule } from './user/user.module';
     AuthModule,
     ProductModule,
     CartModule,
+    CategoryModule,
     PaymentModule,
     ScheduleModule.forRoot(),
     LoyaltyModule,
