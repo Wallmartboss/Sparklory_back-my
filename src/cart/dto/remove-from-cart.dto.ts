@@ -20,13 +20,22 @@ export class RemoveFromCartDto {
   size?: string;
 
   @ApiProperty({
-    description: 'The color of the product to remove',
+    description: 'The material of the product to remove',
     example: 'gold',
     required: false,
   })
   @IsString()
   @IsOptional()
-  color?: string;
+  material?: string;
+
+  @ApiProperty({
+    description: 'The insert of the product to remove',
+    example: 'diamond',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  insert?: string;
 
   @ApiProperty({
     example: 'c0a8012e-7b2a-4c1a-9e2a-123456789abc',
