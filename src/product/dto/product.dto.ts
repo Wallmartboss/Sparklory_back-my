@@ -15,7 +15,7 @@ export class ProductDto {
   @ApiProperty({ type: [String], required: false }) image?: string[];
   @ApiProperty() inStock: boolean;
   @ApiProperty({ type: [String], required: false }) action?: string[];
-  @ApiProperty({ required: false }) collection?: string;
+  @ApiProperty({ required: false }) prod_collection?: string;
   @ApiProperty({ required: false }) discount?: number;
   @ApiProperty({ required: false }) discountStart?: Date;
   @ApiProperty({ required: false }) discountEnd?: Date;
