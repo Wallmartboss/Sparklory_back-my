@@ -12,11 +12,11 @@ export class CouponController {
    * Create a new coupon
    */
   @Post()
-  @ApiOperation({ summary: 'Створити новий купон' })
+  @ApiOperation({ summary: 'Create a new coupon' })
   @ApiBody({ type: Coupon })
-  @ApiResponse({ status: 201, description: 'Купон створено', type: Coupon })
+  @ApiResponse({ status: 201, description: 'Coupon created', type: Coupon })
   async create(@Body() body: Partial<Coupon>): Promise<Coupon> {
-    // Створює новий купон
+    // Creates a new coupon
     return this.couponService.createCoupon(body);
   }
 
@@ -24,10 +24,10 @@ export class CouponController {
    * Get all coupons
    */
   @Get()
-  @ApiOperation({ summary: 'Отримати всі купони' })
-  @ApiResponse({ status: 200, description: 'Список купонів', type: [Coupon] })
+  @ApiOperation({ summary: 'Get all coupons' })
+  @ApiResponse({ status: 200, description: 'List of coupons', type: [Coupon] })
   async getAll(): Promise<Coupon[]> {
-    // Повертає всі купони
+    // Returns all coupons
     return this.couponService.getAll();
   }
 
@@ -35,10 +35,10 @@ export class CouponController {
    * Get coupon by code
    */
   @Get(':code')
-  @ApiOperation({ summary: 'Отримати купон за кодом' })
-  @ApiResponse({ status: 200, description: 'Купон', type: Coupon })
+  @ApiOperation({ summary: 'Get coupon by code' })
+  @ApiResponse({ status: 200, description: 'Coupon', type: Coupon })
   async getByCode(@Param('code') code: string): Promise<Coupon> {
-    // Повертає купон за кодом
+    // Returns coupon by code
     return this.couponService.findValidCoupon(code);
   }
 }
