@@ -75,7 +75,7 @@ export class Product {
     description: 'Collection name for grouping products',
   })
   @Prop({ required: false })
-  collection: string;
+  prod_collection: string;
 
   /** Відсоток знижки (0-100) */
   @ApiProperty({

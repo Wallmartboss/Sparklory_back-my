@@ -137,7 +137,7 @@ export class CreateProductDto {
   })
   @IsOptional()
   @IsString()
-  collection?: string;
+  prod_collection?: string;
 
   @ApiProperty({
     example: 30,
