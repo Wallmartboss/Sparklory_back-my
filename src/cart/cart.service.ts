@@ -20,20 +20,42 @@ export class CartService {
     userId?: string,
     guestId?: string,
   ): Promise<CartDocument> {
+    console.log(
+      '[DEBUG][CartService.getOrCreateCart] userId:',
+      userId,
+      'guestId:',
+      guestId,
+    );
     let cart: CartDocument | null = null;
     if (userId) {
       cart = await this.cartModel.findOne({ user: userId, isOrdered: false });
+      console.log(
+        '[DEBUG][CartService.getOrCreateCart] Found cart for user:',
+        cart?._id,
+      );
       if (!cart) {
         cart = new this.cartModel({ user: userId, items: [] }) as CartDocument;
         await cart.save();
+        console.log(
+          '[DEBUG][CartService.getOrCreateCart] Created new cart:',
+          cart._id,
+        );
       }
       return cart;
     }
     if (guestId) {
       cart = await this.cartModel.findOne({ guestId, isOrdered: false });
+      console.log(
+        '[DEBUG][CartService.getOrCreateCart] Found cart for guest:',
+        cart?._id,
+      );
       if (!cart) {
         cart = new this.cartModel({ guestId, items: [] }) as CartDocument;
         await cart.save();
+        console.log(
+          '[DEBUG][CartService.getOrCreateCart] Created new cart:',
+          cart._id,
+        );
       }
       return cart;
     }
@@ -89,6 +111,36 @@ export class CartService {
     if (!userId && guestId && email && !cart.email) {
       cart.email = email;
     }
+
+    // Get product and find the specific variant
+    const product = await this.productModel.findById(productId);
+    if (!product) throw new Error('Product not found');
+
+    // Find the appropriate variant based on material, size, and insert
+    const variant = product.variants.find(
+      v =>
+        (!material || v.material === material) &&
+        (!size || v.size === size) &&
+        (!insert || v.insert === insert),
+    );
+
+    if (!variant) {
+      const requestedParams = [];
+      if (material) requestedParams.push(`material: ${material}`);
+      if (size) requestedParams.push(`size: ${size}`);
+      if (insert) requestedParams.push(`insert: ${insert}`);
+
+      const availableVariants = product.variants
+        .map(v => `(${v.material}, ${v.size}, ${v.insert})`)
+        .join(', ');
+
+      throw new Error(
+        `Variant not found with parameters: ${requestedParams.join(', ')}. ` +
+          `Available variants: ${availableVariants}`,
+      );
+    }
+
+    // Check stock availability
     const existingItem = cart.items.find(
       item =>
         item.product.toString() === productId &&
@@ -97,9 +149,14 @@ export class CartService {
         item.insert === insert,
     );
 
-    // Get product and calculate price with discount
-    const product = await this.productModel.findById(productId);
-    if (!product) throw new Error('Product not found');
+    const requestedQuantity = quantity + (existingItem?.quantity || 0);
+
+    if (requestedQuantity > variant.stock) {
+      throw new Error(
+        `Insufficient stock. Available: ${variant.stock}, Requested: ${requestedQuantity}`,
+      );
+    }
+
     const price = this.getDiscountedPrice(product, material, size);
 
     if (existingItem) {
@@ -153,9 +210,41 @@ export class CartService {
   }
 
   async clearCart(userId?: string, guestId?: string) {
-    const cart = await this.getOrCreateCart(userId, guestId);
-    cart.items = [];
-    return cart.save();
+    try {
+      console.log(
+        '[DEBUG][CartService.clearCart] userId:',
+        userId,
+        'guestId:',
+        guestId,
+      );
+
+      let query = {};
+      if (userId) {
+        query = { user: userId, isOrdered: false };
+      } else if (guestId) {
+        query = { guestId, isOrdered: false };
+      } else {
+        throw new Error('Either userId or guestId must be provided');
+      }
+
+      const updatedCart = await this.cartModel.findOneAndUpdate(
+        query,
+        { $set: { items: [] } },
+        { new: true, upsert: true },
+      );
+
+      console.log(
+        '[DEBUG][CartService.clearCart] Cart cleared, new items count:',
+        updatedCart.items.length,
+      );
+      return updatedCart;
+    } catch (error) {
+      console.error(
+        '[ERROR][CartService.clearCart] Error clearing cart:',
+        error,
+      );
+      throw error;
+    }
   }
 
   async updateOrderId(cartId: string, orderId: string): Promise<void> {
@@ -173,7 +262,11 @@ export class CartService {
       '[DEBUG][CartService.setOrderedByOrderId] cart:',
       JSON.stringify(cart, null, 2),
     );
+
     if (cart && cart.user && cart.items && cart.items.length > 0) {
+      // Update stock quantities for all items in the order
+      await this.updateStockQuantities(cart.items);
+
       const totalAmount = cart.items.reduce(
         (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
         0,
@@ -192,8 +285,31 @@ export class CartService {
         cart.items,
         totalAmount,
         new Date(),
-        `Замовлення з ${cart.items.length} товарів`,
+        `Order with ${cart.items.length} items`,
       );
+    }
+  }
+
+  /**
+   * Update stock quantities after successful order payment
+   */
+  private async updateStockQuantities(items: any[]): Promise<void> {
+    for (const item of items) {
+      const product = await this.productModel.findById(item.product);
+      if (!product) continue;
+
+      // Find the specific variant and update its stock
+      const variantIndex = product.variants.findIndex(
+        v =>
+          (!item.material || v.material === item.material) &&
+          (!item.size || v.size === item.size) &&
+          (!item.insert || v.insert === item.insert),
+      );
+
+      if (variantIndex !== -1) {
+        product.variants[variantIndex].stock -= item.quantity;
+        await product.save();
+      }
     }
   }
 

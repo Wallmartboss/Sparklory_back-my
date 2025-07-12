@@ -44,17 +44,45 @@ export class CartController {
       'The item has been successfully added to the cart. Price is calculated on the server, including discount if active.',
     type: CartDto,
   })
-  addItem(@Req() req, @Body() addToCartDto: AddToCartDto) {
-    return this.cartService.addItem(
-      req.user?.id,
-      undefined,
-      addToCartDto.productId,
-      addToCartDto.quantity || 1,
-      addToCartDto.size,
-      addToCartDto.material,
-      addToCartDto.insert,
-      undefined,
-    );
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request, insufficient stock, or variant not found.',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: {
+          type: 'string',
+          example: 'Insufficient stock. Available: 3, Requested: 4',
+        },
+        error: { type: 'string', example: 'Bad Request' },
+      },
+    },
+  })
+  async addItem(@Req() req, @Body() addToCartDto: AddToCartDto) {
+    try {
+      return await this.cartService.addItem(
+        req.user?.id,
+        undefined,
+        addToCartDto.productId,
+        addToCartDto.quantity || 1,
+        addToCartDto.size,
+        addToCartDto.material,
+        addToCartDto.insert,
+        undefined,
+      );
+    } catch (error) {
+      if (error.message.includes('Product not found')) {
+        throw new BadRequestException('Product not found');
+      }
+      if (error.message.includes('Variant not found')) {
+        throw new BadRequestException(error.message);
+      }
+      if (error.message.includes('Insufficient stock')) {
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException('Error adding item to cart');
+    }
   }
 
   @UseGuards(JwtAuthGuard)
@@ -87,7 +115,8 @@ export class CartController {
       req.user.id,
       removeFromCartDto.productId,
       removeFromCartDto.size,
-      removeFromCartDto.color,
+      removeFromCartDto.material,
+      removeFromCartDto.insert,
     );
   }
 
@@ -99,8 +128,18 @@ export class CartController {
     description: 'The cart has been successfully cleared.',
     type: Cart,
   })
-  clearCart(@Req() req) {
-    return this.cartService.clearCart(req.user.id);
+  async clearCart(@Req() req) {
+    try {
+      console.log('[DEBUG][CartController.clearCart] User ID:', req.user.id);
+      const result = await this.cartService.clearCart(req.user.id);
+      console.log(
+        '[DEBUG][CartController.clearCart] Cart cleared successfully',
+      );
+      return result;
+    } catch (error) {
+      console.error('[ERROR][CartController.clearCart] Error:', error);
+      throw error;
+    }
   }
 
   @Get('guest')
@@ -133,20 +172,48 @@ export class CartController {
       'The item has been successfully added to the guest cart. Price is calculated on the server, including discount if active.',
     type: CartDto,
   })
-  addItemGuest(@Body() addToCartDto: AddToCartGuestDto) {
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request, insufficient stock, or variant not found.',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: {
+          type: 'string',
+          example: 'Insufficient stock. Available: 3, Requested: 4',
+        },
+        error: { type: 'string', example: 'Bad Request' },
+      },
+    },
+  })
+  async addItemGuest(@Body() addToCartDto: AddToCartGuestDto) {
     if (!addToCartDto.guestId) {
       throw new BadRequestException('guestId is required');
     }
-    return this.cartService.addItem(
-      undefined,
-      addToCartDto.guestId,
-      addToCartDto.productId,
-      addToCartDto.quantity || 1,
-      addToCartDto.size,
-      addToCartDto.material,
-      addToCartDto.insert,
-      addToCartDto.email,
-    );
+    try {
+      return await this.cartService.addItem(
+        undefined,
+        addToCartDto.guestId,
+        addToCartDto.productId,
+        addToCartDto.quantity || 1,
+        addToCartDto.size,
+        addToCartDto.material,
+        addToCartDto.insert,
+        addToCartDto.email,
+      );
+    } catch (error) {
+      if (error.message.includes('Product not found')) {
+        throw new BadRequestException('Product not found');
+      }
+      if (error.message.includes('Variant not found')) {
+        throw new BadRequestException(error.message);
+      }
+      if (error.message.includes('Insufficient stock')) {
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException('Error adding item to cart');
+    }
   }
 
   @Post('remove-guest')
@@ -165,8 +232,27 @@ export class CartController {
       removeFromCartDto.guestId,
       removeFromCartDto.productId,
       removeFromCartDto.size,
-      removeFromCartDto.color,
+      removeFromCartDto.material,
+      removeFromCartDto.insert,
     );
+  }
+
+  @Post('clear-guest')
+  @ApiOperation({ summary: 'Clear the guest cart' })
+  @ApiResponse({
+    status: 200,
+    description: 'The guest cart has been successfully cleared.',
+    type: Cart,
+  })
+  clearGuestCart(@Body() body: { guestId: string }) {
+    if (!body.guestId) {
+      throw new BadRequestException('guestId is required');
+    }
+    console.log(
+      '[DEBUG][CartController.clearGuestCart] Guest ID:',
+      body.guestId,
+    );
+    return this.cartService.clearCart(undefined, body.guestId);
   }
 
   @Post('apply-coupon')
