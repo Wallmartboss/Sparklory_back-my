@@ -20,10 +20,15 @@ export class AddToCartDto {
   @IsOptional()
   size?: string;
 
-  @ApiProperty({ example: 'gold', required: false, description: 'Color' })
+  @ApiProperty({ example: 'gold', required: false, description: 'Material' })
   @IsString()
   @IsOptional()
-  color?: string;
+  material?: string;
+
+  @ApiProperty({ example: 'diamond', required: false, description: 'Insert' })
+  @IsString()
+  @IsOptional()
+  insert?: string;
 }
 
 export class AddToCartGuestDto extends AddToCartDto {

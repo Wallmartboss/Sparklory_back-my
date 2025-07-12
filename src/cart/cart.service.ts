@@ -41,12 +41,27 @@ export class CartService {
   }
 
   /**
-   * Обчислює актуальну ціну продукту з урахуванням знижки
+   * Calculates the actual product price considering discount
    */
   private getDiscountedPrice(
     product: ProductDocument,
+    material?: string,
+    size?: string,
     now: Date = new Date(),
   ): number {
+    // Find the appropriate variant based on material and size
+    let variant = product.variants[0]; // Default to first variant
+    if (material || size) {
+      variant =
+        product.variants.find(
+          v =>
+            (!material || v.material === material) &&
+            (!size || v.size === size),
+        ) || product.variants[0];
+    }
+
+    const basePrice = variant.price || 0;
+
     if (
       product.discount &&
       product.discount > 0 &&
@@ -55,19 +70,19 @@ export class CartService {
       now >= product.discountStart &&
       now <= product.discountEnd
     ) {
-      return Math.round((product.price * (100 - product.discount)) / 100);
+      return Math.round((basePrice * (100 - product.discount)) / 100);
     }
-    return product.price;
+    return basePrice;
   }
 
   async addItem(
     userId: string | undefined,
     guestId: string | undefined,
     productId: string,
-    // price: number, // убираем, цена вычисляется на сервере
     quantity = 1,
     size?: string,
-    color?: string,
+    material?: string,
+    insert?: string,
     email?: string,
   ) {
     const cart = await this.getOrCreateCart(userId, guestId);
@@ -78,23 +93,25 @@ export class CartService {
       item =>
         item.product.toString() === productId &&
         item.size === size &&
-        item.color === color,
+        item.material === material &&
+        item.insert === insert,
     );
 
-    // Получаем продукт и рассчитываем цену с учетом скидки
+    // Get product and calculate price with discount
     const product = await this.productModel.findById(productId);
     if (!product) throw new Error('Product not found');
-    const price = this.getDiscountedPrice(product);
+    const price = this.getDiscountedPrice(product, material, size);
 
     if (existingItem) {
       existingItem.quantity += quantity;
-      existingItem.price = price; // обновляем цену, если скидка изменилась
+      existingItem.price = price; // update price if discount changed
     } else {
       cart.items.push({
         product: new Types.ObjectId(productId),
         quantity,
         size,
-        color,
+        material,
+        insert,
         price,
       });
     }
@@ -107,7 +124,8 @@ export class CartService {
     guestId: string | undefined,
     productId: string,
     size?: string,
-    color?: string,
+    material?: string,
+    insert?: string,
   ) {
     const cart = await this.getOrCreateCart(userId, guestId);
 
@@ -115,7 +133,8 @@ export class CartService {
       item =>
         item.product.toString() === productId &&
         item.size === size &&
-        item.color === color,
+        item.material === material &&
+        item.insert === insert,
     );
 
     if (itemIndex === -1) {

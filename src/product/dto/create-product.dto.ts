@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsArray,
@@ -12,14 +12,9 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Gender } from '../../common/enum';
+import { ProductVariantDto } from './product.dto';
 
 export class ReviewDto {
-  @ApiProperty({
-    example: '653e1b2c8f1b2a001e8e4c1a',
-    description: 'Review unique identifier',
-  })
-  readonly _id?: string;
-
   @ApiProperty({ example: 'Ivan', description: 'Reviewer name' })
   @IsString()
   name: string;
@@ -33,7 +28,7 @@ export class ReviewDto {
   @IsString()
   avatar?: string;
 
-  @ApiProperty({ example: 'Чудовий товар!', description: 'Review text' })
+  @ApiProperty({ example: 'Great product!', description: 'Review text' })
   @IsString()
   text: string;
 
@@ -62,12 +57,12 @@ export class ReviewDto {
 }
 
 export class CreateProductDto {
-  @ApiProperty({ example: 'Сережки Amethyst', description: 'Product name' })
+  @ApiProperty({ example: 'Amethyst Earrings', description: 'Product name' })
   @IsString()
   name: string;
 
   @ApiProperty({
-    example: 'Сережки з білим золотом і аметистами',
+    example: 'Earrings with white gold and amethysts',
     description: 'Product description',
   })
   @IsString()
@@ -77,33 +72,10 @@ export class CreateProductDto {
   @IsString()
   category: string;
 
-  @ApiProperty({ example: 'white gold', description: 'Product material' })
-  @IsString()
-  material: string;
-
   @ApiProperty({ example: true, description: 'Is engraving available' })
   @IsBoolean()
   @Type(() => Boolean)
   engraving: boolean;
-
-  @ApiProperty({ example: '18', required: false, description: 'Product size' })
-  @IsOptional()
-  @IsString()
-  size?: string;
-
-  @ApiProperty({
-    example: 'gold',
-    required: false,
-    description: 'Product color',
-  })
-  @IsOptional()
-  @IsString()
-  color?: string;
-
-  @ApiProperty({ example: 1250, description: 'Product price' })
-  @IsNumber()
-  @Type(() => Number)
-  price: number;
 
   @ApiProperty({
     example: ['12345678.jpg'],
@@ -114,11 +86,6 @@ export class CreateProductDto {
   @IsArray()
   @IsString({ each: true })
   image?: string[];
-
-  @ApiProperty({ example: false, description: 'Is product in stock' })
-  @IsBoolean()
-  @Type(() => Boolean)
-  inStock: boolean;
 
   @ApiProperty({
     example: ['Spring sale'],
@@ -172,9 +139,7 @@ export class CreateProductDto {
   @Type(() => Date)
   discountEnd?: Date;
 
-  /**
-   * Підкатегорії продукту (опціонально)
-   */
+  /** Product subcategories (optional) */
   @ApiProperty({
     example: ['casual', 'sport'],
     required: false,
@@ -186,9 +151,7 @@ export class CreateProductDto {
   @IsString({ each: true })
   subcategory?: string[];
 
-  /**
-   * Стать продукту (male, female, unisex, kids)
-   */
+  /** Product gender (male, female, unisex, kids) */
   @ApiProperty({
     example: Gender.Unisex,
     enum: Gender,
@@ -202,11 +165,28 @@ export class CreateProductDto {
     type: [ReviewDto],
     required: false,
     description:
-      'Product reviews (each review contains _id, name, text, rating, createdAt, image, etc.)',
+      'Product reviews (each review contains name, text, rating, createdAt, image, etc.)',
   })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ReviewDto)
   reviews?: ReviewDto[];
+
+  /** Product variants (each with its own material, size, stock, price) */
+  @ApiProperty({
+    type: [ProductVariantDto],
+    required: true,
+    description:
+      'Product variants (each with its own material, size, stock, price)',
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProductVariantDto)
+  variants: ProductVariantDto[];
+}
+
+export class UpdateProductDto extends PartialType(CreateProductDto) {
+  /** Product variants (each with its own metal, size, stock, price) */
+  variants?: ProductVariantDto[];
 }

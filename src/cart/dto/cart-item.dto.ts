@@ -13,8 +13,11 @@ export class CartItemDto {
   @ApiProperty({ description: 'Size', example: '17.5', required: false })
   size?: string;
 
-  @ApiProperty({ description: 'Color', example: 'gold', required: false })
-  color?: string;
+  @ApiProperty({ description: 'Material', example: 'gold', required: false })
+  material?: string;
+
+  @ApiProperty({ description: 'Insert', example: 'diamond', required: false })
+  insert?: string;
 
   @ApiProperty({ description: 'Price per item', example: 1000 })
   price: number;
