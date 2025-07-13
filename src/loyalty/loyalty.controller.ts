@@ -35,10 +35,10 @@ export class LoyaltyController {
    * @param userId User identifier
    */
   @Get('history')
-  @ApiOperation({ summary: 'Отримати історію покупок' })
-  @ApiResponse({ status: 200, description: 'Історія покупок' })
+  @ApiOperation({ summary: 'Get user purchase history' })
+  @ApiResponse({ status: 200, description: 'User purchase history' })
   async getHistory(@UserDecorator('_id') userId: string) {
-    // Повертає історію покупок користувача
+    // Returns the user's purchase history
     return this.loyaltyService.getHistory(userId);
   }
 
@@ -47,10 +47,10 @@ export class LoyaltyController {
    * @param userId User identifier
    */
   @Get('bonus')
-  @ApiOperation({ summary: 'Отримати баланс бонусів' })
-  @ApiResponse({ status: 200, description: 'Баланс бонусів' })
+  @ApiOperation({ summary: 'Get user bonus balance' })
+  @ApiResponse({ status: 200, description: 'User bonus balance' })
   async getBonus(@UserDecorator('_id') userId: string) {
-    // Повертає баланс бонусів користувача
+    // Returns the user's bonus balance
     return this.loyaltyService.getBonusBalance(userId);
   }
 
@@ -60,24 +60,24 @@ export class LoyaltyController {
    * @param dto Card data
    */
   @Post('card')
-  @ApiOperation({ summary: "Прив'язати карту лояльності" })
-  @ApiResponse({ status: 201, description: "Карту прив'язано" })
+  @ApiOperation({ summary: 'Bind loyalty card to user' })
+  @ApiResponse({ status: 201, description: 'Loyalty card bound to user' })
   async addCard(@UserDecorator('_id') userId: string, @Body() dto: AddCardDto) {
-    // Додає або оновлює номер карти лояльності
+    // Adds or updates the user's loyalty card number
     return this.loyaltyService.addCard(userId, dto.cardNumber);
   }
 
-  // --- Адмінські ендпоінти ---
+  // --- Admin endpoints ---
 
   /**
    * Creates a new loyalty level (admin).
    * @param dto Level data
    */
   @Post('level')
-  @ApiOperation({ summary: 'Створити рівень лояльності (адмін)' })
-  @ApiResponse({ status: 201, description: 'Рівень лояльності створено' })
+  @ApiOperation({ summary: 'Create loyalty level (admin)' })
+  @ApiResponse({ status: 201, description: 'Loyalty level created' })
   async createLevel(@Body() dto: CreateLoyaltyLevelDto) {
-    // Створює новий рівень лояльності
+    // Creates a new loyalty level
     return this.loyaltyService.createLevel(dto.name, dto.bonusPercent);
   }
 
@@ -87,13 +87,13 @@ export class LoyaltyController {
    * @param bonusPercent Bonus percent
    */
   @Patch('level/:id')
-  @ApiOperation({ summary: 'Оновити відсоток рівня лояльності (адмін)' })
-  @ApiResponse({ status: 200, description: 'Рівень лояльності оновлено' })
+  @ApiOperation({ summary: 'Update loyalty level bonus percent (admin)' })
+  @ApiResponse({ status: 200, description: 'Loyalty level updated' })
   async updateLevel(
     @Param('id') id: string,
     @Body('bonusPercent') bonusPercent: number,
   ) {
-    // Оновлює відсоток бонусу для рівня лояльності
+    // Updates the bonus percent for a loyalty level
     return this.loyaltyService.updateLevel(id, bonusPercent);
   }
 
@@ -101,10 +101,10 @@ export class LoyaltyController {
    * Returns all loyalty levels (admin).
    */
   @Get('levels')
-  @ApiOperation({ summary: 'Отримати всі рівні лояльності (адмін)' })
-  @ApiResponse({ status: 200, description: 'Список рівнів лояльності' })
+  @ApiOperation({ summary: 'Get all loyalty levels (admin)' })
+  @ApiResponse({ status: 200, description: 'List of loyalty levels' })
   async getLevels() {
-    // Повертає всі рівні лояльності
+    // Returns all loyalty levels
     return this.loyaltyService.getLevels();
   }
 
@@ -114,15 +114,15 @@ export class LoyaltyController {
    * @param levelId Level identifier
    */
   @Patch('assign-level/:levelId')
-  @ApiOperation({ summary: 'Призначити рівень лояльності користувачу (адмін)' })
-  @ApiResponse({ status: 200, description: 'Рівень лояльності призначено' })
+  @ApiOperation({ summary: 'Assign loyalty level to user (admin)' })
+  @ApiResponse({ status: 200, description: 'Loyalty level assigned to user' })
   @ApiBody({
     schema: {
       properties: {
         userId: {
           type: 'string',
           example: 'userObjectId',
-          description: 'ID користувача',
+          description: 'User ID',
         },
       },
     },
@@ -131,7 +131,7 @@ export class LoyaltyController {
     @Body('userId') userId: string,
     @Param('levelId') levelId: string,
   ) {
-    // Призначає рівень лояльності користувачу
+    // Assigns a loyalty level to a user
     return this.loyaltyService.assignLevel(userId, levelId);
   }
 }

@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiOperation,
   ApiProperty,
@@ -31,6 +32,8 @@ import { UserService } from '@/user/user.service';
 import { randomBytes } from 'crypto';
 import * as response from '../response.json';
 import { LoginDTO } from './dto/login.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { JwtAuthGuard } from './guards/jwt.guard';
 import { LocalAuthGuard } from './guards/local.guard';
 
 class ForgotPasswordDto {
@@ -201,5 +204,77 @@ export class AuthController {
     user.resetPasswordCode = null;
     await this.userService.saveUser(user);
     return { message: 'Пароль успішно скинуто' };
+  }
+
+  @Post('refresh')
+  @ApiOperation({
+    summary: 'Refresh access token using refresh token',
+    description:
+      'Generate new access and refresh tokens using valid refresh token',
+  })
+  @ApiBody({ type: RefreshTokenDto })
+  @ApiResponse({
+    status: 200,
+    description: 'New tokens generated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        accessToken: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        },
+        refreshToken: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid refresh token',
+  })
+  async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
+    const { accessToken, refreshToken } = await this.authService.refreshToken(
+      refreshTokenDto.refreshToken,
+    );
+
+    return {
+      accessToken,
+      refreshToken,
+    };
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Logout user and invalidate session',
+    description: 'Invalidate current session and logout user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully logged out',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Successfully logged out',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Logout failed',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  async logout(@Req() req: Request) {
+    const user = req.user as any;
+    return await this.authService.logout(user.sub, user.sessionId);
   }
 }

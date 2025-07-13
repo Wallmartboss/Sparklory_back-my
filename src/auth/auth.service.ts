@@ -170,4 +170,82 @@ export class AuthService {
     }
     return user;
   }
+
+  /**
+   * Refresh access token using refresh token
+   */
+  async refreshToken(refreshToken: string) {
+    try {
+      // Verify refresh token using refresh secret
+      const payload = await this.jwtService.verifyAsync(refreshToken, {
+        secret: this.configService.get<string>('REFRESH_JWT_SECRET'),
+      });
+
+      // Check if session still exists and user is logged in
+      const session = await this.sessionService.findOneForJwt(
+        payload.sub,
+        payload.sessionId,
+      );
+
+      if (!session || !session.user.isLoggedIn) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      // Generate new tokens
+      const tokenPayload: InTokensGenerate = {
+        email: payload.email,
+        role: payload.role,
+        id: payload.sub,
+        name: payload.name,
+        sessionId: payload.sessionId,
+        deviceId: payload.deviceId,
+      };
+
+      const { accessToken, refreshToken: newRefreshToken } =
+        await this.generateTokens(tokenPayload);
+
+      return {
+        accessToken,
+        refreshToken: newRefreshToken,
+      };
+    } catch (error) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
+  /**
+   * Logout user and invalidate session
+   */
+  async logout(userId: string, sessionId: string) {
+    try {
+      // Find and validate session
+      const session = await this.sessionService.findOneForJwt(
+        userId,
+        sessionId,
+      );
+
+      if (!session) {
+        throw new BadRequestException('Session not found');
+      }
+
+      // Mark session as deleted
+      session.deletedAt = new Date().toISOString();
+      await session.save();
+
+      // Update user login status if this was the last active session
+      const user = session.user as any;
+      const activeSessions = user.sessions.filter(
+        (s: any) => !s.deletedAt && s._id.toString() !== sessionId,
+      );
+
+      if (activeSessions.length === 0) {
+        user.isLoggedIn = false;
+        await this.userService.saveUser(user);
+      }
+
+      return { message: 'Successfully logged out' };
+    } catch (error) {
+      throw new BadRequestException('Logout failed');
+    }
+  }
 }

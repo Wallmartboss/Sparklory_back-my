@@ -256,14 +256,14 @@ export class CartController {
   }
 
   @Post('apply-coupon')
-  @ApiOperation({ summary: 'Застосувати купон до корзини' })
+  @ApiOperation({ summary: 'Apply a coupon to the cart' })
   @ApiBody({ type: ApplyCouponDto })
-  @ApiResponse({ status: 200, description: 'Купон застосовано', type: CartDto })
+  @ApiResponse({ status: 200, description: 'Coupon applied', type: CartDto })
   async applyCoupon(
     @Req() req,
     @Body() body: ApplyCouponDto,
   ): Promise<CartDto> {
-    // Застосовує купон до кошику користувача
+    // Applies a coupon to the user's cart
     const cart = await this.cartService.applyCoupon(req.user.id, body.code);
     return {
       items: cart.items.map(item => ({
@@ -282,15 +282,15 @@ export class CartController {
   }
 
   @Post('apply-bonus')
-  @ApiOperation({ summary: 'Застосувати бонуси до кошику' })
+  @ApiOperation({ summary: 'Apply bonuses to the cart' })
   @ApiBody({ type: ApplyBonusDto })
   @ApiResponse({
     status: 200,
-    description: 'Бонуси застосовано',
+    description: 'Bonuses applied',
     type: CartDto,
   })
   async applyBonus(@Req() req, @Body() body: ApplyBonusDto): Promise<CartDto> {
-    // Застосовує бонуси до кошику користувача
+    // Applies bonuses to the user's cart
     const cart = await this.cartService.applyBonus(req.user.id, body.amount);
     return {
       items: cart.items.map(item => ({
