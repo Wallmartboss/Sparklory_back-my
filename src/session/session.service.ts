@@ -24,7 +24,7 @@ export class SessionService {
 
   async findOneForJwt(userId: string, sessionId: string) {
     const session = await this.sessionModel
-      .findOne({ _id: sessionId, user: userId })
+      .findOne({ _id: sessionId, user: userId, deletedAt: null })
       .populate('user')
       .exec();
 
