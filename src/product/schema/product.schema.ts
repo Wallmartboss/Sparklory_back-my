@@ -21,8 +21,8 @@ export class ProductVariant {
   size?: string;
 
   /** Stock quantity for this variant */
-  @Prop({ required: true, type: Number })
-  stock: number;
+  @Prop({ required: false, type: Number })
+  stock?: number;
 
   /** Price for this variant (optional, overrides product price if set) */
   @Prop({ required: false, type: Number })
@@ -59,8 +59,8 @@ export class Product {
   subcategory?: string[];
 
   /** Product gender (male, female, unisex, kids) */
-  @Prop({ type: String, enum: Gender, required: true })
-  gender: Gender;
+  @Prop({ type: String, enum: Gender, required: false })
+  gender?: Gender;
 
   /** Is engraving available */
   @Prop({ default: false })
@@ -119,8 +119,8 @@ export class Product {
   discountEnd: Date;
 
   /** Product variants (each with its own material, size, stock, price) */
-  @Prop({ type: [ProductVariantSchema], required: true })
-  variants: ProductVariant[];
+  @Prop({ type: [ProductVariantSchema], required: false })
+  variants?: ProductVariant[];
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
