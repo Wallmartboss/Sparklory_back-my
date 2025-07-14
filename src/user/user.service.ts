@@ -94,7 +94,7 @@ export class UserService {
     const user = await this.userModel.findOne({ email, emailVerifyCode: code });
 
     if (!user) {
-      throw new BadRequestException('Invalid token');
+      throw new BadRequestException('Invalid email verification code');
     }
 
     user.isVerifyEmail = true;
