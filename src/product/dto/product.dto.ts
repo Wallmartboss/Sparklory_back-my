@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsInt, IsOptional, Min } from 'class-validator';
 import { Gender } from '../../common/enum';
 import { ReviewDto } from './create-product.dto';
 
@@ -12,8 +13,16 @@ export class ProductVariantDto {
   size?: string;
 
   /** Stock quantity for this variant */
-  @ApiProperty({ example: 10, description: 'Stock quantity for this variant' })
-  stock: number;
+  @ApiProperty({
+    example: 10,
+    required: false,
+    description: 'Stock quantity for this variant',
+    name: 'inStock',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  inStock?: number;
 
   /** Price for this variant (optional, overrides product price if set) */
   @ApiProperty({

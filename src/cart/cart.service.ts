@@ -151,9 +151,9 @@ export class CartService {
 
     const requestedQuantity = quantity + (existingItem?.quantity || 0);
 
-    if (requestedQuantity > variant.stock) {
+    if (requestedQuantity > variant.inStock) {
       throw new Error(
-        `Insufficient stock. Available: ${variant.stock}, Requested: ${requestedQuantity}`,
+        `Insufficient stock. Available: ${variant.inStock}, Requested: ${requestedQuantity}`,
       );
     }
 
@@ -298,7 +298,7 @@ export class CartService {
       const product = await this.productModel.findById(item.product);
       if (!product) continue;
 
-      // Find the specific variant and update its stock
+      // Find the specific variant and update its inStock
       const variantIndex = product.variants.findIndex(
         v =>
           (!item.material || v.material === item.material) &&
@@ -307,7 +307,7 @@ export class CartService {
       );
 
       if (variantIndex !== -1) {
-        product.variants[variantIndex].stock -= item.quantity;
+        product.variants[variantIndex].inStock -= item.quantity;
         await product.save();
       }
     }

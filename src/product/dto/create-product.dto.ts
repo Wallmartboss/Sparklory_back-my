@@ -184,6 +184,18 @@ export class CreateProductDto {
   @ValidateNested({ each: true })
   @Type(() => ProductVariantDto)
   variants: ProductVariantDto[];
+
+  /** Product details (optional, array of strings) */
+  @ApiProperty({
+    example: ['Handmade', '925 Silver', 'Gift box included'],
+    required: false,
+    description: 'Product details (array of strings)',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  details?: string[];
 }
 
 export class UpdateProductDto extends PartialType(CreateProductDto) {

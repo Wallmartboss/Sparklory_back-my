@@ -22,7 +22,7 @@ export class ProductVariant {
 
   /** Stock quantity for this variant */
   @Prop({ required: false, type: Number })
-  stock?: number;
+  inStock?: number;
 
   /** Price for this variant (optional, overrides product price if set) */
   @Prop({ required: false, type: Number })
@@ -77,6 +77,10 @@ export class Product {
   /** Product reviews */
   @Prop({ type: [ReviewSchema], default: [] })
   reviews: Review[];
+
+  /** Product details (optional, array of strings) */
+  @Prop({ type: [String], required: false })
+  details?: string[];
 
   /** Collection name for grouping products */
   @ApiProperty({
