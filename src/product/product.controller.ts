@@ -26,10 +26,8 @@ import {
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { CreateProductDto, ReviewDto } from './dto/create-product.dto';
-import { ProductDto } from './dto/product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductService } from './product.service';
-import { Product } from './schema/product.schema';
 
 @ApiTags('Products')
 @Controller('products')
@@ -42,7 +40,50 @@ export class ProductController {
   @ApiResponse({
     status: 201,
     description: 'Product successfully created.',
-    type: Product,
+    schema: {
+      example: {
+        _id: '60f7c2b8e1d2c8001c8e4c1a',
+        name: 'Amethyst Earrings',
+        description: 'Earrings with white gold and amethysts',
+        category: 'earrings',
+        engraving: true,
+        image: ['12345678.jpg'],
+        action: ['Spring sale'],
+        prod_collection: 'Spring 2025',
+        discount: 30,
+        discountStart: '2025-07-10T00:00:00.000Z',
+        discountEnd: '2025-07-20T23:59:59.000Z',
+        subcategory: ['casual', 'sport'],
+        gender: 'unisex',
+        details: ['Handmade', '925 Silver', 'Gift box included'],
+        reviews: [
+          {
+            name: 'Ivan',
+            avatar: 'avatar123.jpg',
+            text: 'Great product!',
+            rating: 5,
+            createdAt: '20.10.2024',
+            image: ['reviewImage1.jpg'],
+          },
+        ],
+        variants: [
+          {
+            material: 'silver',
+            size: 'L',
+            price: 8000,
+            insert: 'Silver',
+            inStock: 7,
+          },
+          {
+            material: 'white gold',
+            size: 'M',
+            price: 12200,
+            insert: 'White Gold',
+            inStock: 5,
+          },
+        ],
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Bad request.' })
   async create(@Body() createProductDto: CreateProductDto) {
@@ -59,7 +100,52 @@ export class ProductController {
   @ApiResponse({
     status: 200,
     description: 'Returns all products.',
-    type: [ProductDto],
+    schema: {
+      example: [
+        {
+          _id: '60f7c2b8e1d2c8001c8e4c1a',
+          name: 'Amethyst Earrings',
+          description: 'Earrings with white gold and amethysts',
+          category: 'earrings',
+          engraving: true,
+          image: ['12345678.jpg'],
+          action: ['Spring sale'],
+          prod_collection: 'Spring 2025',
+          discount: 30,
+          discountStart: '2025-07-10T00:00:00.000Z',
+          discountEnd: '2025-07-20T23:59:59.000Z',
+          subcategory: ['casual', 'sport'],
+          gender: 'unisex',
+          details: ['Handmade', '925 Silver', 'Gift box included'],
+          reviews: [
+            {
+              name: 'Ivan',
+              avatar: 'avatar123.jpg',
+              text: 'Great product!',
+              rating: 5,
+              createdAt: '20.10.2024',
+              image: ['reviewImage1.jpg'],
+            },
+          ],
+          variants: [
+            {
+              material: 'silver',
+              size: 'L',
+              price: 8000,
+              insert: 'Silver',
+              inStock: 7,
+            },
+            {
+              material: 'white gold',
+              size: 'M',
+              price: 12200,
+              insert: 'White Gold',
+              inStock: 5,
+            },
+          ],
+        },
+      ],
+    },
   })
   @ApiQuery({
     name: 'limit',
@@ -82,7 +168,52 @@ export class ProductController {
   @ApiResponse({
     status: 200,
     description: 'Returns products by category.',
-    type: [Product],
+    schema: {
+      example: [
+        {
+          _id: '60f7c2b8e1d2c8001c8e4c1a',
+          name: 'Amethyst Earrings',
+          description: 'Earrings with white gold and amethysts',
+          category: 'earrings',
+          engraving: true,
+          image: ['12345678.jpg'],
+          action: ['Spring sale'],
+          prod_collection: 'Spring 2025',
+          discount: 30,
+          discountStart: '2025-07-10T00:00:00.000Z',
+          discountEnd: '2025-07-20T23:59:59.000Z',
+          subcategory: ['casual', 'sport'],
+          gender: 'unisex',
+          details: ['Handmade', '925 Silver', 'Gift box included'],
+          reviews: [
+            {
+              name: 'Ivan',
+              avatar: 'avatar123.jpg',
+              text: 'Great product!',
+              rating: 5,
+              createdAt: '20.10.2024',
+              image: ['reviewImage1.jpg'],
+            },
+          ],
+          variants: [
+            {
+              material: 'silver',
+              size: 'L',
+              price: 8000,
+              insert: 'Silver',
+              inStock: 7,
+            },
+            {
+              material: 'white gold',
+              size: 'M',
+              price: 12200,
+              insert: 'White Gold',
+              inStock: 5,
+            },
+          ],
+        },
+      ],
+    },
   })
   @ApiResponse({ status: 404, description: 'Not found.' })
   async findByCategory(@Param('category') category: string) {
@@ -104,7 +235,52 @@ export class ProductController {
   @ApiResponse({
     status: 200,
     description: 'Returns products by action.',
-    type: [Product],
+    schema: {
+      example: [
+        {
+          _id: '60f7c2b8e1d2c8001c8e4c1a',
+          name: 'Amethyst Earrings',
+          description: 'Earrings with white gold and amethysts',
+          category: 'earrings',
+          engraving: true,
+          image: ['12345678.jpg'],
+          action: ['Spring sale'],
+          prod_collection: 'Spring 2025',
+          discount: 30,
+          discountStart: '2025-07-10T00:00:00.000Z',
+          discountEnd: '2025-07-20T23:59:59.000Z',
+          subcategory: ['casual', 'sport'],
+          gender: 'unisex',
+          details: ['Handmade', '925 Silver', 'Gift box included'],
+          reviews: [
+            {
+              name: 'Ivan',
+              avatar: 'avatar123.jpg',
+              text: 'Great product!',
+              rating: 5,
+              createdAt: '20.10.2024',
+              image: ['reviewImage1.jpg'],
+            },
+          ],
+          variants: [
+            {
+              material: 'silver',
+              size: 'L',
+              price: 8000,
+              insert: 'Silver',
+              inStock: 7,
+            },
+            {
+              material: 'white gold',
+              size: 'M',
+              price: 12200,
+              insert: 'White Gold',
+              inStock: 5,
+            },
+          ],
+        },
+      ],
+    },
   })
   @ApiResponse({ status: 404, description: 'Not found.' })
   async findByAction(@Param('action') action: string) {
@@ -126,7 +302,52 @@ export class ProductController {
   @ApiResponse({
     status: 200,
     description: 'Returns all products with a discount.',
-    type: [ProductDto],
+    schema: {
+      example: [
+        {
+          _id: '60f7c2b8e1d2c8001c8e4c1a',
+          name: 'Amethyst Earrings',
+          description: 'Earrings with white gold and amethysts',
+          category: 'earrings',
+          engraving: true,
+          image: ['12345678.jpg'],
+          action: ['Spring sale'],
+          prod_collection: 'Spring 2025',
+          discount: 30,
+          discountStart: '2025-07-10T00:00:00.000Z',
+          discountEnd: '2025-07-20T23:59:59.000Z',
+          subcategory: ['casual', 'sport'],
+          gender: 'unisex',
+          details: ['Handmade', '925 Silver', 'Gift box included'],
+          reviews: [
+            {
+              name: 'Ivan',
+              avatar: 'avatar123.jpg',
+              text: 'Great product!',
+              rating: 5,
+              createdAt: '20.10.2024',
+              image: ['reviewImage1.jpg'],
+            },
+          ],
+          variants: [
+            {
+              material: 'silver',
+              size: 'L',
+              price: 8000,
+              insert: 'Silver',
+              inStock: 7,
+            },
+            {
+              material: 'white gold',
+              size: 'M',
+              price: 12200,
+              insert: 'White Gold',
+              inStock: 5,
+            },
+          ],
+        },
+      ],
+    },
   })
   async findDiscountedProducts() {
     return this.productService.findDiscounted();
@@ -148,7 +369,50 @@ export class ProductController {
   @ApiResponse({
     status: 200,
     description: 'Returns one product.',
-    type: Product,
+    schema: {
+      example: {
+        _id: '60f7c2b8e1d2c8001c8e4c1a',
+        name: 'Amethyst Earrings',
+        description: 'Earrings with white gold and amethysts',
+        category: 'earrings',
+        engraving: true,
+        image: ['12345678.jpg'],
+        action: ['Spring sale'],
+        prod_collection: 'Spring 2025',
+        discount: 30,
+        discountStart: '2025-07-10T00:00:00.000Z',
+        discountEnd: '2025-07-20T23:59:59.000Z',
+        subcategory: ['casual', 'sport'],
+        gender: 'unisex',
+        details: ['Handmade', '925 Silver', 'Gift box included'],
+        reviews: [
+          {
+            name: 'Ivan',
+            avatar: 'avatar123.jpg',
+            text: 'Great product!',
+            rating: 5,
+            createdAt: '20.10.2024',
+            image: ['reviewImage1.jpg'],
+          },
+        ],
+        variants: [
+          {
+            material: 'silver',
+            size: 'L',
+            price: 8000,
+            insert: 'Silver',
+            inStock: 7,
+          },
+          {
+            material: 'white gold',
+            size: 'M',
+            price: 12200,
+            insert: 'White Gold',
+            inStock: 5,
+          },
+        ],
+      },
+    },
   })
   @ApiResponse({ status: 404, description: 'Not found.' })
   async findOne(@Param('id') id: string) {
@@ -157,10 +421,80 @@ export class ProductController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update product' })
+  @ApiBody({
+    description: 'Product update data',
+    required: true,
+    schema: {
+      example: {
+        name: 'Updated Amethyst Earrings',
+        discount: 25,
+        details: ['Limited edition', 'Handmade'],
+        variants: [
+          {
+            material: 'silver',
+            size: 'L',
+            price: 8500,
+            insert: 'Silver',
+            inStock: 10,
+          },
+          {
+            material: 'white gold',
+            size: 'M',
+            price: 13000,
+            insert: 'White Gold',
+            inStock: 6,
+          },
+        ],
+      },
+    },
+  })
   @ApiResponse({
     status: 200,
     description: 'Product successfully updated.',
-    type: Product,
+    schema: {
+      example: {
+        _id: '60f7c2b8e1d2c8001c8e4c1a',
+        name: 'Amethyst Earrings',
+        description: 'Earrings with white gold and amethysts',
+        category: 'earrings',
+        engraving: true,
+        image: ['12345678.jpg'],
+        action: ['Spring sale'],
+        prod_collection: 'Spring 2025',
+        discount: 30,
+        discountStart: '2025-07-10T00:00:00.000Z',
+        discountEnd: '2025-07-20T23:59:59.000Z',
+        subcategory: ['casual', 'sport'],
+        gender: 'unisex',
+        details: ['Handmade', '925 Silver', 'Gift box included'],
+        reviews: [
+          {
+            name: 'Ivan',
+            avatar: 'avatar123.jpg',
+            text: 'Great product!',
+            rating: 5,
+            createdAt: '20.10.2024',
+            image: ['reviewImage1.jpg'],
+          },
+        ],
+        variants: [
+          {
+            material: 'silver',
+            size: 'L',
+            price: 8000,
+            insert: 'Silver',
+            inStock: 7,
+          },
+          {
+            material: 'white gold',
+            size: 'M',
+            price: 12200,
+            insert: 'White Gold',
+            inStock: 5,
+          },
+        ],
+      },
+    },
   })
   @ApiResponse({ status: 404, description: 'Not found.' })
   async update(
@@ -180,7 +514,50 @@ export class ProductController {
   @ApiResponse({
     status: 200,
     description: 'Product successfully deleted.',
-    type: Product,
+    schema: {
+      example: {
+        _id: '60f7c2b8e1d2c8001c8e4c1a',
+        name: 'Amethyst Earrings',
+        description: 'Earrings with white gold and amethysts',
+        category: 'earrings',
+        engraving: true,
+        image: ['12345678.jpg'],
+        action: ['Spring sale'],
+        prod_collection: 'Spring 2025',
+        discount: 30,
+        discountStart: '2025-07-10T00:00:00.000Z',
+        discountEnd: '2025-07-20T23:59:59.000Z',
+        subcategory: ['casual', 'sport'],
+        gender: 'unisex',
+        details: ['Handmade', '925 Silver', 'Gift box included'],
+        reviews: [
+          {
+            name: 'Ivan',
+            avatar: 'avatar123.jpg',
+            text: 'Great product!',
+            rating: 5,
+            createdAt: '20.10.2024',
+            image: ['reviewImage1.jpg'],
+          },
+        ],
+        variants: [
+          {
+            material: 'silver',
+            size: 'L',
+            price: 8000,
+            insert: 'Silver',
+            inStock: 7,
+          },
+          {
+            material: 'white gold',
+            size: 'M',
+            price: 12200,
+            insert: 'White Gold',
+            inStock: 5,
+          },
+        ],
+      },
+    },
   })
   @ApiResponse({ status: 404, description: 'Not found.' })
   async remove(@Param('id') id: string) {
