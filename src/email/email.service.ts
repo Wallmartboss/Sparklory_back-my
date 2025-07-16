@@ -144,4 +144,41 @@ export class EmailService {
     });
     this.logger.log(`Payment result email sent to ${email}`);
   }
+
+  async sendProductInStock(email: string, product: any): Promise<void> {
+    const subject = 'Product is back in stock!';
+    const html = `
+      <p>Hello!</p>
+      <p>The product <b>${product.name}</b> is now available in our store.</p>
+      <p><a href="${this.configService.get('FRONTEND_URL', 'http://localhost:3000')}/product/${product._id}">View product</a></p>
+      <br/>
+      <p>Best regards,<br/>Your Sparklory</p>
+    `;
+    await this.transporter.sendMail({
+      from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
+      to: email,
+      subject,
+      html,
+    });
+    this.logger.log(`Product in stock notification sent to ${email}`);
+  }
+
+  async sendSubscriptionCreated(email: string, product: any): Promise<void> {
+    const subject = 'Subscription created: product back in stock';
+    const html = `
+      <p>Hello!</p>
+      <p>You have successfully subscribed to notifications for the product <b>${product.name}</b>.</p>
+      <p>We will notify you as soon as it is back in stock.</p>
+      <p><a href="${this.configService.get('FRONTEND_URL', 'http://localhost:3000')}/product/${product._id}">View product</a></p>
+      <br/>
+      <p>Best regards,<br/>Your Sparklory</p>
+    `;
+    await this.transporter.sendMail({
+      from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
+      to: email,
+      subject,
+      html,
+    });
+    this.logger.log(`Subscription created email sent to ${email}`);
+  }
 }
