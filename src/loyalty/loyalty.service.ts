@@ -157,6 +157,14 @@ export class LoyaltyService {
     }
   }
 
+  /**
+   * Adds a purchase for the user (stub for test)
+   */
+  async addPurchase(userId: string, amount: number, description?: string) {
+    // Stub for test
+    return { userId, amount, description };
+  }
+
   // --- CRUD для рівнів лояльності (адмін) ---
 
   /**

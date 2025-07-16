@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Types } from 'mongoose';
+import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { CartController } from './cart.controller';
 import { CartService } from './cart.service';
 
@@ -39,7 +40,10 @@ describe('CartController', () => {
           useValue: mockCartService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .compile();
 
     controller = module.get<CartController>(CartController);
   });
@@ -53,32 +57,49 @@ describe('CartController', () => {
 
   describe('addItem', () => {
     it('should add item to cart', async () => {
-      const cartId = new Types.ObjectId().toString();
-      const productId = new Types.ObjectId().toString();
-      const quantity = 1;
+      const req = { user: { id: 'userId' } };
+      const addToCartDto = {
+        productId: 'productId',
+        quantity: 1,
+        size: '17.5',
+        material: 'gold',
+        insert: 'diamond',
+      };
       mockCartService.addItem.mockResolvedValue(mockCart);
 
-      const result = await controller.addItem(cartId, productId, quantity);
+      const result = await controller.addItem(req, addToCartDto);
       expect(result).toBe(mockCart);
       expect(mockCartService.addItem).toHaveBeenCalledWith(
-        cartId,
-        productId,
-        quantity,
+        'userId',
+        undefined,
+        'productId',
+        1,
+        '17.5',
+        'gold',
+        'diamond',
       );
     });
   });
 
   describe('removeItem', () => {
     it('should remove item from cart', async () => {
-      const cartId = new Types.ObjectId().toString();
-      const productId = new Types.ObjectId().toString();
+      const req = { user: { id: 'userId' } };
+      const removeFromCartDto = {
+        productId: 'productId',
+        size: '17.5',
+        material: 'gold',
+        insert: 'diamond',
+      };
       mockCartService.removeItem.mockResolvedValue(mockCart);
 
-      const result = await controller.removeItem(cartId, productId);
+      const result = await controller.removeItem(req, removeFromCartDto);
       expect(result).toBe(mockCart);
       expect(mockCartService.removeItem).toHaveBeenCalledWith(
-        cartId,
-        productId,
+        'userId',
+        'productId',
+        '17.5',
+        'gold',
+        'diamond',
       );
     });
   });
