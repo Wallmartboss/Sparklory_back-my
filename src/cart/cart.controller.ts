@@ -104,6 +104,19 @@ export class CartController {
   @UseGuards(JwtAuthGuard)
   @Post('remove')
   @ApiOperation({ summary: 'Remove an item from the cart' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['productId'],
+      properties: {
+        productId: { type: 'string', example: '60d21b4667d0d8992e610c85' },
+        size: { type: 'string', example: '17.5', description: 'optional' },
+        material: { type: 'string', example: 'gold', description: 'optional' },
+        insert: { type: 'string', example: 'diamond', description: 'optional' },
+      },
+      description: 'For authenticated users',
+    },
+  })
   @ApiResponse({
     status: 200,
     description: 'The item has been successfully removed from the cart.',
