@@ -53,6 +53,10 @@ export class CreatePaymentUserDto {
   amount: number;
 }
 
+/**
+ * DTO for creating a payment for a guest (user is not required).
+ * guestId is required, user is not used.
+ */
 export class CreatePaymentGuestDto extends CreatePaymentUserDto {
   @ApiProperty({
     example: 'c0a8012e-7b2a-4c1a-9e2a-123456789abc',
@@ -65,7 +69,8 @@ export class CreatePaymentGuestDto extends CreatePaymentUserDto {
   @ApiProperty({
     type: GuestContactInfoDto,
     required: false,
-    description: 'Guest contact information',
+    description:
+      'Guest contact information (user is not required for guest payments)',
   })
   @IsOptional()
   @ValidateNested()

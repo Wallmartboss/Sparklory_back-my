@@ -69,7 +69,6 @@ export class CartController {
         addToCartDto.size,
         addToCartDto.material,
         addToCartDto.insert,
-        undefined,
       );
     } catch (error) {
       if (error.message.includes('Product not found')) {
@@ -166,6 +165,18 @@ export class CartController {
     summary:
       'Add an item to the guest cart (price is calculated automatically, including discount if active)',
   })
+  @ApiBody({
+    schema: {
+      example: {
+        productId: '60d21b4667d0d8992e610c85',
+        quantity: 1,
+        size: '17.5',
+        material: 'gold',
+        insert: 'diamond',
+        guestId: 'c0a8012e-7b2a-4c1a-9e2a-123456789abc',
+      },
+    },
+  })
   @ApiResponse({
     status: 201,
     description:
@@ -200,7 +211,6 @@ export class CartController {
         addToCartDto.size,
         addToCartDto.material,
         addToCartDto.insert,
-        addToCartDto.email,
       );
     } catch (error) {
       if (error.message.includes('Product not found')) {
@@ -239,6 +249,22 @@ export class CartController {
 
   @Post('clear-guest')
   @ApiOperation({ summary: 'Clear the guest cart' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['guestId'],
+      properties: {
+        guestId: {
+          type: 'string',
+          example: 'c0a8012e-7b2a-4c1a-9e2a-123456789abc',
+          description: 'Guest cart/session ID',
+        },
+      },
+      example: {
+        guestId: 'c0a8012e-7b2a-4c1a-9e2a-123456789abc',
+      },
+    },
+  })
   @ApiResponse({
     status: 200,
     description: 'The guest cart has been successfully cleared.',

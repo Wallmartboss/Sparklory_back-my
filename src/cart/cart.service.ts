@@ -105,12 +105,8 @@ export class CartService {
     size?: string,
     material?: string,
     insert?: string,
-    email?: string,
   ) {
     const cart = await this.getOrCreateCart(userId, guestId);
-    if (!userId && guestId && email && !cart.email) {
-      cart.email = email;
-    }
 
     // Get product and find the specific variant
     const product = await this.productModel.findById(productId);
@@ -173,7 +169,12 @@ export class CartService {
       });
     }
 
-    return cart.save();
+    const savedCart = await cart.save();
+    if (!userId && guestId) {
+      await this.recalculateTotals(savedCart);
+      await savedCart.save();
+    }
+    return savedCart;
   }
 
   async removeItem(

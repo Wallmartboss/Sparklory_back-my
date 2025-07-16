@@ -41,18 +41,30 @@ describe('ProductController', () => {
         name: 'Test Product',
         description: 'Test Description',
         category: 'Test Category',
-        material: 'Test Material',
         engraving: false,
-        price: 100,
         image: ['Test Image'],
-        inStock: true,
+        action: ['Test Action'],
+        prod_collection: 'Test Collection',
+        discount: 10,
+        discountStart: new Date('2025-01-01T00:00:00.000Z'),
+        discountEnd: new Date('2025-01-10T00:00:00.000Z'),
+        subcategory: ['sub1'],
+        gender: 'unisex',
+        details: ['Handmade'],
+        reviews: [],
+        variants: [
+          {
+            material: 'silver',
+            size: 'L',
+            price: 100,
+            insert: 'Silver',
+            inStock: 5,
+          },
+        ],
       };
       const result = {
         id: '1',
         ...dto,
-        image: ['Test Image'],
-        action: '',
-        reviews: [],
       };
       jest.spyOn(productService, 'create').mockResolvedValue(result);
       expect(await productController.create(dto)).toBe(result);
@@ -74,13 +86,26 @@ describe('ProductController', () => {
           name: 'Test Product',
           description: 'Test Description',
           category: 'Test Category',
-          material: 'Test Material',
           engraving: false,
-          price: 100,
           image: ['Test Image'],
-          inStock: true,
-          action: '',
+          action: ['Test Action'],
+          prod_collection: 'Test Collection',
+          discount: 10,
+          discountStart: new Date('2025-01-01T00:00:00.000Z'),
+          discountEnd: new Date('2025-01-10T00:00:00.000Z'),
+          subcategory: ['sub1'],
+          gender: 'unisex',
+          details: ['Handmade'],
           reviews: [],
+          variants: [
+            {
+              material: 'silver',
+              size: 'L',
+              price: 100,
+              insert: 'Silver',
+              inStock: 5,
+            },
+          ],
         },
       ];
       jest.spyOn(productService, 'findByCategory').mockResolvedValue(result);
@@ -96,13 +121,26 @@ describe('ProductController', () => {
         name: 'Test Product',
         description: 'Test Description',
         category: 'Test Category',
-        material: 'Test Material',
         engraving: false,
-        price: 100,
         image: ['Test Image'],
-        inStock: true,
-        action: '',
+        action: ['Test Action'],
+        prod_collection: 'Test Collection',
+        discount: 10,
+        discountStart: new Date('2025-01-01T00:00:00.000Z'),
+        discountEnd: new Date('2025-01-10T00:00:00.000Z'),
+        subcategory: ['sub1'],
+        gender: 'unisex',
+        details: ['Handmade'],
         reviews: [],
+        variants: [
+          {
+            material: 'silver',
+            size: 'L',
+            price: 100,
+            insert: 'Silver',
+            inStock: 5,
+          },
+        ],
       };
       jest.spyOn(productService, 'findOne').mockResolvedValue(result);
       expect(await productController.findOne(id)).toBe(result);
@@ -112,19 +150,42 @@ describe('ProductController', () => {
   describe('update', () => {
     it('should call productService.update and return an updated product', async () => {
       const id = '1';
-      const dto: UpdateProductDto = { price: 150 };
+      const dto: UpdateProductDto = {
+        variants: [
+          {
+            material: 'silver',
+            size: 'L',
+            price: 150,
+            insert: 'Silver',
+            inStock: 5,
+          },
+        ],
+      };
       const result = {
         id: '1',
         name: 'Test Product',
         description: 'Test Description',
         category: 'Test Category',
-        material: 'Test Material',
         engraving: false,
-        price: 150,
         image: ['Test Image'],
-        inStock: true,
-        action: '',
+        action: ['Test Action'],
+        prod_collection: 'Test Collection',
+        discount: 10,
+        discountStart: new Date('2025-01-01T00:00:00.000Z'),
+        discountEnd: new Date('2025-01-10T00:00:00.000Z'),
+        subcategory: ['sub1'],
+        gender: 'unisex',
+        details: ['Handmade'],
         reviews: [],
+        variants: [
+          {
+            material: 'silver',
+            size: 'L',
+            price: 150,
+            insert: 'Silver',
+            inStock: 5,
+          },
+        ],
       };
       jest.spyOn(productService, 'update').mockResolvedValue(result);
       expect(await productController.update(id, dto)).toBe(result);
@@ -139,13 +200,26 @@ describe('ProductController', () => {
         name: 'Test Product',
         description: 'Test Description',
         category: 'Test Category',
-        material: 'Test Material',
         engraving: false,
-        price: 100,
         image: ['Test Image'],
-        inStock: true,
-        action: '',
+        action: ['Test Action'],
+        prod_collection: 'Test Collection',
+        discount: 10,
+        discountStart: new Date('2025-01-01T00:00:00.000Z'),
+        discountEnd: new Date('2025-01-10T00:00:00.000Z'),
+        subcategory: ['sub1'],
+        gender: 'unisex',
+        details: ['Handmade'],
         reviews: [],
+        variants: [
+          {
+            material: 'silver',
+            size: 'L',
+            price: 100,
+            insert: 'Silver',
+            inStock: 5,
+          },
+        ],
       };
       jest.spyOn(productService, 'remove').mockResolvedValue(result);
       expect(await productController.remove(id)).toBe(result);

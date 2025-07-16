@@ -124,6 +124,8 @@ export class PaymentService {
       cart = await this.cartService.getOrCreateCart(userId, undefined);
     } else if ('guestId' in dto && dto.guestId) {
       cart = await this.cartService.getOrCreateCart(undefined, dto.guestId);
+      await this.cartService.recalculateTotals(cart);
+      await cart.save();
     } else {
       throw new Error('UserId or guestId must be provided');
     }
