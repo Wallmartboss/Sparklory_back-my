@@ -4,10 +4,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CategoryService } from '../category/category.service';
+import { EmailService } from '../email/email.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import {
+  ProductSubscription,
+  ProductSubscriptionDocument,
+} from './schema/product-subscription.schema';
 import { Product, ProductDocument } from './schema/product.schema';
 
 // Add type for pagination parameters
@@ -27,7 +32,10 @@ interface ReviewPaginationResult {
 export class ProductService {
   constructor(
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+    @InjectModel(ProductSubscription.name)
+    private subscriptionModel: Model<ProductSubscriptionDocument>,
     private categoryService: CategoryService,
+    private readonly emailService: EmailService,
   ) {}
 
   async create(createProductDto: CreateProductDto): Promise<Product> {
@@ -117,6 +125,26 @@ export class ProductService {
     return updatedProduct;
   }
 
+  async updateProductStock(productId: string, newStock: number) {
+    const product = await this.productModel.findById(productId);
+    if (!product) return null;
+    // Check if all variants were out of stock before update
+    const wasOutOfStock = product.variants.every(v => (v.inStock ?? 0) <= 0);
+    // Update stock for the first variant (example)
+    if (product.variants && product.variants.length > 0) {
+      product.variants[0].inStock = newStock;
+    }
+    await product.save();
+    // If it was out of stock and now is in stock — notify subscribers
+    const isNowInStock = product.variants.some(v => (v.inStock ?? 0) > 0);
+    if (wasOutOfStock && isNowInStock) {
+      await this.notifySubscribers(productId, (email, prod) =>
+        this.emailService.sendProductInStock(email, prod),
+      );
+    }
+    return product;
+  }
+
   async remove(id: string): Promise<Product> {
     const deletedProduct = await this.productModel.findByIdAndDelete(id).exec();
     if (!deletedProduct) {
@@ -192,5 +220,78 @@ export class ProductService {
    */
   async findDiscounted(): Promise<Product[]> {
     return this.productModel.find({ discount: { $gt: 0 } }).exec();
+  }
+
+  /**
+   * Creates a subscription for product back-in-stock notification
+   */
+  async createSubscription(productId: string, email: string) {
+    // Check for existing active subscription
+    const existing = await this.subscriptionModel.findOne({
+      productId: new Types.ObjectId(productId),
+      email,
+      notified: false,
+    });
+    if (existing) {
+      return { message: 'Already subscribed' };
+    }
+    await this.subscriptionModel.create({
+      productId: new Types.ObjectId(productId),
+      email,
+      notified: false,
+    });
+    const product = await this.productModel.findById(productId);
+    if (product) {
+      try {
+        await this.emailService.sendSubscriptionCreated(email, product);
+      } catch (err) {
+        // Optionally log error if needed
+      }
+    }
+    return { message: 'Subscription created' };
+  }
+
+  /**
+   * Notifies all subscribers when product is back in stock
+   */
+  async notifySubscribers(
+    productId: string,
+    sendEmail: (email: string, product: Product) => Promise<void>,
+  ) {
+    const product = await this.productModel.findById(productId);
+    if (!product) return;
+    const subs = await this.subscriptionModel.find({
+      productId: new Types.ObjectId(productId),
+      notified: false,
+    });
+    for (const sub of subs) {
+      await sendEmail(sub.email, product);
+      sub.notified = true;
+      await sub.save();
+    }
+    return { notified: subs.length };
+  }
+
+  /**
+   * Returns all product subscriptions
+   */
+  async getAllSubscriptions() {
+    return this.subscriptionModel.find().lean();
+  }
+
+  /**
+   * Find up to 3 products by their IDs for comparison
+   */
+  async findProductsByIds(productIds: string[]): Promise<Product[]> {
+    if (
+      !Array.isArray(productIds) ||
+      productIds.length === 0 ||
+      productIds.length > 3
+    ) {
+      throw new BadRequestException('You must provide 1 to 3 product IDs.');
+    }
+    // Convert to ObjectId
+    const ids = productIds.map(id => new Types.ObjectId(id));
+    return this.productModel.find({ _id: { $in: ids } }).exec();
   }
 }
