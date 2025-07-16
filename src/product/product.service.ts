@@ -224,22 +224,27 @@ export class ProductService {
 
   /**
    * Creates a subscription for product back-in-stock notification
+   * If userId is provided, saves it in the subscription
    */
-  async createSubscription(productId: string, email: string) {
+  async createSubscription(productId: string, email: string, userId?: string) {
     // Check for existing active subscription
-    const existing = await this.subscriptionModel.findOne({
+    const query: any = {
       productId: new Types.ObjectId(productId),
       email,
       notified: false,
-    });
+    };
+    if (userId) query.userId = new Types.ObjectId(userId);
+    const existing = await this.subscriptionModel.findOne(query);
     if (existing) {
       return { message: 'Already subscribed' };
     }
-    await this.subscriptionModel.create({
+    const subData: any = {
       productId: new Types.ObjectId(productId),
       email,
       notified: false,
-    });
+    };
+    if (userId) subData.userId = new Types.ObjectId(userId);
+    await this.subscriptionModel.create(subData);
     const product = await this.productModel.findById(productId);
     if (product) {
       try {
@@ -293,5 +298,46 @@ export class ProductService {
     // Convert to ObjectId
     const ids = productIds.map(id => new Types.ObjectId(id));
     return this.productModel.find({ _id: { $in: ids } }).exec();
+  }
+
+  /**
+   * Get all product subscriptions for a specific email
+   */
+  async getSubscriptionsByEmail(email: string) {
+    return this.subscriptionModel.find({ email }).lean();
+  }
+
+  /**
+   * Get all product subscriptions for a specific user
+   */
+  async getSubscriptionsByUser(userId: string) {
+    return this.subscriptionModel
+      .find({ userId: new Types.ObjectId(userId) })
+      .lean();
+  }
+
+  /**
+   * Unsubscribe (delete subscription) by subscription ID
+   */
+  async unsubscribe(id: string) {
+    const result = await this.subscriptionModel.findByIdAndDelete(id);
+    if (!result) {
+      throw new NotFoundException('Subscription not found');
+    }
+    return { message: 'Unsubscribed successfully' };
+  }
+
+  /**
+   * Unsubscribe (delete subscription) by subscription ID and userId
+   */
+  async unsubscribeByUser(id: string, userId: string) {
+    const result = await this.subscriptionModel.findOneAndDelete({
+      _id: id,
+      userId: new Types.ObjectId(userId),
+    });
+    if (!result) {
+      throw new NotFoundException('Subscription not found');
+    }
+    return { message: 'Unsubscribed successfully' };
   }
 }
