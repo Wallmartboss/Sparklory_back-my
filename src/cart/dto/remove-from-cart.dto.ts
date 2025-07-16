@@ -1,6 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
+/**
+ * DTO for removing an item from the cart.
+ * guestId should be provided only for guest users. For authenticated users, do not send guestId.
+ */
 export class RemoveFromCartDto {
   @ApiProperty({
     description: 'The ID of the product to remove from the cart',
@@ -40,7 +44,8 @@ export class RemoveFromCartDto {
   @ApiProperty({
     example: 'c0a8012e-7b2a-4c1a-9e2a-123456789abc',
     required: false,
-    description: 'Guest cart/session ID',
+    description:
+      'Guest cart/session ID (should be provided only for guests, not for authenticated users)',
   })
   @IsOptional()
   @IsString()
