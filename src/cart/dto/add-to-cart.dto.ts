@@ -31,6 +31,10 @@ export class AddToCartDto {
   insert?: string;
 }
 
+/**
+ * DTO for adding an item to the guest cart.
+ * Only guestId is required in addition to product parameters.
+ */
 export class AddToCartGuestDto extends AddToCartDto {
   @ApiProperty({
     example: 'c0a8012e-7b2a-4c1a-9e2a-123456789abc',
@@ -40,13 +44,4 @@ export class AddToCartGuestDto extends AddToCartDto {
   @IsString()
   @IsNotEmpty()
   guestId: string;
-
-  @ApiProperty({
-    example: 'guest@example.com',
-    required: false,
-    description: 'Guest email',
-  })
-  @IsOptional()
-  @IsString()
-  email?: string;
 }

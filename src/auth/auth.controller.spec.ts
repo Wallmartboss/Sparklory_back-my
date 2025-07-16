@@ -1,6 +1,7 @@
 import { Role } from '@/common/enum/user.enum';
 import { DeviceService } from '@/device/device.service';
 import { EmailService } from '@/email/email.service';
+import { ProductService } from '@/product/product.service';
 import { SessionService } from '@/session/session.service';
 import { CreateUserDto } from '@/user/dto/create-user.dto';
 import { User } from '@/user/schema/user.schema';
@@ -86,6 +87,11 @@ describe('UserService', () => {
             create: jest.fn().mockResolvedValue({ id: 'newSessionId' } as any),
           },
         },
+        { provide: getModelToken('Session'), useValue: {} },
+        { provide: getModelToken('Device'), useValue: {} },
+        { provide: getModelToken('LoyaltyAccount'), useValue: {} },
+        { provide: getModelToken('LoyaltyLevel'), useValue: {} },
+        { provide: ProductService, useValue: {} },
       ],
     }).compile();
 

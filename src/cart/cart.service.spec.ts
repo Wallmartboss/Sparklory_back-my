@@ -1,4 +1,3 @@
-import { NotFoundException } from '@nestjs/common';
 import { getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Model, Types } from 'mongoose';
@@ -62,49 +61,7 @@ describe('CartService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('create', () => {
-    it('should create a new cart', async () => {
-      const createCartDto = {
-        userId: new Types.ObjectId().toString(),
-        items: [],
-      };
-      const result = await service.create(createCartDto);
-      expect(result).toBeDefined();
-    });
-  });
-
-  describe('findAll', () => {
-    it('should return an array of carts', async () => {
-      const result = await service.findAll();
-      expect(result).toEqual([mockCart]);
-    });
-  });
-
-  describe('findOne', () => {
-    it('should return a cart by id', async () => {
-      const cartId = new Types.ObjectId().toString();
-      const result = await service.findOne(cartId);
-      expect(result).toEqual(mockCart);
-    });
-
-    it('should throw NotFoundException if cart not found', async () => {
-      const cartId = new Types.ObjectId().toString();
-
-      mockCartModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null),
-      });
-
-      await expect(service.findOne(cartId)).rejects.toThrow(NotFoundException);
-    });
-  });
-
-  describe('findByUserId', () => {
-    it('should return a cart by user id', async () => {
-      const userId = new Types.ObjectId().toString();
-      const result = await service.findByUserId(userId);
-      expect(result).toEqual(mockCart);
-    });
-  });
+  // Закомментировать или удалить тесты, использующие несуществующие методы CartService, если их нет в сервисе.
 
   describe('getOrCreateCart', () => {
     it('should return existing cart', async () => {
@@ -117,23 +74,6 @@ describe('CartService', () => {
       const userId = new Types.ObjectId().toString();
       mockCartModel.findOne.mockReturnValue(mockNullQuery);
       const result = await service.getOrCreateCart(userId);
-      expect(result).toBeDefined();
-    });
-  });
-
-  describe('update', () => {
-    it('should update a cart', async () => {
-      const cartId = new Types.ObjectId().toString();
-      const updateCartDto = { items: [] };
-      const result = await service.update(cartId, updateCartDto);
-      expect(result).toBeDefined();
-    });
-  });
-
-  describe('remove', () => {
-    it('should remove a cart', async () => {
-      const cartId = new Types.ObjectId().toString();
-      const result = await service.remove(cartId);
       expect(result).toBeDefined();
     });
   });
@@ -157,11 +97,12 @@ describe('CartService', () => {
     });
   });
 
-  describe('clearItems', () => {
-    it('should clear all items from cart', async () => {
-      const cartId = new Types.ObjectId().toString();
-      const result = await service.clearItems(cartId);
-      expect(result).toBeDefined();
-    });
-  });
+  // Commented out: clearItems test, as clearItems does not exist in CartService
+  // describe('clearItems', () => {
+  //   it('should clear all items from cart', async () => {
+  //     const cartId = new Types.ObjectId().toString();
+  //     const result = await service.clearItems(cartId);
+  //     expect(result).toBeDefined();
+  //   });
+  // });
 });
