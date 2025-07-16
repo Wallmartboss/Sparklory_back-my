@@ -12,10 +12,12 @@ import {
   Query,
   Req,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiOperation,
@@ -25,6 +27,8 @@ import {
 } from '@nestjs/swagger';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { JwtAuthGuard } from '../auth/guards/jwt.guard';
+import { UserDecorator } from '../common/decorators/user.decorator';
 import { CreateProductDto, ReviewDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductService } from './product.service';
@@ -516,7 +520,9 @@ export class ProductController {
   }
 
   @Post('subscribe')
-  @ApiOperation({ summary: 'Subscribe to product back-in-stock notification' })
+  @ApiOperation({
+    summary: 'Subscribe to product back-in-stock notification (guest)',
+  })
   @ApiBody({
     description: 'Subscription data',
     required: true,
@@ -541,11 +547,58 @@ export class ProductController {
       example: { message: 'productId and email are required' },
     },
   })
-  async subscribeToProduct(@Body() body: { productId: string; email: string }) {
+  async subscribeToProductGuest(
+    @Body() body: { productId: string; email: string },
+  ) {
     if (!body.productId || !body.email) {
       return { message: 'productId and email are required' };
     }
     return this.productService.createSubscription(body.productId, body.email);
+  }
+
+  @Post('subscribe/auth')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary:
+      'Subscribe to product back-in-stock notification (authorized user)',
+  })
+  @ApiBody({
+    description: 'Subscription data',
+    required: true,
+    schema: {
+      example: {
+        productId: '60f7c2b8e1d2c8001c8e4c1a',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Subscription created or already exists',
+    schema: {
+      example: { message: 'Subscription created' },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Missing productId',
+    schema: {
+      example: { message: 'productId is required' },
+    },
+  })
+  async subscribeToProductAuth(
+    @Body() body: { productId: string },
+    @UserDecorator('sub') userId: string,
+    @UserDecorator('email') email: string,
+  ) {
+    if (!body.productId) {
+      return { message: 'productId is required' };
+    }
+    return this.productService.createSubscription(
+      body.productId,
+      email,
+      userId,
+    );
   }
 
   @Get('subscriptions')
@@ -567,6 +620,52 @@ export class ProductController {
   })
   async getAllSubscriptions() {
     return this.productService.getAllSubscriptions();
+  }
+
+  @Get('subscriptions/user')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Get all product subscriptions for the current user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all product subscriptions for the current user',
+    schema: {
+      example: [
+        {
+          _id: '661f1b2c8f1b2a001e8e4c1a',
+          productId: '60f7c2b8e1d2c8001c8e4c1a',
+          email: 'user@example.com',
+          userId: '661f1b2c8f1b2a001e8e4c1b',
+          notified: false,
+          createdAt: '2024-05-01T12:00:00.000Z',
+        },
+      ],
+    },
+  })
+  async getSubscriptionsByUser(@UserDecorator('sub') userId: string) {
+    return this.productService.getSubscriptionsByUser(userId);
+  }
+
+  @Delete('subscriptions/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary:
+      'Unsubscribe from product notifications by subscription ID (only for current user)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription deleted',
+    schema: { example: { message: 'Unsubscribed successfully' } },
+  })
+  @ApiResponse({ status: 404, description: 'Subscription not found' })
+  async unsubscribe(
+    @Param('id') id: string,
+    @UserDecorator('sub') userId: string,
+  ) {
+    return this.productService.unsubscribeByUser(id, userId);
   }
 
   @Get(':id')

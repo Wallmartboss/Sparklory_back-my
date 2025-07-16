@@ -18,6 +18,10 @@ export class ProductSubscription {
   @Prop({ default: false })
   notified: boolean;
 
+  /** User ID who created the subscription (optional) */
+  @Prop({ type: Types.ObjectId, ref: 'User', required: false })
+  userId?: Types.ObjectId;
+
   /** Subscription creation date (auto) */
   @Prop({ type: Date, default: Date.now })
   createdAt?: Date;
