@@ -67,6 +67,21 @@ export class LoyaltyController {
     return this.loyaltyService.addCard(userId, dto.cardNumber);
   }
 
+  /**
+   * Adds a purchase to the user's history (for test/demo purposes)
+   */
+  @Post('add-purchase')
+  async addPurchase(
+    @UserDecorator('_id') userId: string,
+    @Body() body: { amount: number; description?: string },
+  ) {
+    return this.loyaltyService.addPurchase(
+      userId,
+      body.amount,
+      body.description,
+    );
+  }
+
   // --- Admin endpoints ---
 
   /**

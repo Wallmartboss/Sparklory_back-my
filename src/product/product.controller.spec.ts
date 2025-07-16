@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Gender } from '../common/enum/user.enum';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductController } from './product.controller';
@@ -49,7 +50,7 @@ describe('ProductController', () => {
         discountStart: new Date('2025-01-01T00:00:00.000Z'),
         discountEnd: new Date('2025-01-10T00:00:00.000Z'),
         subcategory: ['sub1'],
-        gender: 'unisex',
+        gender: Gender.Unisex,
         details: ['Handmade'],
         reviews: [],
         variants: [
@@ -65,6 +66,13 @@ describe('ProductController', () => {
       const result = {
         id: '1',
         ...dto,
+        image: dto.image ?? [],
+        action: dto.action ?? [],
+        reviews: [],
+        prod_collection: dto.prod_collection ?? '',
+        discount: dto.discount ?? 0,
+        discountStart: dto.discountStart ?? new Date(0),
+        discountEnd: dto.discountEnd ?? new Date(0),
       };
       jest.spyOn(productService, 'create').mockResolvedValue(result);
       expect(await productController.create(dto)).toBe(result);
@@ -94,7 +102,7 @@ describe('ProductController', () => {
           discountStart: new Date('2025-01-01T00:00:00.000Z'),
           discountEnd: new Date('2025-01-10T00:00:00.000Z'),
           subcategory: ['sub1'],
-          gender: 'unisex',
+          gender: Gender.Unisex,
           details: ['Handmade'],
           reviews: [],
           variants: [
@@ -129,7 +137,7 @@ describe('ProductController', () => {
         discountStart: new Date('2025-01-01T00:00:00.000Z'),
         discountEnd: new Date('2025-01-10T00:00:00.000Z'),
         subcategory: ['sub1'],
-        gender: 'unisex',
+        gender: Gender.Unisex,
         details: ['Handmade'],
         reviews: [],
         variants: [
@@ -174,7 +182,7 @@ describe('ProductController', () => {
         discountStart: new Date('2025-01-01T00:00:00.000Z'),
         discountEnd: new Date('2025-01-10T00:00:00.000Z'),
         subcategory: ['sub1'],
-        gender: 'unisex',
+        gender: Gender.Unisex,
         details: ['Handmade'],
         reviews: [],
         variants: [
@@ -208,14 +216,14 @@ describe('ProductController', () => {
         discountStart: new Date('2025-01-01T00:00:00.000Z'),
         discountEnd: new Date('2025-01-10T00:00:00.000Z'),
         subcategory: ['sub1'],
-        gender: 'unisex',
+        gender: Gender.Unisex,
         details: ['Handmade'],
         reviews: [],
         variants: [
           {
             material: 'silver',
             size: 'L',
-            price: 100,
+            price: 150,
             insert: 'Silver',
             inStock: 5,
           },

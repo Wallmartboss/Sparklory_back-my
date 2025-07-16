@@ -3,6 +3,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Model, Types } from 'mongoose';
 import { CartItem } from '../cart/cart.schema';
 import { CartService } from '../cart/cart.service';
+import { LoyaltyAccount } from './loyalty-account.schema';
+import { LoyaltyLevel } from './loyalty-level.schema';
 import { LoyaltyService } from './loyalty.service';
 import { PurchaseHistory } from './purchase-history.schema';
 
@@ -10,8 +12,12 @@ describe('LoyaltyService', () => {
   let service: LoyaltyService;
   let purchaseModel: Model<PurchaseHistory>;
   let cartService: CartService;
+  let mockCartService: Partial<CartService>;
 
   beforeEach(async () => {
+    mockCartService = {
+      getOrCreateCart: jest.fn(),
+    };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         LoyaltyService,
@@ -19,10 +25,11 @@ describe('LoyaltyService', () => {
           provide: getModelToken(PurchaseHistory.name),
           useValue: {
             create: jest.fn(),
+            findOne: jest.fn(),
           },
         },
         {
-          provide: getModelToken('LoyaltyAccount'),
+          provide: getModelToken(LoyaltyAccount.name),
           useValue: {
             findOne: jest.fn().mockReturnValue({
               populate: jest.fn().mockResolvedValue({
@@ -35,14 +42,12 @@ describe('LoyaltyService', () => {
           },
         },
         {
-          provide: getModelToken('LoyaltyLevel'),
+          provide: getModelToken(LoyaltyLevel.name),
           useValue: {},
         },
         {
           provide: CartService,
-          useValue: {
-            getOrCreateCart: jest.fn(),
-          },
+          useValue: mockCartService,
         },
       ],
     }).compile();

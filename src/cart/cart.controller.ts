@@ -125,6 +125,7 @@ export class CartController {
   removeItem(@Req() req, @Body() removeFromCartDto: RemoveFromCartDto) {
     return this.cartService.removeItem(
       req.user.id,
+      undefined,
       removeFromCartDto.productId,
       removeFromCartDto.size,
       removeFromCartDto.material,
