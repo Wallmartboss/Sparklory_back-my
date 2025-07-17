@@ -199,13 +199,7 @@ export class CartService {
       return cart;
     }
 
-    const item = cart.items[itemIndex];
-
-    if (item.quantity > 1) {
-      item.quantity -= 1;
-    } else {
-      cart.items.splice(itemIndex, 1);
-    }
+    cart.items.splice(itemIndex, 1);
 
     return cart.save();
   }
