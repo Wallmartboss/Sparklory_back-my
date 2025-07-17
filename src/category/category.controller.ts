@@ -19,8 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { Category } from './category.schema';
 import { CategoryService } from './category.service';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
+import { CreateCategoryDto, UpdateCategoryDto } from './index';
 
 @ApiTags('Сategories')
 @Controller('categories')
