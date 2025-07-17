@@ -38,37 +38,77 @@ export class ProductService {
     private readonly emailService: EmailService,
   ) {}
 
+  /**
+   * Create a new product. If the category or subcategory does not exist, they will be created automatically.
+   * If the subcategory exists but belongs to another category, an error will be thrown.
+   */
   async create(createProductDto: CreateProductDto): Promise<Product> {
-    // Check if the category exists
-    const categoryExists = await this.categoryService.exists(
-      createProductDto.category,
-    );
-    if (!categoryExists) {
-      throw new BadRequestException(
-        `NO SUCH CATEGORY, PLEASE CHECK OR ADD CATEGORY: ${createProductDto.category}`,
-      );
+    // Ensure category exists or create it
+    let category = await this.categoryService['categoryModel'].findOne({
+      name: createProductDto.category,
+    });
+    if (!category) {
+      category = await this.categoryService['categoryModel'].create({
+        name: createProductDto.category,
+        parentCategory: null,
+      });
     }
-
-    const product = new this.productModel(createProductDto);
+    // Ensure subcategory exists and is linked to the correct category
+    if (createProductDto.subcategory) {
+      let subcategory = await this.categoryService['categoryModel'].findOne({
+        name: createProductDto.subcategory,
+      });
+      if (subcategory) {
+        if (subcategory.parentCategory !== createProductDto.category) {
+          throw new BadRequestException(
+            'Данная подкатегория относится к другой категории',
+          );
+        }
+      } else {
+        await this.categoryService['categoryModel'].create({
+          name: createProductDto.subcategory,
+          parentCategory: createProductDto.category,
+        });
+      }
+    }
+    const product = new this.productModel({ ...createProductDto });
     return product.save();
   }
 
   async findAll(params?: FindAllProductsParams): Promise<Product[]> {
     if (!params) {
-      return this.productModel.find().exec();
+      return this.productModel
+        .find()
+        .populate('category', 'name _id')
+        .populate('subcategory', 'name _id')
+        .exec();
     }
     const { limit, page } = params;
     const parsedLimit = limit ? Number(limit) : undefined;
     const parsedPage = page ? Number(page) : undefined;
     if (!parsedLimit || !parsedPage) {
-      return this.productModel.find().exec();
+      return this.productModel
+        .find()
+        .populate('category', 'name _id')
+        .populate('subcategory', 'name _id')
+        .exec();
     }
     const skip = (parsedPage - 1) * parsedLimit;
-    return this.productModel.find().skip(skip).limit(parsedLimit).exec();
+    return this.productModel
+      .find()
+      .skip(skip)
+      .limit(parsedLimit)
+      .populate('category', 'name _id')
+      .populate('subcategory', 'name _id')
+      .exec();
   }
 
   async findOne(id: string): Promise<Product> {
-    const product = await this.productModel.findById(id).exec();
+    const product = await this.productModel
+      .findById(id)
+      .populate('category', 'name _id')
+      .populate('subcategory', 'name _id')
+      .exec();
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
@@ -76,7 +116,11 @@ export class ProductService {
   }
 
   async findByCategory(category: string): Promise<Product[]> {
-    const products = await this.productModel.find({ category }).exec();
+    const products = await this.productModel
+      .find({ category })
+      .populate('category', 'name _id')
+      .populate('subcategory', 'name _id')
+      .exec();
     if (products.length === 0) {
       throw new NotFoundException(
         `No products found in category "${category}"`,
@@ -95,33 +139,53 @@ export class ProductService {
     return products;
   }
 
+  /**
+   * Update a product. If the category or subcategory does not exist, they will be created automatically.
+   * If the subcategory exists but belongs to another category, an error will be thrown.
+   */
   async update(
     id: string,
     updateProductDto: UpdateProductDto,
   ): Promise<Product> {
-    // If updating the category, check if it exists
+    // Ensure category exists or create it
     if (updateProductDto.category) {
-      const categoryExists = await this.categoryService.exists(
-        updateProductDto.category,
-      );
-      if (!categoryExists) {
-        throw new BadRequestException(
-          `NO SUCH CATEGORY, PLEASE CHECK OR ADD CATEGORY: ${updateProductDto.category}`,
-        );
+      let category = await this.categoryService['categoryModel'].findOne({
+        name: updateProductDto.category,
+      });
+      if (!category) {
+        category = await this.categoryService['categoryModel'].create({
+          name: updateProductDto.category,
+          parentCategory: null,
+        });
       }
     }
-
+    // Ensure subcategory exists and is linked to the correct category
+    if (updateProductDto.subcategory) {
+      let subcategory = await this.categoryService['categoryModel'].findOne({
+        name: updateProductDto.subcategory,
+      });
+      if (subcategory) {
+        if (subcategory.parentCategory !== updateProductDto.category) {
+          throw new BadRequestException(
+            'Данная подкатегория относится к другой категории',
+          );
+        }
+      } else {
+        await this.categoryService['categoryModel'].create({
+          name: updateProductDto.subcategory,
+          parentCategory: updateProductDto.category,
+        });
+      }
+    }
     const updatedProduct = await this.productModel
       .findByIdAndUpdate(id, updateProductDto, {
         new: true,
         runValidators: true,
       })
       .exec();
-
     if (!updatedProduct) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
-
     return updatedProduct;
   }
 
@@ -212,7 +276,8 @@ export class ProductService {
    * Get all unique product categories
    */
   async getAllCategories(): Promise<string[]> {
-    return this.productModel.distinct('category').exec();
+    const ids = await this.productModel.distinct('category').exec();
+    return ids.map(id => id.toString());
   }
 
   /**
@@ -339,5 +404,36 @@ export class ProductService {
       throw new NotFoundException('Subscription not found');
     }
     return { message: 'Unsubscribed successfully' };
+  }
+
+  /**
+   * Get all categories with their subcategories and image
+   */
+  async getCategoriesWithSubcategories() {
+    // Получаем все категории
+    const categories = await this.categoryService['categoryModel']
+      .find()
+      .lean();
+    // Группируем подкатегории по parentCategory
+    const categoryMap = {};
+    categories.forEach(cat => {
+      if (!cat.parentCategory) {
+        categoryMap[cat._id.toString()] = { ...cat, subcategories: [] };
+      }
+    });
+    categories.forEach(cat => {
+      if (cat.parentCategory) {
+        const parentId = cat.parentCategory.toString();
+        if (categoryMap[parentId]) {
+          categoryMap[parentId].subcategories.push({
+            _id: cat._id,
+            name: cat.name,
+            image: cat.image,
+          });
+        }
+      }
+    });
+    // Возвращаем массив категорий с подкатегориями
+    return Object.values(categoryMap);
   }
 }

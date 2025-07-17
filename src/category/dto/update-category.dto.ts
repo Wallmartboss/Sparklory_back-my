@@ -13,10 +13,21 @@ export class UpdateCategoryDto {
 
   @ApiProperty({
     example: 'https://example.com/category-image.jpg',
-    description: 'Category image URL',
+    description: 'Category image URL (optional)',
     required: false,
   })
   @IsOptional()
   @IsUrl()
   image?: string;
+
+  @ApiProperty({
+    example: null, // or 'earrings' for subcategory
+    description:
+      'Parent category name (null for main category, or name of parent category for subcategory, e.g. "earrings")',
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  parentCategory?: string | null;
 }

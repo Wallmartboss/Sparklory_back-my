@@ -24,12 +24,14 @@ import {
   ApiQuery,
   ApiResponse,
   ApiTags,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { UserDecorator } from '../common/decorators/user.decorator';
 import { CreateProductDto, ReviewDto } from './dto/create-product.dto';
+import { ProductDto } from './dto/product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductService } from './product.service';
 
@@ -40,63 +42,37 @@ export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new product' })
+  @ApiOperation({
+    summary:
+      'Create one or multiple products. If the category or subcategory does not exist, they will be created automatically. If the subcategory exists but belongs to another category, an error will be thrown.',
+  })
+  @ApiBody({ type: CreateProductDto, isArray: true })
   @ApiResponse({
     status: 201,
-    description: 'Product successfully created.',
-    schema: {
-      example: {
-        _id: '60f7c2b8e1d2c8001c8e4c1a',
-        name: 'Amethyst Earrings',
-        description: 'Earrings with white gold and amethysts',
-        category: 'earrings',
-        engraving: true,
-        image: ['12345678.jpg'],
-        action: ['Spring sale'],
-        prod_collection: 'Spring 2025',
-        discount: 30,
-        discountStart: '2025-07-10T00:00:00.000Z',
-        discountEnd: '2025-07-20T23:59:59.000Z',
-        subcategory: ['casual', 'sport'],
-        gender: 'unisex',
-        details: ['Handmade', '925 Silver', 'Gift box included'],
-        reviews: [
-          {
-            name: 'Ivan',
-            avatar: 'avatar123.jpg',
-            text: 'Great product!',
-            rating: 5,
-            createdAt: '20.10.2024',
-            image: ['reviewImage1.jpg'],
-          },
-        ],
-        variants: [
-          {
-            material: 'silver',
-            size: 'L',
-            price: 8000,
-            insert: 'Silver',
-            inStock: 7,
-          },
-          {
-            material: 'white gold',
-            size: 'M',
-            price: 12200,
-            insert: 'White Gold',
-            inStock: 5,
-          },
-        ],
-      },
-    },
+    description: 'Product created',
+    type: ProductDto,
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Products created',
+    type: [ProductDto],
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Product DTO',
+    type: CreateProductDto,
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Product DTO (array)',
+    type: [CreateProductDto],
   })
   @ApiResponse({ status: 400, description: 'Bad request.' })
-  async create(@Body() createProductDto: CreateProductDto) {
-    this.logger.log('Received request to create product');
-    this.logger.debug(`Action: ${createProductDto.action}`);
-    this.logger.debug(
-      `Number of reviews: ${createProductDto.reviews?.length || 0}`,
-    );
-    return this.productService.create(createProductDto);
+  async create(@Body() body: CreateProductDto | CreateProductDto[]) {
+    if (Array.isArray(body)) {
+      return Promise.all(body.map(dto => this.productService.create(dto)));
+    }
+    return this.productService.create(body);
   }
 
   @Get()
@@ -110,7 +86,7 @@ export class ProductController {
           _id: '60f7c2b8e1d2c8001c8e4c1a',
           name: 'Amethyst Earrings',
           description: 'Earrings with white gold and amethysts',
-          category: 'earrings',
+          category: '60f7c2b8e1d2c8001c8e4c1b',
           engraving: true,
           image: ['12345678.jpg'],
           action: ['Spring sale'],
@@ -118,7 +94,7 @@ export class ProductController {
           discount: 30,
           discountStart: '2025-07-10T00:00:00.000Z',
           discountEnd: '2025-07-20T23:59:59.000Z',
-          subcategory: ['casual', 'sport'],
+          subcategory: '60f7c2b8e1d2c8001c8e4c1c',
           gender: 'unisex',
           details: ['Handmade', '925 Silver', 'Gift box included'],
           reviews: [
@@ -178,7 +154,7 @@ export class ProductController {
           _id: '60f7c2b8e1d2c8001c8e4c1a',
           name: 'Amethyst Earrings',
           description: 'Earrings with white gold and amethysts',
-          category: 'earrings',
+          category: '60f7c2b8e1d2c8001c8e4c1b',
           engraving: true,
           image: ['12345678.jpg'],
           action: ['Spring sale'],
@@ -186,7 +162,7 @@ export class ProductController {
           discount: 30,
           discountStart: '2025-07-10T00:00:00.000Z',
           discountEnd: '2025-07-20T23:59:59.000Z',
-          subcategory: ['casual', 'sport'],
+          subcategory: '60f7c2b8e1d2c8001c8e4c1c',
           gender: 'unisex',
           details: ['Handmade', '925 Silver', 'Gift box included'],
           reviews: [
@@ -358,14 +334,32 @@ export class ProductController {
   }
 
   @Get('categories')
-  @ApiOperation({ summary: 'Get all unique product categories' })
+  @ApiOperation({
+    summary: 'Get all categories with their subcategories and image',
+  })
   @ApiResponse({
     status: 200,
-    description: 'Returns all unique product categories.',
-    type: [String],
+    description: 'Returns all categories with their subcategories and image.',
+    schema: {
+      example: [
+        {
+          _id: '60f7c2b8e1d2c8001c8e4c1b',
+          name: 'earrings',
+          image: 'https://example.com/category-image.jpg',
+          parentCategory: null, //"category" for subcategory,
+          subcategories: [
+            {
+              _id: '60f7c2b8e1d2c8001c8e4c1c',
+              name: 'studs',
+              image: 'https://example.com/subcategory-image.jpg',
+            },
+          ],
+        },
+      ],
+    },
   })
   async getAllCategories() {
-    return this.productService.getAllCategories();
+    return this.productService.getCategoriesWithSubcategories();
   }
 
   @Post(':productId/reviews/:reviewId/upload')
@@ -678,7 +672,7 @@ export class ProductController {
         _id: '60f7c2b8e1d2c8001c8e4c1a',
         name: 'Amethyst Earrings',
         description: 'Earrings with white gold and amethysts',
-        category: 'earrings',
+        category: '60f7c2b8e1d2c8001c8e4c1b',
         engraving: true,
         image: ['12345678.jpg'],
         action: ['Spring sale'],
@@ -686,7 +680,7 @@ export class ProductController {
         discount: 30,
         discountStart: '2025-07-10T00:00:00.000Z',
         discountEnd: '2025-07-20T23:59:59.000Z',
-        subcategory: ['casual', 'sport'],
+        subcategory: '60f7c2b8e1d2c8001c8e4c1c',
         gender: 'unisex',
         details: ['Handmade', '925 Silver', 'Gift box included'],
         reviews: [
@@ -725,80 +719,11 @@ export class ProductController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update product' })
-  @ApiBody({
-    description: 'Product update data',
-    required: true,
-    schema: {
-      example: {
-        name: 'Updated Amethyst Earrings',
-        discount: 25,
-        details: ['Limited edition', 'Handmade'],
-        variants: [
-          {
-            material: 'silver',
-            size: 'L',
-            price: 8500,
-            insert: 'Silver',
-            inStock: 10,
-          },
-          {
-            material: 'white gold',
-            size: 'M',
-            price: 13000,
-            insert: 'White Gold',
-            inStock: 6,
-          },
-        ],
-      },
-    },
-  })
+  @ApiBody({ type: UpdateProductDto })
   @ApiResponse({
     status: 200,
     description: 'Product successfully updated.',
-    schema: {
-      example: {
-        _id: '60f7c2b8e1d2c8001c8e4c1a',
-        name: 'Amethyst Earrings',
-        description: 'Earrings with white gold and amethysts',
-        category: 'earrings',
-        engraving: true,
-        image: ['12345678.jpg'],
-        action: ['Spring sale'],
-        prod_collection: 'Spring 2025',
-        discount: 30,
-        discountStart: '2025-07-10T00:00:00.000Z',
-        discountEnd: '2025-07-20T23:59:59.000Z',
-        subcategory: ['casual', 'sport'],
-        gender: 'unisex',
-        details: ['Handmade', '925 Silver', 'Gift box included'],
-        reviews: [
-          {
-            name: 'Ivan',
-            avatar: 'avatar123.jpg',
-            text: 'Great product!',
-            rating: 5,
-            createdAt: '20.10.2024',
-            image: ['reviewImage1.jpg'],
-          },
-        ],
-        variants: [
-          {
-            material: 'silver',
-            size: 'L',
-            price: 8000,
-            insert: 'Silver',
-            inStock: 7,
-          },
-          {
-            material: 'white gold',
-            size: 'M',
-            price: 12200,
-            insert: 'White Gold',
-            inStock: 5,
-          },
-        ],
-      },
-    },
+    schema: { $ref: getSchemaPath(UpdateProductDto) },
   })
   @ApiResponse({ status: 404, description: 'Not found.' })
   async update(
@@ -854,7 +779,7 @@ export class ProductController {
         _id: '60f7c2b8e1d2c8001c8e4c1a',
         name: 'Amethyst Earrings',
         description: 'Earrings with white gold and amethysts',
-        category: 'earrings',
+        category: '60f7c2b8e1d2c8001c8e4c1b',
         engraving: true,
         image: ['12345678.jpg'],
         action: ['Spring sale'],
@@ -862,7 +787,7 @@ export class ProductController {
         discount: 30,
         discountStart: '2025-07-10T00:00:00.000Z',
         discountEnd: '2025-07-20T23:59:59.000Z',
-        subcategory: ['casual', 'sport'],
+        subcategory: '60f7c2b8e1d2c8001c8e4c1c',
         gender: 'unisex',
         details: ['Handmade', '925 Silver', 'Gift box included'],
         reviews: [

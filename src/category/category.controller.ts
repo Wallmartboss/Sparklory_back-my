@@ -9,7 +9,14 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+  getSchemaPath,
+} from '@nestjs/swagger';
 import { Category } from './category.schema';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -21,47 +28,92 @@ export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Add a new category' })
+  @ApiOperation({ summary: 'Add one or multiple categories' })
+  @ApiBody({
+    description: 'Single category or array of categories',
+    schema: {
+      oneOf: [
+        { $ref: getSchemaPath(CreateCategoryDto) },
+        { type: 'array', items: { $ref: getSchemaPath(CreateCategoryDto) } },
+      ],
+    },
+  })
   @ApiResponse({
     status: 201,
-    description: 'Category successfully created',
-    type: Category,
+    description: 'Category or categories successfully created',
+    schema: {
+      oneOf: [
+        { $ref: getSchemaPath(Category) },
+        { type: 'array', items: { $ref: getSchemaPath(Category) } },
+      ],
+    },
   })
   @ApiResponse({
     status: 409,
     description: 'Category with this name already exists',
   })
   async create(
-    @Body() createCategoryDto: CreateCategoryDto,
-  ): Promise<Category> {
-    return this.categoryService.create(createCategoryDto);
+    @Body() body: CreateCategoryDto | CreateCategoryDto[],
+  ): Promise<Category | Category[]> {
+    if (Array.isArray(body)) {
+      return Promise.all(body.map(dto => this.categoryService.create(dto)));
+    }
+    return this.categoryService.create(body);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all categories' })
+  @ApiOperation({ summary: 'Get all categories with their subcategories' })
   @ApiResponse({
     status: 200,
-    description: 'List of all categories',
-    type: [Category],
+    description: 'List of all categories with their subcategories',
+    schema: {
+      example: [
+        {
+          name: 'earrings',
+          image: 'https://example.com/category-image.jpg',
+          parentCategory: null,
+          subcategories: [
+            {
+              name: 'studs',
+              image: 'https://example.com/subcategory-image.jpg',
+              parentCategory: 'earrings',
+            },
+          ],
+        },
+      ],
+    },
   })
-  async findAll(): Promise<Category[]> {
-    return this.categoryService.findAll();
+  async findAll(): Promise<any[]> {
+    return this.categoryService.findAllWithSubcategories();
   }
 
   @Get(':name')
-  @ApiOperation({ summary: 'Get category by name' })
+  @ApiOperation({ summary: 'Get category by name with its subcategories' })
   @ApiParam({ name: 'name', description: 'Category name' })
   @ApiResponse({
     status: 200,
-    description: 'Category found',
-    type: Category,
+    description: 'Category found with its subcategories',
+    schema: {
+      example: {
+        name: 'earrings',
+        image: 'https://example.com/category-image.jpg',
+        parentCategory: null,
+        subcategories: [
+          {
+            name: 'studs',
+            image: 'https://example.com/subcategory-image.jpg',
+            parentCategory: 'earrings',
+          },
+        ],
+      },
+    },
   })
   @ApiResponse({
     status: 404,
     description: 'Category not found',
   })
-  async findByName(@Param('name') name: string): Promise<Category> {
-    return this.categoryService.findByName(name);
+  async findByName(@Param('name') name: string): Promise<any> {
+    return this.categoryService.findByNameWithSubcategories(name);
   }
 
   @Patch(':name')

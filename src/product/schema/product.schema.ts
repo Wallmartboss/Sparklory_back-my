@@ -50,13 +50,13 @@ export class Product {
   @Prop()
   description: string;
 
-  /** Product category */
+  /** Product category (name) */
   @Prop({ required: true })
   category: string;
 
-  /** Product subcategories (optional) */
-  @Prop({ type: [String], required: false })
-  subcategory?: string[];
+  /** Product subcategory (name, optional) */
+  @Prop({ required: false })
+  subcategory?: string;
 
   /** Product gender (male, female, unisex, kids) */
   @Prop({ type: String, enum: Gender, required: false })
