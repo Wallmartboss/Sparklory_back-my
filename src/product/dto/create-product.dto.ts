@@ -179,14 +179,15 @@ export class CreateProductDto {
   /** Product variants (each with its own material, size, stock, price) */
   @ApiProperty({
     type: [ProductVariantDto],
-    required: true,
+    required: false,
     description:
       'Product variants (each with its own material, size, stock, price)',
   })
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ProductVariantDto)
-  variants: ProductVariantDto[];
+  variants?: ProductVariantDto[];
 
   /** Product details (optional, array of strings) */
   @ApiProperty({

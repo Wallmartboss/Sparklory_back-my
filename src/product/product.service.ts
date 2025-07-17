@@ -43,35 +43,44 @@ export class ProductService {
    * If the subcategory exists but belongs to another category, an error will be thrown.
    */
   async create(createProductDto: CreateProductDto): Promise<Product> {
+    // Normalize category and subcategory to lowercase for comparison
+    const categoryName = createProductDto.category.toLowerCase();
+    const subcategoryName = createProductDto.subcategory
+      ? createProductDto.subcategory.toLowerCase()
+      : undefined;
     // Ensure category exists or create it
     let category = await this.categoryService['categoryModel'].findOne({
-      name: createProductDto.category,
+      name: categoryName,
     });
     if (!category) {
       category = await this.categoryService['categoryModel'].create({
-        name: createProductDto.category,
+        name: categoryName,
         parentCategory: null,
       });
     }
     // Ensure subcategory exists and is linked to the correct category
-    if (createProductDto.subcategory) {
-      let subcategory = await this.categoryService['categoryModel'].findOne({
-        name: createProductDto.subcategory,
+    if (subcategoryName) {
+      const subcategory = await this.categoryService['categoryModel'].findOne({
+        name: subcategoryName,
       });
       if (subcategory) {
-        if (subcategory.parentCategory !== createProductDto.category) {
+        if (subcategory.parentCategory !== categoryName) {
           throw new BadRequestException(
             'Данная подкатегория относится к другой категории',
           );
         }
       } else {
         await this.categoryService['categoryModel'].create({
-          name: createProductDto.subcategory,
-          parentCategory: createProductDto.category,
+          name: subcategoryName,
+          parentCategory: categoryName,
         });
       }
     }
-    const product = new this.productModel({ ...createProductDto });
+    const product = new this.productModel({
+      ...createProductDto,
+      category: categoryName,
+      subcategory: subcategoryName,
+    });
     return product.save();
   }
 
@@ -147,41 +156,56 @@ export class ProductService {
     id: string,
     updateProductDto: UpdateProductDto,
   ): Promise<Product> {
+    // Normalize category and subcategory to lowercase for comparison
+    const categoryName = updateProductDto.category
+      ? updateProductDto.category.toLowerCase()
+      : undefined;
+    const subcategoryName = updateProductDto.subcategory
+      ? updateProductDto.subcategory.toLowerCase()
+      : undefined;
     // Ensure category exists or create it
-    if (updateProductDto.category) {
+    if (categoryName) {
       let category = await this.categoryService['categoryModel'].findOne({
-        name: updateProductDto.category,
+        name: categoryName,
       });
       if (!category) {
         category = await this.categoryService['categoryModel'].create({
-          name: updateProductDto.category,
+          name: categoryName,
           parentCategory: null,
         });
       }
     }
     // Ensure subcategory exists and is linked to the correct category
-    if (updateProductDto.subcategory) {
-      let subcategory = await this.categoryService['categoryModel'].findOne({
-        name: updateProductDto.subcategory,
+    if (subcategoryName) {
+      const subcategory = await this.categoryService['categoryModel'].findOne({
+        name: subcategoryName,
       });
       if (subcategory) {
-        if (subcategory.parentCategory !== updateProductDto.category) {
+        if (subcategory.parentCategory !== categoryName) {
           throw new BadRequestException(
             'Данная подкатегория относится к другой категории',
           );
         }
       } else {
         await this.categoryService['categoryModel'].create({
-          name: updateProductDto.subcategory,
-          parentCategory: updateProductDto.category,
+          name: subcategoryName,
+          parentCategory: categoryName,
         });
       }
     }
     const updatedProduct = await this.productModel
-      .findByIdAndUpdate(id, updateProductDto, {
-        new: true,
-        runValidators: true,
-      })
+      .findByIdAndUpdate(
+        id,
+        {
+          ...updateProductDto,
+          category: categoryName,
+          subcategory: subcategoryName,
+        },
+        {
+          new: true,
+          runValidators: true,
+        },
+      )
       .exec();
     if (!updatedProduct) {
       throw new NotFoundException(`Product with ID ${id} not found`);
