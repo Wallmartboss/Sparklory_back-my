@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsUrl } from 'class-validator';
+import { IsOptional, IsString, IsUrl } from 'class-validator';
 
 export class CreateCategoryDto {
   @ApiProperty({
@@ -11,8 +11,20 @@ export class CreateCategoryDto {
 
   @ApiProperty({
     example: 'https://example.com/category-image.jpg',
-    description: 'Category image URL',
+    description: 'Category image URL (optional)',
+    required: false,
   })
   @IsUrl()
-  image: string;
+  @IsOptional()
+  image?: string;
+
+  @ApiProperty({
+    example: null,
+    description:
+      'Parent category name (null for main category, or name of parent category for subcategory, e.g. "earrings")',
+    required: false,
+    nullable: true,
+  })
+  @IsString()
+  parentCategory?: string | null;
 }

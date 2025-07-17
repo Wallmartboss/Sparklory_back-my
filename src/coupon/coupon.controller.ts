@@ -1,5 +1,11 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  getSchemaPath,
+} from '@nestjs/swagger';
 import { Coupon } from './coupon.schema';
 import { CouponService } from './coupon.service';
 
@@ -12,11 +18,31 @@ export class CouponController {
    * Create a new coupon
    */
   @Post()
-  @ApiOperation({ summary: 'Create a new coupon' })
-  @ApiBody({ type: Coupon })
-  @ApiResponse({ status: 201, description: 'Coupon created', type: Coupon })
-  async create(@Body() body: Partial<Coupon>): Promise<Coupon> {
-    // Creates a new coupon
+  @ApiOperation({ summary: 'Create one or multiple coupons' })
+  @ApiBody({
+    description: 'Single coupon or array of coupons',
+    schema: {
+      oneOf: [
+        { $ref: getSchemaPath(Coupon) },
+        { type: 'array', items: { $ref: getSchemaPath(Coupon) } },
+      ],
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Coupon or coupons successfully created.',
+    schema: {
+      oneOf: [
+        { $ref: getSchemaPath(Coupon) },
+        { type: 'array', items: { $ref: getSchemaPath(Coupon) } },
+      ],
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad request.' })
+  async create(@Body() body: Partial<Coupon> | Partial<Coupon>[]) {
+    if (Array.isArray(body)) {
+      return Promise.all(body.map(dto => this.couponService.createCoupon(dto)));
+    }
     return this.couponService.createCoupon(body);
   }
 

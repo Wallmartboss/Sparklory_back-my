@@ -54,9 +54,9 @@ export class ProductDto {
   @ApiProperty({ required: false }) discountStart?: Date;
   @ApiProperty({ required: false }) discountEnd?: Date;
   @ApiProperty({ type: [ReviewDto], required: false }) reviews?: ReviewDto[];
-  /** Subcategories of the product (optional) */
-  @ApiProperty({ type: [String], required: false })
-  subcategory?: string[];
+  /** Subcategory of the product (optional, must be a child of category) */
+  @ApiProperty({ type: String, required: false })
+  subcategory?: string;
   /** Gender of the product (male, female, unisex, kids) */
   @ApiProperty({ enum: Gender, required: true })
   gender: Gender;

@@ -5,7 +5,7 @@ import { Document } from 'mongoose';
 /**
  * Купон на знижку для покупця
  */
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, versionKey: false })
 export class Coupon extends Document {
   @ApiProperty({ description: 'Код купона', example: 'SUMMER2024' })
   @Prop({ required: true, unique: true })

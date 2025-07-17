@@ -18,13 +18,25 @@ export class Category {
   @Prop({ required: true, unique: true })
   name: string;
 
-  /** Category image URL */
+  /** Category image URL (optional) */
   @ApiProperty({
     example: 'https://example.com/category-image.jpg',
-    description: 'Category image URL',
+    description: 'Category image URL (optional)',
+    required: false,
   })
-  @Prop({ required: true })
-  image: string;
+  @Prop({ required: false })
+  image?: string;
+
+  /** Parent category (null if root category) */
+  @ApiProperty({
+    example: null,
+    description:
+      'Parent category name (null for main category, or name of parent category for subcategory)',
+    required: false,
+    nullable: true,
+  })
+  @Prop({ type: String, default: null })
+  parentCategory: string | null;
 }
 
 export const CategorySchema = SchemaFactory.createForClass(Category);

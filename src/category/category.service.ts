@@ -45,6 +45,14 @@ export class CategoryService {
     return category;
   }
 
+  async findById(id: string): Promise<Category> {
+    const category = await this.categoryModel.findById(id).exec();
+    if (!category) {
+      throw new NotFoundException(`Category with id "${id}" not found`);
+    }
+    return category;
+  }
+
   async update(
     name: string,
     updateCategoryDto: UpdateCategoryDto,
@@ -96,5 +104,33 @@ export class CategoryService {
   async exists(name: string): Promise<boolean> {
     const category = await this.categoryModel.findOne({ name }).exec();
     return !!category;
+  }
+
+  /**
+   * Get all categories with their subcategories (where parentCategory equals the category name)
+   */
+  async findAllWithSubcategories(): Promise<any[]> {
+    const categories = await this.categoryModel.find().lean();
+    return Promise.all(
+      categories.map(async cat => {
+        const subcategories = await this.categoryModel
+          .find({ parentCategory: cat.name })
+          .lean();
+        return { ...cat, subcategories };
+      }),
+    );
+  }
+
+  /**
+   * Get a category by name with its subcategories (where parentCategory equals the category name)
+   */
+  async findByNameWithSubcategories(name: string): Promise<any> {
+    const category = await this.categoryModel.findOne({ name }).lean();
+    if (!category)
+      throw new NotFoundException(`Category with name "${name}" not found`);
+    const subcategories = await this.categoryModel
+      .find({ parentCategory: name })
+      .lean();
+    return { ...category, subcategories };
   }
 }

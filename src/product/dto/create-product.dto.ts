@@ -68,7 +68,11 @@ export class CreateProductDto {
   @IsString()
   description: string;
 
-  @ApiProperty({ example: 'earrings', description: 'Product category' })
+  @ApiProperty({
+    example: 'earrings',
+    description:
+      'Product category name. If the category does not exist, it will be created automatically.',
+  })
   @IsString()
   category: string;
 
@@ -139,17 +143,16 @@ export class CreateProductDto {
   @Type(() => Date)
   discountEnd?: Date;
 
-  /** Product subcategories (optional) */
+  /** Product subcategory (optional, must be a child of category) */
   @ApiProperty({
-    example: ['casual', 'sport'],
+    example: 'studs',
+    description:
+      'Product subcategory name (optional). If the subcategory does not exist, it will be created and linked to the specified category. If the subcategory exists but belongs to another category, an error will be thrown.',
     required: false,
-    description: 'Product subcategories',
-    type: [String],
   })
   @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  subcategory?: string[];
+  @IsString()
+  subcategory?: string;
 
   /** Product gender (male, female, unisex, kids) */
   @ApiProperty({
