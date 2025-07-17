@@ -16,20 +16,29 @@ export class CategoryService {
   ) {}
 
   async create(createCategoryDto: CreateCategoryDto): Promise<Category> {
+    // Normalize name and parentCategory to lowercase for comparison and storage
+    const name = createCategoryDto.name.toLowerCase();
+    const parentCategory = createCategoryDto.parentCategory
+      ? createCategoryDto.parentCategory.toLowerCase()
+      : null;
     // Check if a category with the same name already exists
     const existingCategory = await this.categoryModel
       .findOne({
-        name: createCategoryDto.name,
+        name,
       })
       .exec();
 
     if (existingCategory) {
       throw new ConflictException(
-        `Category with name "${createCategoryDto.name}" already exists`,
+        `Category with name "${name}" already exists`,
       );
     }
 
-    const category = new this.categoryModel(createCategoryDto);
+    const category = new this.categoryModel({
+      ...createCategoryDto,
+      name,
+      parentCategory,
+    });
     return category.save();
   }
 

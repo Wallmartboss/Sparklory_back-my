@@ -5,8 +5,13 @@ import { ReviewDto } from './create-product.dto';
 
 export class ProductVariantDto {
   /** Material type (e.g., gold, silver, platinum) */
-  @ApiProperty({ example: 'gold', description: 'Material type' })
-  material: string;
+  @ApiProperty({
+    example: 'gold',
+    description: 'Material type',
+    required: false,
+  })
+  @IsOptional()
+  material?: string;
 
   /** Product size (optional) */
   @ApiProperty({ example: '18', required: false, description: 'Product size' })
