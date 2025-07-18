@@ -14,9 +14,9 @@ jobs:
 
       - name: Check if the pusher is allowed
         run: |
-          if [[ "${{ github.actor }}" != "innekto" ]]; then
+          if [[ "${{ github.actor }}" != "Wallmartboss" ]]; then
             echo "❌ You are not allowed to push to dev!";
             exit 1;
           else
-            echo "✅ Push allowed for innekto!"
+            echo "✅ Push allowed for Wallmartboss!"
           fi
