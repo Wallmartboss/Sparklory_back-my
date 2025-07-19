@@ -118,8 +118,16 @@ export class CategoryService {
   /**
    * Get all categories with their subcategories (where parentCategory equals the category name)
    */
-  async findAllWithSubcategories(): Promise<any[]> {
-    const categories = await this.categoryModel.find().lean();
+  async findAllWithSubcategories(
+    limit?: number,
+    page?: number,
+  ): Promise<any[]> {
+    let categories = await this.categoryModel.find().lean();
+    // Apply pagination if limit and page are provided
+    if (limit !== undefined && page !== undefined) {
+      const skip = (Number(page) - 1) * Number(limit);
+      categories = categories.slice(skip, skip + Number(limit));
+    }
     return Promise.all(
       categories.map(async cat => {
         const subcategories = await this.categoryModel
