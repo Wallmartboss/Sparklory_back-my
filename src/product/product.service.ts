@@ -15,10 +15,15 @@ import {
 } from './schema/product-subscription.schema';
 import { Product, ProductDocument } from './schema/product.schema';
 
-// Add type for pagination parameters
+// Add type for pagination and filter parameters
 interface FindAllProductsParams {
   limit?: number;
   page?: number;
+  category?: string;
+  material?: string;
+  insert?: string;
+  inStock?: number;
+  sort?: string;
 }
 
 interface ReviewPaginationResult {
@@ -85,28 +90,48 @@ export class ProductService {
   }
 
   async findAll(params?: FindAllProductsParams): Promise<Product[]> {
-    if (!params) {
-      return this.productModel
-        .find()
-        .populate('category', 'name _id')
-        .populate('subcategory', 'name _id')
-        .exec();
+    // Build filter object for MongoDB query
+    const filter: any = {};
+    if (params?.category) {
+      // Use regex for case-insensitive category filtering
+      filter.category = { $regex: `^${params.category}$`, $options: 'i' };
     }
-    const { limit, page } = params;
-    const parsedLimit = limit ? Number(limit) : undefined;
-    const parsedPage = page ? Number(page) : undefined;
-    if (!parsedLimit || !parsedPage) {
-      return this.productModel
-        .find()
-        .populate('category', 'name _id')
-        .populate('subcategory', 'name _id')
-        .exec();
+    // Filter by material and insert inside variants array (case-insensitive, regex)
+    if (params?.material) {
+      filter['variants.material'] = {
+        $regex: `^${params.material}$`,
+        $options: 'i',
+      };
     }
-    const skip = (parsedPage - 1) * parsedLimit;
+    if (params?.insert) {
+      filter['variants.insert'] = {
+        $regex: `^${params.insert}$`,
+        $options: 'i',
+      };
+    }
+    // Filter by inStock (at least this quantity in any variant)
+    if (params?.inStock !== undefined) {
+      filter['variants.inStock'] = { $gte: Number(params.inStock) };
+    }
+    // Build sort option
+    let sortOption: any = {};
+    if (params?.sort) {
+      if (params.sort === 'price_desc') {
+        sortOption['variants.price'] = -1;
+      } else if (params.sort === 'price_asc') {
+        sortOption['variants.price'] = 1;
+      } // Add more sort options if needed
+    }
+    // Pagination
+    const limit = params?.limit ? Number(params.limit) : 16;
+    const page = params?.page ? Number(params.page) : 1;
+    const skip = (page - 1) * limit;
+    // Query with filters, sort, and pagination
     return this.productModel
-      .find()
+      .find(filter)
+      .sort(sortOption)
       .skip(skip)
-      .limit(parsedLimit)
+      .limit(limit)
       .populate('category', 'name _id')
       .populate('subcategory', 'name _id')
       .exec();
