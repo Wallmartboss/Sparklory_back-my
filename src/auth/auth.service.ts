@@ -148,7 +148,7 @@ export class AuthService {
       user = await this.userService.findByEmail(email);
     }
     if (!user) {
-      // Создать нового пользователя
+      // Create new user
       user = await this.userService.createUser({
         email,
         name: name || email?.split('@')[0],

@@ -11,6 +11,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiBearerAuth,
@@ -64,6 +65,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly userService: UserService,
     private readonly emailService: EmailService,
+    private readonly configService: ConfigService, // Inject ConfigService
   ) {}
 
   @Post('register')
@@ -140,14 +142,17 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Returns JWT tokens and user info' })
   @UseGuards(AuthGuard('facebook'))
   async facebookLoginCallback(@Req() req: Request, @Res() res: Response) {
-    // req.user містить користувача
-    // Повернути JWT токени та користувача
     const result = await this.authService.login(req.user as any);
-    return res.json({
-      user: result.loggedInUser,
+    // Redirect to frontend with tokens in query params
+    const frontendUrl = this.configService.get<string>(
+      'FRONTEND_URL',
+      'http://localhost:3000',
+    );
+    const params = new URLSearchParams({
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
     });
+    return res.redirect(`${frontendUrl}/?${params.toString()}`);
   }
 
   @Get('google')
@@ -164,11 +169,16 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   async googleLoginCallback(@Req() req: Request, @Res() res: Response) {
     const result = await this.authService.login(req.user as any);
-    return res.json({
-      user: result.loggedInUser,
+    // Redirect to frontend with tokens in query params
+    const frontendUrl = this.configService.get<string>(
+      'FRONTEND_URL',
+      'http://localhost:3000',
+    );
+    const params = new URLSearchParams({
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
     });
+    return res.redirect(`${frontendUrl}/?${params.toString()}`);
   }
 
   @Post('forgot-password')
