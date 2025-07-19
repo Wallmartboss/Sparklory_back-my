@@ -463,18 +463,18 @@ export class ProductService {
     const categories = await this.categoryService['categoryModel']
       .find()
       .lean();
-    // Group subcategories by parentCategory
+    // Group subcategories by parentCategory (using name, not _id)
     const categoryMap = {};
     categories.forEach(cat => {
       if (!cat.parentCategory) {
-        categoryMap[cat._id.toString()] = { ...cat, subcategories: [] };
+        categoryMap[cat.name] = { ...cat, subcategories: [] };
       }
     });
     categories.forEach(cat => {
       if (cat.parentCategory) {
-        const parentId = cat.parentCategory.toString();
-        if (categoryMap[parentId]) {
-          categoryMap[parentId].subcategories.push({
+        const parentName = cat.parentCategory;
+        if (categoryMap[parentName]) {
+          categoryMap[parentName].subcategories.push({
             _id: cat._id,
             name: cat.name,
             image: cat.image,
