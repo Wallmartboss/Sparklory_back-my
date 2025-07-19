@@ -121,8 +121,15 @@ export class CategoryService {
   async findAllWithSubcategories(
     limit?: number,
     page?: number,
+    parentCategory?: string,
   ): Promise<any[]> {
-    let categories = await this.categoryModel.find().lean();
+    let categoriesQuery: any = {};
+    if (parentCategory === 'null') {
+      categoriesQuery.parentCategory = null;
+    } else if (parentCategory) {
+      categoriesQuery.parentCategory = parentCategory;
+    }
+    let categories = await this.categoryModel.find(categoriesQuery).lean();
     // Apply pagination if limit and page are provided
     if (limit !== undefined && page !== undefined) {
       const skip = (Number(page) - 1) * Number(limit);
