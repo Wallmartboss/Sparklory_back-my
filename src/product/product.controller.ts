@@ -350,8 +350,23 @@ export class ProductController {
       ],
     },
   })
-  async getAllCategories() {
-    return this.productService.getCategoriesWithSubcategories();
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of categories per page',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number',
+  })
+  async getAllCategories(
+    @Query('limit') limit?: number,
+    @Query('page') page?: number,
+  ) {
+    return this.productService.getCategoriesWithSubcategories(limit, page);
   }
 
   @Post(':productId/reviews/:reviewId/upload')

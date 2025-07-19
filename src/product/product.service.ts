@@ -458,12 +458,12 @@ export class ProductService {
   /**
    * Get all categories with their subcategories and image
    */
-  async getCategoriesWithSubcategories() {
-    // Получаем все категории
+  async getCategoriesWithSubcategories(limit?: number, page?: number) {
+    // Get all categories
     const categories = await this.categoryService['categoryModel']
       .find()
       .lean();
-    // Группируем подкатегории по parentCategory
+    // Group subcategories by parentCategory
     const categoryMap = {};
     categories.forEach(cat => {
       if (!cat.parentCategory) {
@@ -482,7 +482,13 @@ export class ProductService {
         }
       }
     });
-    // Возвращаем массив категорий с подкатегориями
-    return Object.values(categoryMap);
+    // Convert to array
+    let result = Object.values(categoryMap);
+    // Apply pagination if limit and page are provided
+    if (limit !== undefined && page !== undefined) {
+      const skip = (Number(page) - 1) * Number(limit);
+      result = result.slice(skip, skip + Number(limit));
+    }
+    return result;
   }
 }
