@@ -8,11 +8,13 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBody,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiTags,
   getSchemaPath,
@@ -82,8 +84,23 @@ export class CategoryController {
       ],
     },
   })
-  async findAll(): Promise<any[]> {
-    return this.categoryService.findAllWithSubcategories();
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of categories per page',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number',
+  })
+  async findAll(
+    @Query('limit') limit?: number,
+    @Query('page') page?: number,
+  ): Promise<any[]> {
+    return this.categoryService.findAllWithSubcategories(limit, page);
   }
 
   @Get(':name')
