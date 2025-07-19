@@ -178,7 +178,7 @@ export class AuthController {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
     });
-    return res.redirect(`${frontendUrl}/?${params.toString()}`);
+    return res.redirect(`${frontendUrl}/oauth-callback?${params.toString()}`);
   }
 
   @Post('forgot-password')
