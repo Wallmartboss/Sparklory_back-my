@@ -96,11 +96,22 @@ export class CategoryController {
     type: Number,
     description: 'Page number',
   })
+  @ApiQuery({
+    name: 'parentCategory',
+    required: false,
+    type: String,
+    description: 'Filter by parent category name (null for root categories)',
+  })
   async findAll(
     @Query('limit') limit?: number,
     @Query('page') page?: number,
+    @Query('parentCategory') parentCategory?: string,
   ): Promise<any[]> {
-    return this.categoryService.findAllWithSubcategories(limit, page);
+    return this.categoryService.findAllWithSubcategories(
+      limit,
+      page,
+      parentCategory,
+    );
   }
 
   @Get(':name')
