@@ -31,6 +31,7 @@ import { extname } from 'path';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { UserDecorator } from '../common/decorators/user.decorator';
 import { CreateProductDto, ReviewDto } from './dto/create-product.dto';
+import { ProductFilterDto } from './dto/product-filter.dto';
 import { ProductDto } from './dto/product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductService } from './product.service';
@@ -76,7 +77,9 @@ export class ProductController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all products' })
+  @ApiOperation({
+    summary: 'Get all products with filtering, sorting, and pagination',
+  })
   @ApiResponse({
     status: 200,
     description: 'Returns all products.',
@@ -127,20 +130,9 @@ export class ProductController {
       ],
     },
   })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Number of products per page',
-  })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    description: 'Page number',
-  })
-  async findAll(@Query('limit') limit?: number, @Query('page') page?: number) {
-    return this.productService.findAll({ limit, page });
+  async findAll(@Query() query: ProductFilterDto) {
+    // Pass all filters and options to the service
+    return this.productService.findAll(query);
   }
 
   @Get('category/:category')
