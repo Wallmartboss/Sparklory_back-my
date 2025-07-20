@@ -19,6 +19,12 @@ export class CartItemDto {
   @ApiProperty({ description: 'Insert', example: 'diamond', required: false })
   insert?: string;
 
-  @ApiProperty({ description: 'Price per item', example: 1000 })
-  price: number;
+  @ApiProperty({ description: 'Initial price per item', example: 1200 })
+  firstPrice: number;
+
+  @ApiProperty({ description: 'Discount percent', example: 20 })
+  discount: number;
+
+  @ApiProperty({ description: 'Price per item with discount', example: 960 })
+  priceWithDiscount: number;
 }

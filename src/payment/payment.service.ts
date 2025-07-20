@@ -265,7 +265,8 @@ export class PaymentService {
             `[Лояльність] В корзине ${cart.items.length} товаров`,
           );
           const totalAmount = cart.items.reduce(
-            (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
+            (sum, item) =>
+              sum + (item.priceWithDiscount || 0) * (item.quantity || 1),
             0,
           );
           await this.loyaltyService.addOrderToHistory(

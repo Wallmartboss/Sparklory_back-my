@@ -91,31 +91,32 @@ export class Product {
   @Prop({ required: false })
   prod_collection: string;
 
-  /** Discount percentage (0-100) */
+  /** Discount percentage (0-100). If > 0, discount is always applied regardless of dates. */
   @ApiProperty({
     example: 30,
     required: false,
-    description: 'Discount percentage (0-100)',
+    description:
+      'Discount percentage (0-100). If > 0, discount is always applied regardless of dates.',
   })
   @Prop({ type: Number, default: 0 })
   discount: number;
 
-  /** Discount start date (ISO 8601) */
+  /** Discount start date (ISO 8601, ignored if discount > 0) */
   @ApiProperty({
     example: '2025-07-10T00:00:00.000Z',
     required: false,
-    description: 'Discount start date (ISO 8601)',
+    description: 'Discount start date (ISO 8601, ignored if discount > 0)',
     type: String,
     format: 'date-time',
   })
   @Prop({ type: Date, required: false })
   discountStart: Date;
 
-  /** Discount end date (ISO 8601) */
+  /** Discount end date (ISO 8601, ignored if discount > 0) */
   @ApiProperty({
     example: '2025-07-20T23:59:59.000Z',
     required: false,
-    description: 'Discount end date (ISO 8601)',
+    description: 'Discount end date (ISO 8601, ignored if discount > 0)',
     type: String,
     format: 'date-time',
   })

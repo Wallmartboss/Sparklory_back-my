@@ -153,11 +153,28 @@ export class CartService {
       );
     }
 
-    const price = this.getDiscountedPrice(product, material, size);
+    const { firstPrice, discount, priceWithDiscount } = (() => {
+      const basePrice = variant.price || 0;
+      let discount = 0;
+      let priceWithDiscount = basePrice;
+      if (product.discount && product.discount > 0) {
+        discount = product.discount;
+        priceWithDiscount = Math.round(
+          (basePrice * (100 - product.discount)) / 100,
+        );
+      }
+      return {
+        firstPrice: basePrice,
+        discount,
+        priceWithDiscount,
+      };
+    })();
 
     if (existingItem) {
       existingItem.quantity += quantity;
-      existingItem.price = price; // update price if discount changed
+      existingItem.firstPrice = firstPrice;
+      existingItem.discount = discount;
+      existingItem.priceWithDiscount = priceWithDiscount;
     } else {
       cart.items.push({
         product: new Types.ObjectId(productId),
@@ -165,7 +182,9 @@ export class CartService {
         size,
         material,
         insert,
-        price,
+        firstPrice,
+        discount,
+        priceWithDiscount,
       });
     }
 
@@ -206,13 +225,6 @@ export class CartService {
 
   async clearCart(userId?: string, guestId?: string) {
     try {
-      console.log(
-        '[DEBUG][CartService.clearCart] userId:',
-        userId,
-        'guestId:',
-        guestId,
-      );
-
       let query = {};
       if (userId) {
         query = { user: userId, isOrdered: false };
@@ -222,17 +234,14 @@ export class CartService {
         throw new Error('Either userId or guestId must be provided');
       }
 
-      const updatedCart = await this.cartModel.findOneAndUpdate(
-        query,
-        { $set: { items: [] } },
-        { new: true, upsert: true },
-      );
-
-      console.log(
-        '[DEBUG][CartService.clearCart] Cart cleared, new items count:',
-        updatedCart.items.length,
-      );
-      return updatedCart;
+      let cart = await this.cartModel.findOne(query);
+      if (!cart) {
+        cart = new this.cartModel({ ...query, items: [] });
+      } else {
+        cart.items = [];
+      }
+      await this.recalculateTotals(cart);
+      return cart.save();
     } catch (error) {
       console.error(
         '[ERROR][CartService.clearCart] Error clearing cart:',
@@ -263,7 +272,8 @@ export class CartService {
       await this.updateStockQuantities(cart.items);
 
       const totalAmount = cart.items.reduce(
-        (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
+        (sum, item) =>
+          sum + (item.priceWithDiscount || 0) * (item.quantity || 1),
         0,
       );
       console.log(
@@ -316,24 +326,74 @@ export class CartService {
    * Оновлює підсумкову суму корзини з урахуванням купона та бонусів
    */
   async recalculateTotals(cart: CartDocument): Promise<void> {
-    // Рахуємо попередню суму
-    const preTotal = cart.items.reduce(
-      (sum, item) => sum + item.price * item.quantity,
+    if (!cart.items || cart.items.length === 0) {
+      cart.preTotal = 0;
+      cart.finalTotal = 0;
+      cart.firstAmount = 0;
+      cart.amountWithDiscount = 0;
+      cart.finalAmount = 0;
+      cart.totalDiscount = 0;
+      return;
+    }
+    // Сума товарів за стандартною ціною
+    const firstAmount = cart.items.reduce(
+      (sum, item) => sum + item.firstPrice * item.quantity,
       0,
     );
-    let discountedTotal = preTotal;
+    // Сума товарів з урахуванням знижки
+    const amountWithDiscount = cart.items.reduce(
+      (sum, item) => sum + item.priceWithDiscount * item.quantity,
+      0,
+    );
+    // Сума знижки
+    const totalDiscount = firstAmount - amountWithDiscount;
+    // Остаточна сума після купонів і бонусів
+    let finalAmount = amountWithDiscount;
     let coupon = null;
     if (cart.appliedCoupon) {
       coupon = await this.couponService.findValidCoupon(cart.appliedCoupon);
       if (coupon.amount) {
-        discountedTotal = Math.max(0, discountedTotal - coupon.amount);
+        finalAmount = Math.max(0, finalAmount - coupon.amount);
       } else if (coupon.percent) {
-        discountedTotal = Math.max(0, discountedTotal * (1 - coupon.percent));
+        finalAmount = Math.max(0, finalAmount * (1 - coupon.percent));
       }
     }
-    const finalTotal = Math.max(0, discountedTotal - (cart.appliedBonus || 0));
-    cart.preTotal = preTotal;
-    cart.finalTotal = finalTotal;
+    finalAmount = Math.max(0, finalAmount - (cart.appliedBonus || 0));
+    cart.preTotal = firstAmount;
+    cart.finalTotal = finalAmount;
+    cart.firstAmount = firstAmount;
+    cart.amountWithDiscount = amountWithDiscount;
+    cart.finalAmount = finalAmount;
+    cart.totalDiscount = totalDiscount;
+  }
+
+  /**
+   * Оновлює ціни, знижки та firstPrice для всіх товарів у корзині на основі актуальних даних продукту
+   */
+  async updateCartItemsPrices(cart: CartDocument): Promise<void> {
+    for (const item of cart.items) {
+      const product = await this.productModel.findById(item.product);
+      if (!product) continue;
+      const variant = product.variants.find(
+        v =>
+          (!item.material || v.material === item.material) &&
+          (!item.size || v.size === item.size) &&
+          (!item.insert || v.insert === item.insert),
+      );
+      if (!variant) continue;
+      const basePrice = variant.price || 0;
+      let discount = 0;
+      let priceWithDiscount = basePrice;
+      if (product.discount && product.discount > 0) {
+        discount = product.discount;
+        priceWithDiscount = Math.round(
+          (basePrice * (100 - product.discount)) / 100,
+        );
+      }
+      item.firstPrice = basePrice;
+      item.discount = discount;
+      item.priceWithDiscount = priceWithDiscount;
+    }
   }
 
   /**
