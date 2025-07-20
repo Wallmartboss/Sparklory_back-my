@@ -145,7 +145,7 @@ export class AuthController {
     const result = await this.authService.login(req.user as any);
     // Redirect to frontend with tokens in query params
     const frontendUrl = this.configService.get<string>(
-      'FRONTEND_URL',
+      // 'FRONTEND_URL',
       'http://localhost:3000',
     );
     const params = new URLSearchParams({
@@ -171,7 +171,7 @@ export class AuthController {
     const result = await this.authService.login(req.user as any);
     // Redirect to frontend with tokens in query params
     const frontendUrl = this.configService.get<string>(
-      'FRONTEND_URL',
+      // 'FRONTEND_URL',
       'http://localhost:3000',
     );
     const params = new URLSearchParams({
