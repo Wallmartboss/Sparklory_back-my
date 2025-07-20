@@ -94,11 +94,28 @@ export class CartController {
   })
   async getCart(@Req() req) {
     const cart = await this.cartService.getOrCreateCart(req.user.id);
-    const total = cart.items.reduce(
-      (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
-      0,
-    );
-    return { ...cart.toObject(), total };
+    await this.cartService.updateCartItemsPrices(cart);
+    await this.cartService.recalculateTotals(cart);
+    return {
+      items: cart.items.map(item => ({
+        product: item.product.toString(),
+        quantity: item.quantity,
+        size: item.size,
+        material: item.material,
+        insert: item.insert,
+        firstPrice: item.firstPrice,
+        discount: item.discount,
+        priceWithDiscount: item.priceWithDiscount,
+      })),
+      preTotal: cart.preTotal,
+      finalTotal: cart.finalTotal,
+      appliedCoupon: cart.appliedCoupon,
+      appliedBonus: cart.appliedBonus,
+      firstAmount: cart.firstAmount,
+      totalDiscount: cart.totalDiscount,
+      amountWithDiscount: cart.amountWithDiscount,
+      finalAmount: cart.finalAmount,
+    };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -167,11 +184,26 @@ export class CartController {
       throw new BadRequestException('guestId is required');
     }
     const cart = await this.cartService.getOrCreateCart(undefined, guestId);
-    const total = cart.items.reduce(
-      (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
-      0,
-    );
-    return { ...cart.toObject(), total };
+    return {
+      items: cart.items.map(item => ({
+        product: item.product.toString(),
+        quantity: item.quantity,
+        size: item.size,
+        material: item.material,
+        insert: item.insert,
+        firstPrice: item.firstPrice,
+        discount: item.discount,
+        priceWithDiscount: item.priceWithDiscount,
+      })),
+      preTotal: cart.preTotal,
+      finalTotal: cart.finalTotal,
+      appliedCoupon: cart.appliedCoupon,
+      appliedBonus: cart.appliedBonus,
+      firstAmount: cart.firstAmount,
+      totalDiscount: cart.totalDiscount,
+      amountWithDiscount: cart.amountWithDiscount,
+      finalAmount: cart.finalAmount,
+    };
   }
 
   @Post('add-guest')
@@ -295,6 +327,7 @@ export class CartController {
     return this.cartService.clearCart(undefined, body.guestId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('apply-coupon')
   @ApiOperation({ summary: 'Apply a coupon to the cart' })
   @ApiBody({ type: ApplyCouponDto })
@@ -303,6 +336,9 @@ export class CartController {
     @Req() req,
     @Body() body: ApplyCouponDto,
   ): Promise<CartDto> {
+    if (!req.user || !req.user.id) {
+      throw new BadRequestException('User not authenticated');
+    }
     // Applies a coupon to the user's cart
     const cart = await this.cartService.applyCoupon(req.user.id, body.code);
     return {
@@ -312,15 +348,22 @@ export class CartController {
         size: item.size,
         material: item.material,
         insert: item.insert,
-        price: item.price,
+        firstPrice: item.firstPrice,
+        discount: item.discount,
+        priceWithDiscount: item.priceWithDiscount,
       })),
       preTotal: cart.preTotal,
       finalTotal: cart.finalTotal,
       appliedCoupon: cart.appliedCoupon,
       appliedBonus: cart.appliedBonus,
+      firstAmount: cart.firstAmount,
+      totalDiscount: cart.totalDiscount,
+      amountWithDiscount: cart.amountWithDiscount,
+      finalAmount: cart.finalAmount,
     };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('apply-bonus')
   @ApiOperation({ summary: 'Apply bonuses to the cart' })
   @ApiBody({ type: ApplyBonusDto })
@@ -330,7 +373,9 @@ export class CartController {
     type: CartDto,
   })
   async applyBonus(@Req() req, @Body() body: ApplyBonusDto): Promise<CartDto> {
-    // Applies bonuses to the user's cart
+    if (!req.user || !req.user.id) {
+      throw new BadRequestException('User not authenticated');
+    }
     const cart = await this.cartService.applyBonus(req.user.id, body.amount);
     return {
       items: cart.items.map(item => ({
@@ -339,12 +384,18 @@ export class CartController {
         size: item.size,
         material: item.material,
         insert: item.insert,
-        price: item.price,
+        firstPrice: item.firstPrice,
+        discount: item.discount,
+        priceWithDiscount: item.priceWithDiscount,
       })),
       preTotal: cart.preTotal,
       finalTotal: cart.finalTotal,
       appliedCoupon: cart.appliedCoupon,
       appliedBonus: cart.appliedBonus,
+      firstAmount: cart.firstAmount,
+      totalDiscount: cart.totalDiscount,
+      amountWithDiscount: cart.amountWithDiscount,
+      finalAmount: cart.finalAmount,
     };
   }
 }

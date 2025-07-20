@@ -16,4 +16,16 @@ export class CartDto {
 
   @ApiProperty({ description: 'Applied bonuses', required: false })
   appliedBonus?: number;
+
+  @ApiProperty({ description: 'Total amount before discounts' })
+  firstAmount: number;
+
+  @ApiProperty({ description: 'Total discount amount' })
+  totalDiscount: number;
+
+  @ApiProperty({ description: 'Total amount with discount' })
+  amountWithDiscount: number;
+
+  @ApiProperty({ description: 'Final cart amount after bonuses/coupons' })
+  finalAmount: number;
 }

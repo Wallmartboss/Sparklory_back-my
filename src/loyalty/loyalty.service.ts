@@ -125,7 +125,10 @@ export class LoyaltyService {
         !Array.isArray(items) ||
         items.length === 0 ||
         !items.every(
-          item => item.product && item.quantity && item.price !== undefined,
+          item =>
+            item.product &&
+            item.quantity &&
+            item.priceWithDiscount !== undefined,
         )
       ) {
         console.error(

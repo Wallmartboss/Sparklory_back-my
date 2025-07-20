@@ -19,7 +19,11 @@ export class CartItem {
   insert?: string;
 
   @Prop({ required: true })
-  price: number; // Ціна
+  firstPrice: number; // Початкова ціна за одиницю
+  @Prop({ required: true })
+  discount: number; // Розмір знижки у відсотках
+  @Prop({ required: true })
+  priceWithDiscount: number; // Ціна з урахуванням знижки
 }
 
 @Schema({ timestamps: true, versionKey: false })
@@ -59,6 +63,14 @@ export class Cart {
 
   @Prop({ type: Number, default: 0 })
   finalTotal: number; // Підсумкова сума
+  @Prop({ type: Number, default: 0 })
+  firstAmount: number; // Сума товарів за стандартною ціною
+  @Prop({ type: Number, default: 0 })
+  totalDiscount: number; // Сума знижки
+  @Prop({ type: Number, default: 0 })
+  amountWithDiscount: number; // Сума товарів з урахуванням знижки
+  @Prop({ type: Number, default: 0 })
+  finalAmount: number; // Остаточна сума корзини
 }
 
 export type CartDocument = Cart & Document;
