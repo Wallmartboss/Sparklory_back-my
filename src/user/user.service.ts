@@ -11,6 +11,7 @@ import { Model, Types } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 
 import { ECondition } from '@/common';
+import { Role } from '@/common/enum/user.enum';
 import { DeviceService } from '@/device/device.service';
 import { Device } from '@/device/schema/device.schema';
 import { EmailService } from '@/email/email.service';
@@ -223,6 +224,24 @@ export class UserService {
     const user = await this.userModel.findById(userId);
     if (!user) throw new NotFoundException('User not found');
     user.wishlist = [];
+    await user.save();
+    return user;
+  }
+
+  /**
+   * Change user role (only for superadmin)
+   */
+  async changeUserRole(
+    targetUserId: string,
+    newRole: Role,
+    requester: User,
+  ): Promise<User> {
+    if (requester.role !== 'superadmin') {
+      throw new BadRequestException('Only superadmin can change roles');
+    }
+    const user = await this.userModel.findById(targetUserId);
+    if (!user) throw new NotFoundException('User not found');
+    user.role = newRole;
     await user.save();
     return user;
   }
