@@ -1,6 +1,9 @@
 import { JwtAuthGuard } from '@/auth/guards/jwt.guard';
 import { UserDecorator } from '@/common/decorators/user.decorator';
+import { Role } from '@/common/enum/user.enum';
 import {
+  BadRequestException,
+  Body,
   Controller,
   Delete,
   Get,
@@ -10,12 +13,19 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
   ApiParam,
+  ApiProperty,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { UserService } from './user.service';
+
+class SetUserRoleDto {
+  @ApiProperty({ example: 'admin', enum: ['user', 'admin', 'superadmin'] })
+  role: Role;
+}
 
 @ApiTags('User')
 @Controller('user')
@@ -168,5 +178,32 @@ export class UserController {
   @ApiResponse({ status: 200, description: 'Wishlist cleared' })
   async clearWishlist(@UserDecorator('sub') sub: string) {
     return this.userService.clearWishlist(sub);
+  }
+
+  /**
+   * Change user role (only for superadmin)
+   */
+  @Post('set-role/:userId')
+  @ApiOperation({ summary: 'Change user role (superadmin only)' })
+  @ApiParam({ name: 'userId', type: String })
+  @ApiResponse({ status: 200, description: 'User role changed' })
+  @ApiBody({ type: SetUserRoleDto })
+  async setUserRole(
+    @UserDecorator() requester: any,
+    @Param('userId') userId: string,
+    @Body() body: SetUserRoleDto,
+  ) {
+    try {
+      if (requester.role !== Role.SuperAdmin) {
+        throw new BadRequestException('Only superadmin can change roles');
+      }
+      return await this.userService.changeUserRole(
+        userId,
+        body.role,
+        requester,
+      );
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Unknown error');
+    }
   }
 }

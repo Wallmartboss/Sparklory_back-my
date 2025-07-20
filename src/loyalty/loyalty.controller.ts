@@ -1,4 +1,6 @@
+import { Role } from '@/common/enum/user.enum';
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -18,6 +20,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { UserDecorator } from '../common/decorators/user.decorator';
 import { AddCardDto } from './dto/add-card.dto';
 import { CreateLoyaltyLevelDto } from './dto/create-loyalty-level.dto';
+import { UpdateLoyaltyLevelDto } from './dto/update-loyalty-level.dto';
 import { LoyaltyService } from './loyalty.service';
 
 /**
@@ -91,8 +94,21 @@ export class LoyaltyController {
   @Post('level')
   @ApiOperation({ summary: 'Create loyalty level (admin)' })
   @ApiResponse({ status: 201, description: 'Loyalty level created' })
-  async createLevel(@Body() dto: CreateLoyaltyLevelDto) {
-    // Creates a new loyalty level
+  async createLevel(
+    @UserDecorator() requester: any,
+    @Body() dto: CreateLoyaltyLevelDto,
+  ) {
+    if (!requester) {
+      throw new BadRequestException(
+        'User is not authenticated. Please provide a valid JWT token.',
+      );
+    }
+    if (requester.role !== Role.Admin && requester.role !== Role.SuperAdmin) {
+      throw new BadRequestException(
+        'Only admin or superadmin can access this endpoint. Your role: ' +
+          requester.role,
+      );
+    }
     return this.loyaltyService.createLevel(dto.name, dto.bonusPercent);
   }
 
@@ -105,11 +121,27 @@ export class LoyaltyController {
   @ApiOperation({ summary: 'Update loyalty level bonus percent (admin)' })
   @ApiResponse({ status: 200, description: 'Loyalty level updated' })
   async updateLevel(
+    @UserDecorator() requester: any,
     @Param('id') id: string,
-    @Body('bonusPercent') bonusPercent: number,
+    @Body() body: UpdateLoyaltyLevelDto,
   ) {
-    // Updates the bonus percent for a loyalty level
-    return this.loyaltyService.updateLevel(id, bonusPercent);
+    if (!requester) {
+      throw new BadRequestException(
+        'User is not authenticated. Please provide a valid JWT token.',
+      );
+    }
+    if (requester.role !== Role.Admin && requester.role !== Role.SuperAdmin) {
+      throw new BadRequestException(
+        'Only admin or superadmin can access this endpoint. Your role: ' +
+          requester.role,
+      );
+    }
+    if (typeof body.bonusPercent !== 'number' || isNaN(body.bonusPercent)) {
+      throw new BadRequestException(
+        'Field "bonusPercent" is required and must be a number.',
+      );
+    }
+    return this.loyaltyService.updateLevel(id, body.bonusPercent);
   }
 
   /**
@@ -143,10 +175,21 @@ export class LoyaltyController {
     },
   })
   async assignLevel(
+    @UserDecorator() requester: any,
     @Body('userId') userId: string,
     @Param('levelId') levelId: string,
   ) {
-    // Assigns a loyalty level to a user
+    if (!requester) {
+      throw new BadRequestException(
+        'User is not authenticated. Please provide a valid JWT token.',
+      );
+    }
+    if (requester.role !== Role.Admin && requester.role !== Role.SuperAdmin) {
+      throw new BadRequestException(
+        'Only admin or superadmin can access this endpoint. Your role: ' +
+          requester.role,
+      );
+    }
     return this.loyaltyService.assignLevel(userId, levelId);
   }
 }

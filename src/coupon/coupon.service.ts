@@ -13,8 +13,21 @@ export class CouponService {
 
   /**
    * Створює новий купон
+   * @param data Дані купона
+   * @param requester Користувач, що виконує запит (має бути переданий з контролера)
    */
-  async createCoupon(data: Partial<Coupon>): Promise<Coupon> {
+  async createCoupon(data: Partial<Coupon>, requester: any): Promise<Coupon> {
+    if (!requester) {
+      throw new BadRequestException(
+        'User is not authenticated. Please provide a valid JWT token.',
+      );
+    }
+    if (requester.role !== 'admin' && requester.role !== 'superadmin') {
+      throw new BadRequestException(
+        'Only admin or superadmin can access this endpoint. Your role: ' +
+          requester.role,
+      );
+    }
     // amount або percent, але не обидва
     if ((data.amount && data.percent) || (!data.amount && !data.percent)) {
       throw new BadRequestException(
