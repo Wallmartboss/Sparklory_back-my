@@ -189,10 +189,8 @@ export class CartService {
     }
 
     const savedCart = await cart.save();
-    if (!userId && guestId) {
-      await this.recalculateTotals(savedCart);
-      await savedCart.save();
-    }
+    await this.recalculateTotals(savedCart);
+    await savedCart.save();
     return savedCart;
   }
 
