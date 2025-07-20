@@ -219,7 +219,7 @@ export class CartService {
     }
 
     cart.items.splice(itemIndex, 1);
-
+    await this.recalculateTotals(cart);
     return cart.save();
   }
 
@@ -239,6 +239,8 @@ export class CartService {
         cart = new this.cartModel({ ...query, items: [] });
       } else {
         cart.items = [];
+        cart.appliedCoupon = undefined;
+        cart.appliedBonus = 0;
       }
       await this.recalculateTotals(cart);
       return cart.save();
