@@ -152,7 +152,7 @@ export class AuthController {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
     });
-    return res.redirect(`${frontendUrl}/?${params.toString()}`);
+    return res.redirect(`${frontendUrl}/oauth-callback?${params.toString()}`);
   }
 
   @Get('google')
@@ -178,7 +178,9 @@ export class AuthController {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
     });
-    return res.redirect(`${frontendUrl}/oauth-callback?${params.toString()}`);
+    const redirectUrl = `${frontendUrl}/oauth-callback?${params.toString()}`;
+    console.log('[GOOGLE OAUTH REDIRECT]', redirectUrl);
+    return res.redirect(redirectUrl);
   }
 
   @Post('forgot-password')
