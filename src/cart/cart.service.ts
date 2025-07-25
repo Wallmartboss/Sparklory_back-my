@@ -217,6 +217,12 @@ export class CartService {
     }
 
     cart.items.splice(itemIndex, 1);
+    // If the cart is now empty after removing the item, clear appliedCoupon and appliedBonus
+    // This ensures that any applied coupon is removed when the cart becomes empty
+    if (cart.items.length === 0) {
+      cart.appliedCoupon = undefined; // Remove applied coupon if cart is empty
+      cart.appliedBonus = 0; // Remove applied bonus if cart is empty
+    }
     await this.recalculateTotals(cart);
     return cart.save();
   }
@@ -237,8 +243,8 @@ export class CartService {
         cart = new this.cartModel({ ...query, items: [] });
       } else {
         cart.items = [];
-        cart.appliedCoupon = undefined;
-        cart.appliedBonus = 0;
+        cart.appliedCoupon = undefined; // Remove applied coupon when cart is cleared
+        cart.appliedBonus = 0; // Remove applied bonus when cart is cleared
       }
       await this.recalculateTotals(cart);
       return cart.save();
