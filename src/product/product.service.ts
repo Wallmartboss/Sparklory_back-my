@@ -33,6 +33,22 @@ interface ReviewPaginationResult {
   reviews: any[];
 }
 
+interface ProductPaginationResult {
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+  products: Product[];
+}
+
+interface CategoryPaginationResult {
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+  categories: any[];
+}
+
 @Injectable()
 export class ProductService {
   constructor(
@@ -71,7 +87,7 @@ export class ProductService {
       if (subcategory) {
         if (subcategory.parentCategory !== categoryName) {
           throw new BadRequestException(
-            'Данная подкатегория относится к другой категории',
+            'Дана підкатегорія відноситься до іншої категорії',
           );
         }
       } else {
@@ -89,14 +105,13 @@ export class ProductService {
     return product.save();
   }
 
-  async findAll(params?: FindAllProductsParams): Promise<Product[]> {
-    // Build filter object for MongoDB query
+  async findAll(
+    params?: FindAllProductsParams,
+  ): Promise<ProductPaginationResult> {
     const filter: any = {};
     if (params?.category) {
-      // Use regex for case-insensitive category filtering
       filter.category = { $regex: `^${params.category}$`, $options: 'i' };
     }
-    // Filter by material and insert inside variants array (case-insensitive, regex)
     if (params?.material) {
       filter['variants.material'] = {
         $regex: `^${params.material}$`,
@@ -109,32 +124,33 @@ export class ProductService {
         $options: 'i',
       };
     }
-    // Filter by inStock (at least this quantity in any variant)
     if (params?.inStock !== undefined) {
       filter['variants.inStock'] = { $gte: Number(params.inStock) };
     }
-    // Build sort option
     let sortOption: any = {};
     if (params?.sort) {
       if (params.sort === 'price_desc') {
         sortOption['variants.price'] = -1;
       } else if (params.sort === 'price_asc') {
         sortOption['variants.price'] = 1;
-      } // Add more sort options if needed
+      }
     }
-    // Pagination
     const limit = params?.limit ? Number(params.limit) : 16;
     const page = params?.page ? Number(params.page) : 1;
     const skip = (page - 1) * limit;
-    // Query with filters, sort, and pagination
-    return this.productModel
-      .find(filter)
-      .sort(sortOption)
-      .skip(skip)
-      .limit(limit)
-      .populate('category', 'name _id')
-      .populate('subcategory', 'name _id')
-      .exec();
+    const [products, total] = await Promise.all([
+      this.productModel
+        .find(filter)
+        .sort(sortOption)
+        .skip(skip)
+        .limit(limit)
+        .populate('category', 'name _id')
+        .populate('subcategory', 'name _id')
+        .exec(),
+      this.productModel.countDocuments(filter),
+    ]);
+    const pages = Math.ceil(total / limit) || 1;
+    return { total, page, limit, pages, products };
   }
 
   async findOne(id: string): Promise<Product> {
@@ -458,12 +474,13 @@ export class ProductService {
   /**
    * Get all categories with their subcategories and image
    */
-  async getCategoriesWithSubcategories(limit?: number, page?: number) {
-    // Get all categories
+  async getCategoriesWithSubcategories(
+    limit?: number,
+    page?: number,
+  ): Promise<CategoryPaginationResult> {
     const categories = await this.categoryService['categoryModel']
       .find()
       .lean();
-    // Group subcategories by parentCategory (using name, not _id)
     const categoryMap = {};
     categories.forEach(cat => {
       if (!cat.parentCategory) {
@@ -482,13 +499,22 @@ export class ProductService {
         }
       }
     });
-    // Convert to array
-    let result = Object.values(categoryMap);
-    // Apply pagination if limit and page are provided
+    const result = Object.values(categoryMap);
+    const total = result.length;
+    const usedLimit = limit !== undefined ? Number(limit) : total;
+    const usedPage = page !== undefined ? Number(page) : 1;
+    let paged = result;
     if (limit !== undefined && page !== undefined) {
-      const skip = (Number(page) - 1) * Number(limit);
-      result = result.slice(skip, skip + Number(limit));
+      const skip = (usedPage - 1) * usedLimit;
+      paged = result.slice(skip, skip + usedLimit);
     }
-    return result;
+    const pages = Math.ceil(total / usedLimit) || 1;
+    return {
+      total,
+      page: usedPage,
+      limit: usedLimit,
+      pages,
+      categories: paged,
+    };
   }
 }
