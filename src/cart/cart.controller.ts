@@ -398,4 +398,56 @@ export class CartController {
       finalAmount: cart.finalAmount,
     };
   }
+
+  @Post('apply-coupon-guest')
+  @ApiOperation({ summary: 'Apply a coupon to the guest cart' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        guestId: { type: 'string', example: 'guest-uuid' },
+        code: { type: 'string', example: 'WELCOME2024' },
+      },
+      required: ['guestId', 'code'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Coupon applied to guest cart',
+    type: CartDto,
+  })
+  async applyCouponGuest(
+    @Body() body: { guestId: string; code: string },
+  ): Promise<CartDto> {
+    if (!body.guestId) {
+      throw new BadRequestException('guestId is required');
+    }
+    if (!body.code) {
+      throw new BadRequestException('Coupon code is required');
+    }
+    const cart = await this.cartService.applyCouponGuest(
+      body.guestId,
+      body.code,
+    );
+    return {
+      items: cart.items.map(item => ({
+        product: item.product.toString(),
+        quantity: item.quantity,
+        size: item.size,
+        material: item.material,
+        insert: item.insert,
+        firstPrice: item.firstPrice,
+        discount: item.discount,
+        priceWithDiscount: item.priceWithDiscount,
+      })),
+      preTotal: cart.preTotal,
+      finalTotal: cart.finalTotal,
+      appliedCoupon: cart.appliedCoupon,
+      appliedBonus: cart.appliedBonus,
+      firstAmount: cart.firstAmount,
+      totalDiscount: cart.totalDiscount,
+      amountWithDiscount: cart.amountWithDiscount,
+      finalAmount: cart.finalAmount,
+    };
+  }
 }
