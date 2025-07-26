@@ -168,6 +168,30 @@ export class LoyaltyService {
     return { userId, amount, description };
   }
 
+  /**
+   * Adds bonus points to the user's loyalty account.
+   * @param userId User identifier
+   * @param amount Amount of bonus points to add
+   */
+  async addBonusToUser(
+    userId: string | Types.ObjectId,
+    amount: number,
+  ): Promise<void> {
+    const idStr = typeof userId === 'string' ? userId : userId?.toString();
+    if (!idStr || idStr.length !== 24) {
+      throw new Error('Invalid userId');
+    }
+    if (!amount || amount <= 0) {
+      return;
+    }
+    const account = await this.loyaltyModel.findOne({
+      userId: new Types.ObjectId(idStr),
+    });
+    if (!account) throw new NotFoundException('Loyalty account not found');
+    account.bonusBalance += amount;
+    await account.save();
+  }
+
   // --- CRUD для рівнів лояльності (адмін) ---
 
   /**

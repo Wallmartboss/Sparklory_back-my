@@ -1,4 +1,9 @@
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CouponService } from '../coupon/coupon.service';
@@ -239,12 +244,19 @@ export class CartService {
       }
 
       let cart = await this.cartModel.findOne(query);
+      let appliedBonusToReturn = 0;
       if (!cart) {
         cart = new this.cartModel({ ...query, items: [] });
       } else {
+        // Save applied bonus before clearing
+        appliedBonusToReturn = cart.appliedBonus || 0;
         cart.items = [];
         cart.appliedCoupon = undefined; // Remove applied coupon when cart is cleared
         cart.appliedBonus = 0; // Remove applied bonus when cart is cleared
+      }
+      // Return bonus to user if cart was not ordered and user is present
+      if (userId && appliedBonusToReturn > 0) {
+        await this.loyaltyService.addBonusToUser(userId, appliedBonusToReturn);
       }
       await this.recalculateTotals(cart);
       return cart.save();
@@ -413,6 +425,21 @@ export class CartService {
     // Зберігаємо застосований купон
     cart.appliedCoupon = coupon.code;
     // Перераховуємо підсумкову суму
+    await this.recalculateTotals(cart);
+    await cart.save();
+    return cart;
+  }
+
+  /**
+   * Застосовує купон до корзини гостя
+   */
+  async applyCouponGuest(guestId: string, code: string): Promise<CartDocument> {
+    const cart = await this.getOrCreateCart(undefined, guestId);
+    const coupon = await this.couponService.findValidCoupon(code);
+    if (!coupon) {
+      throw new BadRequestException('Coupon not found or not valid');
+    }
+    cart.appliedCoupon = coupon.code;
     await this.recalculateTotals(cart);
     await cart.save();
     return cart;
