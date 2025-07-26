@@ -82,55 +82,61 @@ export class ProductController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Returns all products.',
+    description: 'Returns paginated products.',
     schema: {
-      example: [
-        {
-          _id: '60f7c2b8e1d2c8001c8e4c1a',
-          name: 'Amethyst Earrings',
-          description: 'Earrings with white gold and amethysts',
-          category: '60f7c2b8e1d2c8001c8e4c1b',
-          engraving: true,
-          image: ['12345678.jpg'],
-          action: ['Spring sale'],
-          prod_collection: 'Spring 2025',
-          discount: 30,
-          discountStart: '2025-07-10T00:00:00.000Z',
-          discountEnd: '2025-07-20T23:59:59.000Z',
-          subcategory: '60f7c2b8e1d2c8001c8e4c1c',
-          gender: 'unisex',
-          details: ['Handmade', '925 Silver', 'Gift box included'],
-          reviews: [
-            {
-              name: 'Ivan',
-              avatar: 'avatar123.jpg',
-              text: 'Great product!',
-              rating: 5,
-              createdAt: '20.10.2024',
-              image: ['reviewImage1.jpg'],
-            },
-          ],
-          variants: [
-            {
-              material: 'silver',
-              size: 'L',
-              price: 8000,
-              insert: 'Silver',
-              inStock: 7,
-            },
-            {
-              material: 'white gold',
-              size: 'M',
-              price: 12200,
-              insert: 'White Gold',
-              inStock: 5,
-            },
-          ],
-        },
-      ],
+      example: {
+        total: 100,
+        page: 1,
+        limit: 16,
+        pages: 7,
+        products: [
+          {
+            _id: '60f7c2b8e1d2c8001c8e4c1a',
+            name: 'Amethyst Earrings',
+            description: 'Earrings with white gold and amethysts',
+            category: '60f7c2b8e1d2c8001c8e4c1b',
+            engraving: true,
+            image: ['12345678.jpg'],
+            action: ['Spring sale'],
+            prod_collection: 'Spring 2025',
+            discount: 30,
+            discountStart: '2025-07-10T00:00:00.000Z',
+            discountEnd: '2025-07-20T23:59:59.000Z',
+            subcategory: '60f7c2b8e1d2c8001c8e4c1c',
+            gender: 'unisex',
+            details: ['Handmade', '925 Silver', 'Gift box included'],
+            reviews: [
+              {
+                name: 'Ivan',
+                avatar: 'avatar123.jpg',
+                text: 'Great product!',
+                rating: 5,
+                createdAt: '20.10.2024',
+                image: ['reviewImage1.jpg'],
+              },
+            ],
+            variants: [
+              {
+                material: 'silver',
+                size: 'L',
+                price: 8000,
+                insert: 'Silver',
+                inStock: 7,
+              },
+              {
+                material: 'white gold',
+                size: 'M',
+                price: 12200,
+                insert: 'White Gold',
+                inStock: 5,
+              },
+            ],
+          },
+        ],
+      },
     },
   })
-  async findAll(@Query() query: ProductFilterDto) {
+  async findAll(@Query() query: ProductFilterDto): Promise<any> {
     // Pass all filters and options to the service
     return this.productService.findAll(query);
   }
@@ -331,23 +337,30 @@ export class ProductController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Returns all categories with their subcategories and image.',
+    description:
+      'Returns paginated categories with their subcategories and image.',
     schema: {
-      example: [
-        {
-          _id: '60f7c2b8e1d2c8001c8e4c1b',
-          name: 'earrings',
-          image: 'https://example.com/category-image.jpg',
-          parentCategory: null, //"category" for subcategory,
-          subcategories: [
-            {
-              _id: '60f7c2b8e1d2c8001c8e4c1c',
-              name: 'studs',
-              image: 'https://example.com/subcategory-image.jpg',
-            },
-          ],
-        },
-      ],
+      example: {
+        total: 10,
+        page: 1,
+        limit: 5,
+        pages: 2,
+        categories: [
+          {
+            _id: '60f7c2b8e1d2c8001c8e4c1b',
+            name: 'earrings',
+            image: 'https://example.com/category-image.jpg',
+            parentCategory: null,
+            subcategories: [
+              {
+                _id: '60f7c2b8e1d2c8001c8e4c1c',
+                name: 'studs',
+                image: 'https://example.com/subcategory-image.jpg',
+              },
+            ],
+          },
+        ],
+      },
     },
   })
   @ApiQuery({
@@ -365,7 +378,7 @@ export class ProductController {
   async getAllCategories(
     @Query('limit') limit?: number,
     @Query('page') page?: number,
-  ) {
+  ): Promise<any> {
     return this.productService.getCategoriesWithSubcategories(limit, page);
   }
 

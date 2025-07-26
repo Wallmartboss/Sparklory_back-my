@@ -213,8 +213,10 @@ export class UserService {
     if (!user) throw new NotFoundException('User not found');
     // Populate products
     const wishlistIds = user.wishlist.map(id => id.toString());
-    const products = await this.productService.findAll();
-    return products.filter((p: any) => wishlistIds.includes(p._id.toString()));
+    const products: any = await this.productService.findAll();
+    return (products.products || []).filter((p: any) =>
+      wishlistIds.includes(p._id.toString()),
+    );
   }
 
   /**
