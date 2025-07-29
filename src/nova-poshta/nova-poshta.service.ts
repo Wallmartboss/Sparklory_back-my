@@ -120,7 +120,7 @@ export class NovaPoshtaService {
    * @param cityRef City reference
    */
   async getWarehouses(cityRef: string, type?: string) {
-    const cacheKey = `warehouses:${cityRef}:${type || 'all'}`;
+    const cacheKey = `warehouses:${cityRef}:all`; // Always cache all warehouses for city
     const startTime = Date.now();
 
     try {
@@ -130,28 +130,10 @@ export class NovaPoshtaService {
         this.logger.debug(
           `Returning cached warehouses for city: ${cityRef} (${Date.now() - startTime}ms)`,
         );
-        this.logger.debug(
-          'Before filtering warehouses:',
-          Array.isArray(cached),
-          typeof cached,
-          Array.isArray(cached) ? cached.length : undefined,
-        );
-
-        // Debug: Log first warehouse structure to see available fields
-        if (Array.isArray(cached) && cached.length > 0) {
-          this.logger.debug(
-            'First warehouse structure (cached):',
-            JSON.stringify(cached[0], null, 2),
-          );
-          this.logger.debug(
-            'Available warehouse fields (cached):',
-            Object.keys(cached[0]),
-          );
-        }
 
         let filtered = Array.isArray(cached) ? cached : [];
         if (type) {
-          // Try different possible field names for warehouse type
+          // Filter by type from cached data
           filtered = filtered.filter(w => {
             const warehouseType =
               w.CategoryOfWarehouse ||
@@ -159,19 +141,13 @@ export class NovaPoshtaService {
               w.WarehouseType ||
               w.Type ||
               w.Category;
-            this.logger.debug(
-              `Warehouse ${w.Ref} (cached): CategoryOfWarehouse="${w.CategoryOfWarehouse}", TypeOfWarehouse="${w.TypeOfWarehouse}", WarehouseType="${w.WarehouseType}", Type="${w.Type}", Category="${w.Category}"`,
-            );
             return warehouseType === type;
           });
         }
         // Map warehouses AFTER filtering to preserve type fields for filtering
         filtered = filtered.map(this.mapWarehouse);
         this.logger.debug(
-          'After filtering warehouses:',
-          Array.isArray(filtered),
-          typeof filtered,
-          Array.isArray(filtered) ? filtered.length : undefined,
+          `Filtered warehouses for type '${type || 'all'}': ${filtered.length}`,
         );
         return filtered;
       }
@@ -195,34 +171,16 @@ export class NovaPoshtaService {
         });
       }
 
-      // Cache the result
+      // Cache the result (always cache all warehouses for the city)
       await this.cacheManager.set(cacheKey, result, this.cacheTtl);
 
       this.logger.debug(
         `Warehouses fetched and cached for city: ${cityRef} (${Date.now() - startTime}ms)`,
       );
-      this.logger.debug(
-        'Before filtering warehouses:',
-        Array.isArray(result),
-        typeof result,
-        Array.isArray(result) ? result.length : undefined,
-      );
-
-      // Debug: Log first warehouse structure to see available fields
-      if (Array.isArray(result) && result.length > 0) {
-        this.logger.debug(
-          'First warehouse structure:',
-          JSON.stringify(result[0], null, 2),
-        );
-        this.logger.debug(
-          'Available warehouse fields:',
-          Object.keys(result[0]),
-        );
-      }
 
       let filtered = Array.isArray(result) ? result : [];
       if (type) {
-        // Try different possible field names for warehouse type
+        // Filter by type from fetched data
         filtered = filtered.filter(w => {
           const warehouseType =
             w.CategoryOfWarehouse ||
@@ -230,9 +188,6 @@ export class NovaPoshtaService {
             w.WarehouseType ||
             w.Type ||
             w.Category;
-          this.logger.debug(
-            `Warehouse ${w.Ref}: CategoryOfWarehouse="${w.CategoryOfWarehouse}", TypeOfWarehouse="${w.TypeOfWarehouse}", WarehouseType="${w.WarehouseType}", Type="${w.Type}", Category="${w.Category}"`,
-          );
           return warehouseType === type;
         });
       }

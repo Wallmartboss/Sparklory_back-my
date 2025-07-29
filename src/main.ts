@@ -56,6 +56,14 @@ async function bootstrap() {
     next();
   });
 
+  // Middleware to disable Swagger caching
+  app.use('/api/docs', (req, res, next) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    next();
+  });
+
   // Swagger documentation
   const config = new DocumentBuilder()
     .setTitle('Sparklory')
@@ -76,7 +84,31 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('/api/docs', app, document);
+
+  // Swagger setup with disabled caching
+  SwaggerModule.setup('/api/docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      filter: true,
+      showExtensions: true,
+      showCommonExtensions: true,
+      // Disable Swagger UI caching
+      cacheControl: 'no-cache, no-store, must-revalidate',
+      // Add headers to disable caching
+      customHeaders: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        Pragma: 'no-cache',
+        Expires: '0',
+      },
+    },
+    customSiteTitle: 'Sparklory API Documentation',
+    customCss: `
+      .swagger-ui .topbar { display: none }
+      .swagger-ui .info .title { color: #3b82f6; }
+      .swagger-ui .scheme-container { background: #f8fafc; }
+    `,
+  });
 
   // Start the server
   await app.listen(port);
