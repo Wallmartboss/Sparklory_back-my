@@ -32,7 +32,8 @@ export class NovaPoshtaController {
   @Get('warehouses')
   @ApiOperation({
     summary: 'Get warehouses by city',
-    description: 'Retrieve warehouses for a specific city',
+    description:
+      'Retrieve warehouses for a specific city with pagination support',
   })
   @ApiQuery({
     name: 'cityRef',
@@ -47,15 +48,65 @@ export class NovaPoshtaController {
       'Warehouse type (e.g., "Branch" for branches or "Postomat" for postomats)',
     example: 'Branch',
   })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (default: 1)',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Items per page (default: 100, max: 500)',
+    example: 100,
+  })
   @ApiResponse({
     status: 200,
     description: 'List of warehouses retrieved successfully',
+    schema: {
+      example: {
+        total: 2416,
+        page: 1,
+        limit: 100,
+        pages: 25,
+        warehouses: [
+          {
+            Ref: '7b422fc3-e1b8-11e3-8c4a-0050568002cf',
+            Description: 'Відділення №1',
+            CityDescription: 'Львів',
+            WarehouseIndex: '1',
+          },
+        ],
+      },
+    },
   })
   async getWarehouses(
     @Query('cityRef') cityRef: string,
     @Query('type') type?: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 100,
   ) {
-    return this.novaPoshtaService.getWarehouses(cityRef, type);
+    // Validate pagination parameters
+    const validPage = Math.max(1, Math.floor(page));
+    const validLimit = Math.min(500, Math.max(1, Math.floor(limit)));
+
+    const warehouses = await this.novaPoshtaService.getWarehouses(
+      cityRef,
+      type,
+    );
+
+    // Apply pagination
+    const startIndex = (validPage - 1) * validLimit;
+    const endIndex = startIndex + validLimit;
+    const paginatedWarehouses = warehouses.slice(startIndex, endIndex);
+
+    return {
+      total: warehouses.length,
+      page: validPage,
+      limit: validLimit,
+      pages: Math.ceil(warehouses.length / validLimit),
+      warehouses: paginatedWarehouses,
+    };
   }
 
   @Get('delivery-cost')

@@ -6,6 +6,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { AppCacheModule } from './cache/cache.module';
 import { CartModule } from './cart/cart.module';
 import { CategoryModule } from './category/category.module';
 import { AppLoggerMiddleware } from './common/loggers/app-logger';
@@ -36,6 +37,7 @@ import { UserModule } from './user/user.module';
       },
       inject: [ConfigService],
     }),
+    AppCacheModule, // Global cache for entire application
     CoreModule,
     UserModule,
     DeviceModule,
