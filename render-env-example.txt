@@ -1,0 +1,38 @@
+# Environment Variables для Render.com
+# Скопіюйте ці змінні в Render Dashboard → Environment
+
+# ===== БАЗОВІ НАЛАШТУВАННЯ =====
+NODE_ENV=production
+PORT=10000
+
+# ===== БАЗА ДАНИХ =====
+DB_CONNECTION_STRING=mongodb+srv://username:password@cluster.mongodb.net/database
+
+# ===== КЕШ =====
+# In-memory кеш працює автоматично - ніяких налаштувань не потрібно!
+
+# ===== NOVA POSHTA API =====
+NOVA_POSHTA_API_URL=https://api.novaposhta.ua/v2.0/json/
+NOVA_POSHTA_API_KEY=your_nova_poshta_api_key
+NOVA_POSHTA_CITY_REF=your_sender_city_ref
+NOVA_POSHTA_WAREHOUSE_NAME=your_warehouse_name
+
+# ===== JWT СЕКРЕТИ =====
+JWT_SECRET=your_super_secret_jwt_key_here
+REFRESH_SECRET=your_super_secret_refresh_key_here
+
+# ===== EMAIL (якщо використовуєте) =====
+# EMAIL_HOST=smtp.gmail.com
+# EMAIL_PORT=587
+# EMAIL_USER=your-email@gmail.com
+# EMAIL_PASS=your-app-password
+
+# ===== OAUTH (якщо використовуєте) =====
+# GOOGLE_CLIENT_ID=your_google_client_id
+# GOOGLE_CLIENT_SECRET=your_google_client_secret
+# FACEBOOK_APP_ID=your_facebook_app_id
+# FACEBOOK_APP_SECRET=your_facebook_app_secret
+
+# ===== ДОДАТКОВІ =====
+# FRONTEND_URL=https://your-frontend.com
+# CORS_ORIGIN=https://your-frontend.com 

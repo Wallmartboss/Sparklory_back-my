@@ -159,7 +159,7 @@ export class AuthService {
         password: '',
       });
     } else {
-      // Привязать соц. ID если не был сохранён
+      // Link social ID if not saved
       if (provider === 'facebook' && !user.facebookId) {
         user.facebookId = providerId;
       }

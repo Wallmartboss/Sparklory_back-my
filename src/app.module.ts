@@ -1,3 +1,4 @@
+import { HttpModule } from '@nestjs/axios';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -12,6 +13,7 @@ import { CoreModule } from './core/core.module';
 import { CouponModule } from './coupon/coupon.module';
 import { DeviceModule } from './device/device.module';
 import { LoyaltyModule } from './loyalty/loyalty.module';
+import { NovaPoshtaModule } from './nova-poshta/nova-poshta.module';
 import { PaymentModule } from './payment/payment.module';
 import { ProductModule } from './product/product.module';
 import { SessionModule } from './session/session.module';
@@ -46,6 +48,8 @@ import { UserModule } from './user/user.module';
     ScheduleModule.forRoot(),
     LoyaltyModule,
     CouponModule,
+    HttpModule,
+    NovaPoshtaModule,
   ],
   controllers: [AppController],
   providers: [AppService],
