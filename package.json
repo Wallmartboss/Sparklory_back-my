@@ -23,7 +23,9 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "get-warehouse-ref": "ts-node -r tsconfig-paths/register src/nova-poshta/get-warehouse-ref.ts",
     "codebase-map": "node scripts/generate-codebase-map.js",
-    "codebase-pdf": "node scripts/generate-codebase-pdf.js"
+    "codebase-pdf": "node scripts/generate-codebase-pdf.js",
+    "create-indexes": "node scripts/create-indexes.js",
+    "test-optimization": "node test-optimization.js"
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.1",
@@ -99,7 +101,7 @@
     "ts-node-dev": "^2.0.0",
     "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.0.4"
   },
   "jest": {
     "moduleFileExtensions": [
