@@ -13,27 +13,48 @@ export class NovaPoshtaController {
   @Get('cities')
   @ApiOperation({
     summary: 'Get list of cities',
-    description: 'Retrieve list of cities from Nova Poshta API',
+    description: 'Retrieve list of cities from Nova Poshta API with fast filtering',
   })
   @ApiQuery({
     name: 'cityName',
     required: false,
-    description: 'City name to search for',
+    description: 'City name to search for (supports partial matching)',
     example: 'Київ',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Maximum number of results (default: 100, max: 500)',
+    example: 50,
   })
   @ApiResponse({
     status: 200,
     description: 'List of cities retrieved successfully',
   })
-  async getCities(@Query('cityName') cityName?: string) {
-    return this.novaPoshtaService.getCities(cityName);
+  async getCities(
+    @Query('cityName') cityName?: string,
+    @Query('limit') limit: number = 100,
+  ) {
+    const cities = await this.novaPoshtaService.getCities(cityName);
+    
+    // Apply limit if specified
+    const maxLimit = Math.min(500, Math.max(1, Math.floor(limit)));
+    const citiesArray = Array.isArray(cities) ? cities : [];
+    const limitedCities = citiesArray.slice(0, maxLimit);
+    
+    return {
+      total: citiesArray.length,
+      returned: limitedCities.length,
+      limit: maxLimit,
+      cities: limitedCities,
+    };
   }
 
   @Get('warehouses')
   @ApiOperation({
     summary: 'Get warehouses by city',
     description:
-      'Retrieve warehouses for a specific city with pagination support',
+      'Retrieve warehouses for a specific city with pagination and filtering support',
   })
   @ApiQuery({
     name: 'cityRef',
@@ -47,6 +68,12 @@ export class NovaPoshtaController {
     description:
       'Warehouse type (e.g., "Branch" for branches or "Postomat" for postomats)',
     example: 'Branch',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search by warehouse name, description, or index number',
+    example: '1',
   })
   @ApiQuery({
     name: 'page',
@@ -83,6 +110,7 @@ export class NovaPoshtaController {
   async getWarehouses(
     @Query('cityRef') cityRef: string,
     @Query('type') type?: string,
+    @Query('search') search?: string,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 100,
   ) {
@@ -93,6 +121,7 @@ export class NovaPoshtaController {
     const warehouses = await this.novaPoshtaService.getWarehouses(
       cityRef,
       type,
+      search,
     );
 
     // Apply pagination

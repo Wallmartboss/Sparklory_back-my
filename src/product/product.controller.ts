@@ -31,6 +31,7 @@ import { extname } from 'path';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { UserDecorator } from '../common/decorators/user.decorator';
 import { CreateProductDto, ReviewDto } from './dto/create-product.dto';
+
 import { ProductFilterDto } from './dto/product-filter.dto';
 import { ProductDto } from './dto/product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -889,17 +890,16 @@ export class ProductController {
     description: 'You must provide 1 to 3 product IDs.',
   })
   async compareProducts(@Body() body: { productIds: string[] }) {
-    if (
-      !Array.isArray(body.productIds) ||
-      body.productIds.length === 0 ||
-      body.productIds.length > 3
-    ) {
-      return { message: 'You must provide 1 to 3 product IDs.' };
+    try {
+      const products = await this.productService.findProductsByIds(
+        body.productIds,
+      );
+      return products;
+    } catch (error) {
+      this.logger.error(
+        `Error comparing products: ${(error as Error).message}`,
+      );
+      throw error;
     }
-    // Find products by IDs
-    const products = await this.productService.findProductsByIds(
-      body.productIds,
-    );
-    return products;
   }
 }

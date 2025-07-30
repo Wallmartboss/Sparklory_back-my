@@ -129,3 +129,38 @@ export class Product {
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
+
+// Add indexes for performance optimization
+ProductSchema.index({ category: 1 }); // Index for category filtering
+ProductSchema.index({ subcategory: 1 }); // Index for subcategory filtering
+ProductSchema.index({ 'variants.material': 1 }); // Index for material filtering
+ProductSchema.index({ 'variants.insert': 1 }); // Index for insert filtering
+ProductSchema.index({ 'variants.inStock': 1 }); // Index for stock filtering
+ProductSchema.index({ discount: 1 }); // Index for discount filtering
+ProductSchema.index({ action: 1 }); // Index for action filtering
+ProductSchema.index({ gender: 1 }); // Index for gender filtering
+ProductSchema.index({ prod_collection: 1 }); // Index for collection filtering
+
+// Compound indexes for common query combinations
+ProductSchema.index({ category: 1, subcategory: 1 }); // Category + subcategory
+ProductSchema.index({ category: 1, 'variants.material': 1 }); // Category + material
+ProductSchema.index({ category: 1, discount: 1 }); // Category + discount
+ProductSchema.index({ 'variants.inStock': 1, discount: 1 }); // Stock + discount
+
+// Text index for search functionality
+ProductSchema.index(
+  {
+    name: 'text',
+    description: 'text',
+    category: 'text',
+    subcategory: 'text',
+  },
+  {
+    weights: {
+      name: 10,
+      description: 5,
+      category: 3,
+      subcategory: 3,
+    },
+  },
+);

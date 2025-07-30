@@ -1,14 +1,23 @@
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { Cache } from 'cache-manager';
 import { Model, Types } from 'mongoose';
 import { CategoryService } from '../category/category.service';
 import { EmailService } from '../email/email.service';
+import { BulkProductQueryDto } from './dto/bulk-product-query.dto';
 import { CreateProductDto } from './dto/create-product.dto';
+import { OptimizedProductQueryDto } from './dto/optimized-product-query.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import {
+  BulkProductResult,
+  OptimizedProductResult,
+} from './interfaces/optimized-product.interface';
 import {
   ProductSubscription,
   ProductSubscriptionDocument,
@@ -57,6 +66,7 @@ export class ProductService {
     private subscriptionModel: Model<ProductSubscriptionDocument>,
     private categoryService: CategoryService,
     private readonly emailService: EmailService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   /**
@@ -127,7 +137,7 @@ export class ProductService {
     if (params?.inStock !== undefined) {
       filter['variants.inStock'] = { $gte: Number(params.inStock) };
     }
-    let sortOption: any = {};
+    const sortOption: any = {};
     if (params?.sort) {
       if (params.sort === 'price_desc') {
         sortOption['variants.price'] = -1;
@@ -516,5 +526,409 @@ export class ProductService {
       pages,
       categories: paged,
     };
+  }
+
+  /**
+   * Get products with advanced caching and performance optimization
+   * This method provides better performance for frequently accessed product data
+   */
+  async getProductsOptimized(
+    query: OptimizedProductQueryDto,
+  ): Promise<OptimizedProductResult> {
+    const startTime = Date.now();
+    const cacheKey = this.generateCacheKey(query);
+
+    // Try to get from cache first
+    if (query.useCache !== false) {
+      const cached = await this.cacheManager.get(cacheKey);
+      if (cached) {
+        return {
+          ...(cached as OptimizedProductResult),
+          executionTime: Date.now() - startTime,
+          cacheHit: true,
+        } as OptimizedProductResult;
+      }
+    }
+
+    try {
+      // Build filter and projection
+      const filter = this.buildOptimizedFilter(query);
+      const projection = this.buildProjection(query.fields);
+      const sort = this.buildSort(query.sort);
+
+      // Set pagination parameters
+      const page = query.page || 1;
+      const limit = query.limit || 20;
+      const skip = (page - 1) * limit;
+
+      // Execute query with optimization
+      const [products, total] = await Promise.all([
+        this.productModel
+          .find(filter, projection)
+          .sort(sort)
+          .skip(skip)
+          .limit(limit)
+          .lean()
+          .exec(),
+        this.productModel.countDocuments(filter).exec(),
+      ]);
+
+      // Calculate pagination info
+      const pages = Math.ceil(total / limit);
+      const hasNext = page < pages;
+      const hasPrev = page > 1;
+
+      const result: OptimizedProductResult = {
+        total,
+        page,
+        limit,
+        pages,
+        hasNext,
+        hasPrev,
+        executionTime: Date.now() - startTime,
+        cacheHit: false,
+        products,
+      };
+
+      // Cache the result
+      if (query.useCache !== false) {
+        await this.cacheManager.set(cacheKey, result, 1800); // 30 minutes TTL
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error in getProductsOptimized:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get multiple products by IDs with optimization
+   */
+  async getProductsBulk(
+    query: BulkProductQueryDto,
+  ): Promise<BulkProductResult> {
+    const startTime = Date.now();
+    const cacheKey = `bulk:${query.productIds.sort().join(',')}`;
+
+    // Try to get from cache first
+    if (query.useCache !== false) {
+      const cached = await this.cacheManager.get(cacheKey);
+      if (cached) {
+        return {
+          ...(cached as BulkProductResult),
+          executionTime: Date.now() - startTime,
+          cacheHit: true,
+        } as BulkProductResult;
+      }
+    }
+
+    // Build projection
+    const projection = this.buildProjection(query.fields);
+
+    // Add conditional fields
+    if (query.includeVariants !== false) {
+      projection.variants = 1;
+    }
+    if (query.includeReviews === true) {
+      projection.reviews = 1;
+    }
+
+    // Execute query
+    const products = await this.productModel
+      .find(
+        { _id: { $in: query.productIds.map(id => new Types.ObjectId(id)) } },
+        projection,
+      )
+      .lean()
+      .exec();
+
+    const found = products.length;
+    const notFound = query.productIds.filter(
+      id => !products.find(p => p._id.toString() === id),
+    );
+
+    // Limit reviews if specified
+    if (query.includeReviews && query.maxReviews) {
+      products.forEach(product => {
+        if (product.reviews && product.reviews.length > query.maxReviews) {
+          product.reviews = product.reviews.slice(0, query.maxReviews);
+        }
+      });
+    }
+
+    const result: BulkProductResult = {
+      products,
+      found,
+      notFound,
+      executionTime: Date.now() - startTime,
+      cacheHit: false,
+    };
+
+    // Cache the result
+    if (query.useCache !== false) {
+      await this.cacheManager.set(cacheKey, result, 300); // 5 minutes TTL
+    }
+
+    return result;
+  }
+
+  /**
+   * Search products using text index
+   */
+  async searchProducts(
+    searchText: string,
+    options: {
+      limit?: number;
+      page?: number;
+      category?: string;
+      useCache?: boolean;
+    } = {},
+  ): Promise<OptimizedProductResult> {
+    const startTime = Date.now();
+    const cacheKey = `search:${searchText}:${JSON.stringify(options)}`;
+
+    // Try to get from cache first
+    if (options.useCache !== false) {
+      const cached = await this.cacheManager.get(cacheKey);
+      if (cached) {
+        return {
+          ...(cached as OptimizedProductResult),
+          executionTime: Date.now() - startTime,
+          cacheHit: true,
+        } as OptimizedProductResult;
+      }
+    }
+
+    try {
+      // Build filter - use regex search instead of text search for now
+      const filter: any = {
+        $or: [
+          { name: { $regex: searchText, $options: 'i' } },
+          { description: { $regex: searchText, $options: 'i' } },
+          { category: { $regex: searchText, $options: 'i' } },
+          { subcategory: { $regex: searchText, $options: 'i' } },
+        ],
+      };
+
+      if (options.category) {
+        filter.category = { $regex: `^${options.category}$`, $options: 'i' };
+      }
+
+      // Pagination
+      const limit = options.limit || 20;
+      const page = options.page || 1;
+      const skip = (page - 1) * limit;
+
+      // Execute search query
+      const [products, total] = await Promise.all([
+        this.productModel
+          .find(filter)
+          .sort({ name: 1 }) // Sort by name instead of text score
+          .skip(skip)
+          .limit(limit)
+          .lean()
+          .exec(),
+        this.productModel.countDocuments(filter),
+      ]);
+
+      const pages = Math.ceil(total / limit) || 1;
+      const result: OptimizedProductResult = {
+        total,
+        page,
+        limit,
+        pages,
+        hasNext: page < pages,
+        hasPrev: page > 1,
+        executionTime: Date.now() - startTime,
+        cacheHit: false,
+        products,
+      };
+
+      // Cache the result
+      if (options.useCache !== false) {
+        await this.cacheManager.set(cacheKey, result, 1800); // 30 minutes TTL
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error in searchProducts:', error);
+      throw error;
+    }
+  }
+
+  // Helper methods for optimization
+
+  private generateCacheKey(query: OptimizedProductQueryDto): string {
+    const keyParts = [
+      'products:optimized',
+      query.category || 'all',
+      query.subcategory || 'all',
+      query.material || 'all',
+      query.insert || 'all',
+      query.inStock || 'all',
+      query.gender || 'all',
+      query.collection || 'all',
+      query.action || 'all',
+      query.hasDiscount || 'all',
+      query.search || 'all',
+      query.sort || 'default',
+      query.page || 1,
+      query.limit || 20,
+    ];
+    return keyParts.join(':');
+  }
+
+  private buildOptimizedFilter(query: OptimizedProductQueryDto): any {
+    const filter: any = {};
+
+    // Only add filters if they are provided
+    if (query.category && query.category.trim()) {
+      filter.category = { $regex: query.category, $options: 'i' };
+    }
+
+    if (query.subcategory && query.subcategory.trim()) {
+      filter.subcategory = { $regex: query.subcategory, $options: 'i' };
+    }
+
+    if (query.material && query.material.trim()) {
+      filter['variants.material'] = {
+        $regex: query.material,
+        $options: 'i',
+      };
+    }
+
+    if (query.insert && query.insert.trim()) {
+      filter['variants.insert'] = {
+        $regex: query.insert,
+        $options: 'i',
+      };
+    }
+
+    if (query.inStock !== undefined && query.inStock !== null) {
+      filter['variants.inStock'] = { $gte: Number(query.inStock) };
+    }
+
+    if (query.gender && query.gender.trim()) {
+      filter.gender = { $regex: query.gender, $options: 'i' };
+    }
+
+    if (query.collection && query.collection.trim()) {
+      filter.prod_collection = { $regex: query.collection, $options: 'i' };
+    }
+
+    if (query.action && query.action.trim()) {
+      filter.action = { $regex: query.action, $options: 'i' };
+    }
+
+    if (query.hasDiscount === true) {
+      filter.$or = [
+        { discount: { $gt: 0 } },
+        {
+          $and: [
+            { discountStart: { $lte: new Date() } },
+            { discountEnd: { $gte: new Date() } },
+          ],
+        },
+      ];
+    }
+
+    if (query.search && query.search.trim()) {
+      filter.$or = [
+        { name: { $regex: query.search, $options: 'i' } },
+        { description: { $regex: query.search, $options: 'i' } },
+        { category: { $regex: query.search, $options: 'i' } },
+        { subcategory: { $regex: query.search, $options: 'i' } },
+      ];
+    }
+
+    return filter;
+  }
+
+  private buildProjection(fields?: string[]): any {
+    if (!fields || fields.length === 0) {
+      return {}; // Return all fields
+    }
+
+    const projection: any = { _id: 1 };
+    fields.forEach(field => {
+      projection[field] = 1;
+    });
+
+    return projection;
+  }
+
+  private buildSort(sort?: string): any {
+    const sortOption: any = {};
+
+    if (sort) {
+      switch (sort) {
+        case 'price_asc':
+          sortOption['variants.price'] = 1;
+          break;
+        case 'price_desc':
+          sortOption['variants.price'] = -1;
+          break;
+        case 'name_asc':
+          sortOption.name = 1;
+          break;
+        case 'name_desc':
+          sortOption.name = -1;
+          break;
+        case 'discount_desc':
+          sortOption.discount = -1;
+          break;
+        case 'created_desc':
+          sortOption._id = -1; // Assuming newer documents have higher ObjectIds
+          break;
+        default:
+          sortOption._id = -1; // Default sort by newest
+      }
+    } else {
+      sortOption._id = -1; // Default sort by newest
+    }
+
+    return sortOption;
+  }
+
+  /**
+   * Clear all product-related cache entries
+   * This method helps maintain cache consistency when products are updated
+   */
+  async clearProductCache(): Promise<string[]> {
+    const clearedKeys: string[] = [];
+
+    if (!this.cacheManager) {
+      return clearedKeys;
+    }
+
+    try {
+      // Get all cache keys (this is a simplified approach)
+      // In a production environment, you might want to use a more sophisticated cache key management system
+      const cachePatterns = ['products:compare:*', 'products:optimized:*'];
+
+      // Clear cache entries matching patterns
+      for (const pattern of cachePatterns) {
+        try {
+          // Note: This is a simplified cache clearing approach
+          // In a real implementation, you might need to iterate through all cache keys
+          await this.cacheManager.del(pattern);
+          clearedKeys.push(pattern);
+        } catch (error) {
+          console.warn(
+            `Failed to clear cache pattern ${pattern}:`,
+            (error as Error).message,
+          );
+          // Continue with other patterns even if one fails
+        }
+      }
+
+      return clearedKeys;
+    } catch (error) {
+      console.error('Cache clear error:', (error as Error).message);
+      throw new Error(
+        `Failed to clear product cache: ${(error as Error).message}`,
+      );
+    }
   }
 }

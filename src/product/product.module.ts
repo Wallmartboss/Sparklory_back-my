@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { AppCacheModule } from '../cache/cache.module';
 import { CategoryModule } from '../category/category.module';
 import { EmailModule } from '../email/email.module';
+import { OptimizedProductController } from './optimized-product.controller';
 import { ProductController } from './product.controller';
 import { ProductService } from './product.service';
 import {
@@ -16,10 +18,11 @@ import { Product, ProductSchema } from './schema/product.schema';
       { name: Product.name, schema: ProductSchema },
       { name: ProductSubscription.name, schema: ProductSubscriptionSchema },
     ]),
+    AppCacheModule,
     CategoryModule,
     EmailModule,
   ],
-  controllers: [ProductController],
+  controllers: [ProductController, OptimizedProductController],
   providers: [ProductService],
   exports: [ProductService], // Export ProductService for use in other modules
 })
