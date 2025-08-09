@@ -144,10 +144,8 @@ export class AuthController {
   async facebookLoginCallback(@Req() req: Request, @Res() res: Response) {
     const result = await this.authService.login(req.user as any);
     // Redirect to frontend with tokens in query params
-    const frontendUrl = this.configService.get<string>(
-      'FRONTEND_URL',
-      'LOCALHOST_URL',
-    );
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+    // ?? this.configService.get<string>('LOCALHOST_URL') ?? 'http://localhost:3000';
     const params = new URLSearchParams({
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
@@ -170,10 +168,8 @@ export class AuthController {
   async googleLoginCallback(@Req() req: Request, @Res() res: Response) {
     const result = await this.authService.login(req.user as any);
     // Redirect to frontend with tokens in query params
-    const frontendUrl = this.configService.get<string>(
-      'FRONTEND_URL',
-      'LOCALHOST_URL',
-    );
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+    // ?? this.configService.get<string>('LOCALHOST_URL') ?? 'http://localhost:3000';
     const params = new URLSearchParams({
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,

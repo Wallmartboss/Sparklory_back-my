@@ -137,7 +137,9 @@ export class ProductController {
       },
     },
   })
-  async findAll(@Query() query: ProductFilterDto): Promise<any> {
+  async findAll(
+    @Query() query: ProductFilterDto = {} as ProductFilterDto,
+  ): Promise<any> {
     // Pass all filters and options to the service
     return this.productService.findAll(query);
   }
@@ -228,7 +230,7 @@ export class ProductController {
           discount: 30,
           discountStart: '2025-07-10T00:00:00.000Z',
           discountEnd: '2025-07-20T23:59:59.000Z',
-          subcategory: ['casual', 'sport'],
+          subcategory: 'casual',
           gender: 'unisex',
           details: ['Handmade', '925 Silver', 'Gift box included'],
           reviews: [
@@ -295,7 +297,7 @@ export class ProductController {
           discount: 30,
           discountStart: '2025-07-10T00:00:00.000Z',
           discountEnd: '2025-07-20T23:59:59.000Z',
-          subcategory: ['casual', 'sport'],
+          subcategory: 'casual',
           gender: 'unisex',
           details: ['Handmade', '925 Silver', 'Gift box included'],
           reviews: [

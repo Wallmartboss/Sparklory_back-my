@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
-import { randomBytes } from 'crypto';
+import * as crypto from 'crypto';
 import { Model, Types } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 
@@ -49,7 +49,7 @@ export class UserService {
     }
 
     const newUser = new this.userModel(payload);
-    const token = randomBytes(2).toString('hex');
+    const token = crypto.randomBytes(2).toString('hex');
 
     newUser.password = await bcrypt.hash(payload.password, 10);
     newUser.emailVerifyCode = token;
@@ -138,7 +138,7 @@ export class UserService {
   }
 
   async addNewDevice(user: User) {
-    const verifyDeviceCode = randomBytes(2).toString('hex');
+    const verifyDeviceCode = crypto.randomBytes(2).toString('hex');
     user.verifyDeviceCode = verifyDeviceCode;
     await this.saveUser(user);
 
