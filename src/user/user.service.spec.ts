@@ -1,18 +1,18 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { UserService } from './user.service';
-import { EmailService } from 'src/email/email.service';
-import { DeviceService } from 'src/device/device.service';
-import { SessionService } from 'src/session/session.service';
+import { DeviceService } from '@/device/device.service';
+import { EmailService } from '@/email/email.service';
+import { SessionService } from '@/session/session.service';
 import {
+  BadRequestException,
   ConflictException,
   NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import { Types } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
-import { Types } from 'mongoose';
+import { UserService } from './user.service';
 
 jest.mock('bcrypt', () => ({
   ...jest.requireActual('bcrypt'),
@@ -31,8 +31,8 @@ class MockUserModel {
   role: string = 'user';
   name?: string;
   email: string;
-  devices: any[] = []; // Инициализированы по умолчанию
-  sessions: any[] = []; // Инициализированы по умолчанию
+  devices: any[] = []; // Ініціалізовані за замовчуванням
+  sessions: any[] = []; // Ініціалізовані за замовчуванням
 
   constructor(data: any) {
     Object.assign(this, data);
@@ -40,7 +40,7 @@ class MockUserModel {
     this.password = data.password || '';
     this.emailVerifyCode = data.emailVerifyCode || '';
     this.email = data.email || '';
-    // Убеждаемся, что массивы всегда определены
+    // Переконуємось, що масиви завжди визначені
     this.devices = data.devices || [];
     this.sessions = data.sessions || [];
   }
@@ -111,7 +111,7 @@ describe('UserService', () => {
         isVerifyEmail: false,
         isLoggedIn: false,
         _id: new Types.ObjectId(),
-        devices: [], // Явно передаем пустые массивы
+        devices: [], // Явно передаємо порожні масиви
         sessions: [],
       });
 
@@ -186,6 +186,7 @@ describe('UserService', () => {
       const createUserDto: CreateUserDto = {
         email: 'test@example.com',
         password: 'password123',
+        name: 'Vasyl Bordanov',
       };
 
       const mockUser = new MockUserModel({
@@ -195,6 +196,7 @@ describe('UserService', () => {
         isVerifyEmail: false,
         isLoggedIn: false,
         role: 'user',
+        name: 'Vasyl Bordanov',
         devices: [],
         sessions: [],
       });
@@ -224,6 +226,7 @@ describe('UserService', () => {
       const createUserDto: CreateUserDto = {
         email: 'test@example.com',
         password: 'password123',
+        name: 'Vasyl Bordanov',
       };
 
       MockUserModel.countDocuments.mockResolvedValue(1);

@@ -1,29 +1,42 @@
 import {
-  Injectable,
-  ConflictException,
   BadRequestException,
+  ConflictException,
+  Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
+import { Model, Types } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 
-import { User } from './schema/user.schema';
-import { EmailService } from 'src/email/email.service';
-import { ECondition } from 'src/common';
+import { ECondition } from '@/common';
+import { Role } from '@/common/enum/user.enum';
+import { DeviceService } from '@/device/device.service';
+import { Device } from '@/device/schema/device.schema';
+import { EmailService } from '@/email/email.service';
+import { Session } from '@/session/schema/session.schema';
+import { SessionService } from '@/session/session.service';
+import { LoyaltyAccount } from '../loyalty/loyalty-account.schema';
+import { LoyaltyLevel } from '../loyalty/loyalty-level.schema';
+import { ProductService } from '../product/product.service';
 import { VerifyEmailDto } from './dto/verify-email.dto';
-import { DeviceService } from 'src/device/device.service';
-import { SessionService } from 'src/session/session.service';
+import { User, UserDocument } from './schema/user.schema';
 
 @Injectable()
 export class UserService {
   constructor(
-    @InjectModel(User.name) private readonly userModel: Model<User>,
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectModel(Session.name) private readonly sessionModel: Model<Session>,
+    @InjectModel(Device.name) private readonly deviceModel: Model<Device>,
+    @InjectModel(LoyaltyAccount.name)
+    private readonly loyaltyModel: Model<LoyaltyAccount>,
+    @InjectModel(LoyaltyLevel.name)
+    private readonly loyaltyLevelModel: Model<LoyaltyLevel>,
     private readonly emailService: EmailService,
     readonly deviceService: DeviceService,
     readonly sessionService: SessionService,
+    private readonly productService: ProductService,
   ) {}
 
   async createUser(payload: CreateUserDto): Promise<User> {
@@ -48,11 +61,32 @@ export class UserService {
       ECondition.EmailVerify,
     );
     await newUser.save();
+
+    // Призначати всім користувачам один і той самий рівень 'Default' (створювати тільки якщо його немає)
+    let defaultLevel = await this.loyaltyLevelModel.findOne({
+      name: 'Default',
+    });
+    if (!defaultLevel) {
+      defaultLevel = await this.loyaltyLevelModel.create({
+        name: 'Default',
+        bonusPercent: 0,
+      });
+    }
+    await this.loyaltyModel.create({
+      userId: newUser._id,
+      levelId: defaultLevel._id,
+      totalAmount: 0,
+      bonusBalance: 0,
+    });
+
     return await this.findOne(newUser.id);
   }
 
-  async saveUser(user: User) {
-    await user.save();
+  async saveUser(user: User): Promise<User> {
+    if (user.password && !user.password.startsWith('$2b$')) {
+      user.password = await bcrypt.hash(user.password, 10);
+    }
+    return user.save();
   }
 
   async verifyUserEmail(payload: VerifyEmailDto) {
@@ -61,7 +95,7 @@ export class UserService {
     const user = await this.userModel.findOne({ email, emailVerifyCode: code });
 
     if (!user) {
-      throw new BadRequestException('Invalid token');
+      throw new BadRequestException('Invalid email verification code');
     }
 
     user.isVerifyEmail = true;
@@ -104,20 +138,17 @@ export class UserService {
   }
 
   async addNewDevice(user: User) {
-    const newDevice = await this.deviceService.create(
-      user._id as Types.ObjectId,
-    );
-
-    user.devices.push(newDevice);
-    await user.save();
+    const verifyDeviceCode = randomBytes(2).toString('hex');
+    user.verifyDeviceCode = verifyDeviceCode;
+    await this.saveUser(user);
 
     await this.emailService.sendEmail(
       user.email,
-      user.verifyDeviceCode,
+      verifyDeviceCode,
       ECondition.VerifyDevice,
     );
 
-    return newDevice.id;
+    return verifyDeviceCode;
   }
 
   async me(userId: string) {
@@ -134,6 +165,10 @@ export class UserService {
     return await this.userModel.findOne({ _id: userId }).exec();
   }
 
+  async findByEmail(email: string): Promise<User | null> {
+    return this.userModel.findOne({ email }).exec();
+  }
+
   async delete(userId: string): Promise<void> {
     const user = await this.findOne(userId);
     if (!user) {
@@ -141,5 +176,75 @@ export class UserService {
     }
 
     await user.deleteOne();
+  }
+
+  /**
+   * Add a product to the user's wishlist
+   */
+  async addToWishlist(userId: string, productId: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+    // Check if product exists
+    await this.productService.findOne(productId);
+    if (user.wishlist.some(id => id.toString() === productId)) {
+      return user; // Already in wishlist
+    }
+    user.wishlist.push(new Types.ObjectId(productId));
+    await user.save();
+    return user;
+  }
+
+  /**
+   * Remove a product from the user's wishlist
+   */
+  async removeFromWishlist(userId: string, productId: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+    user.wishlist = user.wishlist.filter(id => id.toString() !== productId);
+    await user.save();
+    return user;
+  }
+
+  /**
+   * Get all products from the user's wishlist
+   */
+  async getWishlist(userId: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+    // Populate products
+    const wishlistIds = user.wishlist.map(id => id.toString());
+    const products: any = await this.productService.findAll();
+    return (products.products || []).filter((p: any) =>
+      wishlistIds.includes(p._id.toString()),
+    );
+  }
+
+  /**
+   * Clear the user's wishlist
+   */
+  async clearWishlist(userId: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+    user.wishlist = [];
+    await user.save();
+    return user;
+  }
+
+  /**
+   * Change user role (only for superadmin)
+   */
+  async changeUserRole(
+    targetUserId: string,
+    newRole: Role,
+    requester: User,
+  ): Promise<User> {
+    if (requester.role !== 'superadmin') {
+      throw new BadRequestException('Only superadmin can change roles');
+    }
+    const user = await this.userModel.findById(targetUserId);
+    if (!user) throw new NotFoundException('User not found');
+    user.role = newRole;
+    await user.save();
+    return user;
   }
 }

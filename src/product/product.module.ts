@@ -1,14 +1,29 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Product, ProductSchema } from './schema/product.schema';
-import { ProductService } from './product.service';
+import { AppCacheModule } from '../cache/cache.module';
+import { CategoryModule } from '../category/category.module';
+import { EmailModule } from '../email/email.module';
+import { OptimizedProductController } from './optimized-product.controller';
 import { ProductController } from './product.controller';
+import { ProductService } from './product.service';
+import {
+  ProductSubscription,
+  ProductSubscriptionSchema,
+} from './schema/product-subscription.schema';
+import { Product, ProductSchema } from './schema/product.schema';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Product.name, schema: ProductSchema }]),
+    MongooseModule.forFeature([
+      { name: Product.name, schema: ProductSchema },
+      { name: ProductSubscription.name, schema: ProductSubscriptionSchema },
+    ]),
+    AppCacheModule,
+    CategoryModule,
+    EmailModule,
   ],
-  controllers: [ProductController],
+  controllers: [ProductController, OptimizedProductController],
   providers: [ProductService],
+  exports: [ProductService], // Export ProductService for use in other modules
 })
 export class ProductModule {}

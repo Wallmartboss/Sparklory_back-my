@@ -1,17 +1,21 @@
+import { NotFoundException } from '@nestjs/common';
+import {
+  MongooseModule,
+  getConnectionToken,
+  getModelToken,
+} from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
-import { getModelToken } from '@nestjs/mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import { Connection, Model, Types } from 'mongoose';
+import { CategoryService } from '../category/category.service';
+import { Gender } from '../common/enum';
+import { CreateProductDto } from './dto/create-product.dto';
 import { ProductService } from './product.service';
 import {
   Product,
   ProductDocument,
   ProductSchema,
 } from './schema/product.schema';
-import { CreateProductDto } from './dto/create-product.dto';
-import { NotFoundException } from '@nestjs/common';
-import { Model, Types } from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
-import { Connection } from 'mongoose';
 
 describe('ProductService', () => {
   let productService: ProductService;
@@ -34,7 +38,13 @@ describe('ProductService', () => {
             { name: Product.name, schema: ProductSchema },
           ]),
         ],
-        providers: [ProductService],
+        providers: [
+          ProductService,
+          {
+            provide: CategoryService,
+            useValue: { exists: jest.fn().mockResolvedValue(true) },
+          },
+        ],
       }).compile();
 
       productService = module.get<ProductService>(ProductService);
@@ -76,11 +86,26 @@ describe('ProductService', () => {
         name: 'Test Product',
         description: 'Test Description',
         category: 'Test Category',
-        material: 'Test Material',
         engraving: false,
-        price: 10000,
         image: ['Test Image'],
-        inStock: true,
+        action: ['Test Action'],
+        prod_collection: 'Test Collection',
+        discount: 10,
+        discountStart: new Date('2025-01-01T00:00:00.000Z'),
+        discountEnd: new Date('2025-01-10T00:00:00.000Z'),
+        subcategory: ['sub1'],
+        gender: Gender.Unisex,
+        details: ['Handmade'],
+        reviews: [],
+        variants: [
+          {
+            material: 'Test Material',
+            size: 'M',
+            price: 10000,
+            insert: 'Test Insert',
+            inStock: 3,
+          },
+        ],
       };
 
       const result = (await productService.create(
@@ -103,22 +128,51 @@ describe('ProductService', () => {
         name: 'Product 1',
         description: 'Description 1',
         category: 'Category 1',
-        material: 'Material 1',
         engraving: false,
-        price: 10000,
         image: ['Image 1'],
-        inStock: true,
+        action: ['Action 1'],
+        prod_collection: 'Collection 1',
+        discount: 5,
+        discountStart: new Date('2025-01-01T00:00:00.000Z'),
+        discountEnd: new Date('2025-01-10T00:00:00.000Z'),
+        subcategory: ['sub1'],
+        gender: Gender.Unisex,
+        details: ['Detail 1'],
+        reviews: [],
+        variants: [
+          {
+            material: 'gold',
+            size: 'M',
+            price: 10000,
+            insert: 'Gold',
+            inStock: 3,
+          },
+        ],
       });
-
       const product2 = await productModel.create({
         name: 'Product 2',
         description: 'Description 2',
         category: 'Category 2',
-        material: 'Material 2',
         engraving: true,
-        price: 20000,
         image: ['Image 2', 'Image 3'],
-        inStock: false,
+        action: ['Action 2'],
+        prod_collection: 'Collection 2',
+        discount: 0,
+        discountStart: new Date('2025-02-01T00:00:00.000Z'),
+        discountEnd: new Date('2025-02-10T00:00:00.000Z'),
+        subcategory: ['sub2'],
+        gender: Gender.Female,
+        details: ['Detail 2'],
+        reviews: [],
+        variants: [
+          {
+            material: 'silver',
+            size: 'L',
+            price: 20000,
+            insert: 'Silver',
+            inStock: 2,
+          },
+        ],
       });
 
       const result = (await productService.findAll()) as ProductDocument[];
@@ -138,11 +192,26 @@ describe('ProductService', () => {
         name: 'Test Product',
         description: 'Test Description',
         category: 'Test Category',
-        material: 'Test Material',
         engraving: false,
-        price: 10000,
         image: ['Test Image'],
-        inStock: true,
+        action: ['Test Action'],
+        prod_collection: 'Test Collection',
+        discount: 10,
+        discountStart: new Date('2025-01-01T00:00:00.000Z'),
+        discountEnd: new Date('2025-01-10T00:00:00.000Z'),
+        subcategory: ['sub1'],
+        gender: Gender.Unisex,
+        details: ['Test Detail'],
+        reviews: [],
+        variants: [
+          {
+            material: 'Test Material',
+            size: 'M',
+            price: 10000,
+            insert: 'Test Insert',
+            inStock: 3,
+          },
+        ],
       });
 
       const result = (await productService.findOne(
@@ -165,11 +234,26 @@ describe('ProductService', () => {
         name: 'Test Product',
         description: 'Test Description',
         category: 'Test Category',
-        material: 'Test Material',
         engraving: false,
-        price: 10000,
         image: ['Test Image'],
-        inStock: true,
+        action: ['Test Action'],
+        prod_collection: 'Test Collection',
+        discount: 10,
+        discountStart: new Date('2025-01-01T00:00:00.000Z'),
+        discountEnd: new Date('2025-01-10T00:00:00.000Z'),
+        subcategory: ['sub1'],
+        gender: Gender.Unisex,
+        details: ['Test Detail'],
+        reviews: [],
+        variants: [
+          {
+            material: 'Test Material',
+            size: 'M',
+            price: 10000,
+            insert: 'Test Insert',
+            inStock: 3,
+          },
+        ],
       });
 
       const updateProductDto = { name: 'Updated Product' };
@@ -190,11 +274,26 @@ describe('ProductService', () => {
         name: 'Test Product',
         description: 'Test Description',
         category: 'Test Category',
-        material: 'Test Material',
         engraving: false,
-        price: 10000,
         image: ['Test Image'],
-        inStock: true,
+        action: ['Test Action'],
+        prod_collection: 'Test Collection',
+        discount: 10,
+        discountStart: new Date('2025-01-01T00:00:00.000Z'),
+        discountEnd: new Date('2025-01-10T00:00:00.000Z'),
+        subcategory: ['sub1'],
+        gender: Gender.Unisex,
+        details: ['Test Detail'],
+        reviews: [],
+        variants: [
+          {
+            material: 'Test Material',
+            size: 'M',
+            price: 10000,
+            insert: 'Test Insert',
+            inStock: 3,
+          },
+        ],
       });
 
       const result = (await productService.remove(

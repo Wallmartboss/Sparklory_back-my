@@ -1,15 +1,16 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { UserService } from 'src/user/user.service';
-import { getModelToken } from '@nestjs/mongoose';
-import { User } from 'src/user/schema/user.schema';
-import { Model } from 'mongoose';
-import * as bcrypt from 'bcrypt';
-import { EmailService } from 'src/email/email.service';
-import { DeviceService } from 'src/device/device.service';
-import { SessionService } from 'src/session/session.service';
+import { Role } from '@/common/enum/user.enum';
+import { DeviceService } from '@/device/device.service';
+import { EmailService } from '@/email/email.service';
+import { ProductService } from '@/product/product.service';
+import { SessionService } from '@/session/session.service';
+import { CreateUserDto } from '@/user/dto/create-user.dto';
+import { User } from '@/user/schema/user.schema';
+import { UserService } from '@/user/user.service';
 import { ConflictException } from '@nestjs/common';
-import { CreateUserDto } from 'src/user/dto/create-user.dto';
-import { Role } from 'src/common/enum/user.enum';
+import { getModelToken } from '@nestjs/mongoose';
+import { Test, TestingModule } from '@nestjs/testing';
+import * as bcrypt from 'bcrypt';
+import { Model } from 'mongoose';
 
 describe('UserService', () => {
   let userService: UserService;
@@ -86,6 +87,11 @@ describe('UserService', () => {
             create: jest.fn().mockResolvedValue({ id: 'newSessionId' } as any),
           },
         },
+        { provide: getModelToken('Session'), useValue: {} },
+        { provide: getModelToken('Device'), useValue: {} },
+        { provide: getModelToken('LoyaltyAccount'), useValue: {} },
+        { provide: getModelToken('LoyaltyLevel'), useValue: {} },
+        { provide: ProductService, useValue: {} },
       ],
     }).compile();
 

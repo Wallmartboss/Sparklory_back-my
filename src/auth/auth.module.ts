@@ -1,17 +1,28 @@
+import { DeviceService } from '@/device/device.service';
+import { Device, DeviceSchema } from '@/device/schema/device.schema';
+import { EmailService } from '@/email/email.service';
+import { Session, SessionSchema } from '@/session/schema/session.schema';
+import { SessionService } from '@/session/session.service';
+import { User, UserSchema } from '@/user/schema/user.schema';
+import { UserService } from '@/user/user.service';
 import { Module } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
-import { UserService } from 'src/user/user.service';
-import { MongooseModule } from '@nestjs/mongoose';
-import { User, UserSchema } from 'src/user/schema/user.schema';
-import { EmailService } from 'src/email/email.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { DeviceService } from 'src/device/device.service';
-import { Device, DeviceSchema } from 'src/device/schema/device.schema';
-import { SessionService } from 'src/session/session.service';
-import { Session, SessionSchema } from 'src/session/schema/session.schema';
+import { MongooseModule } from '@nestjs/mongoose';
+import {
+  LoyaltyAccount,
+  LoyaltyAccountSchema,
+} from '../loyalty/loyalty-account.schema';
+import {
+  LoyaltyLevel,
+  LoyaltyLevelSchema,
+} from '../loyalty/loyalty-level.schema';
+import { ProductModule } from '../product/product.module';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
 import { LocalStrategy } from './strategies';
+import { FacebookStrategy } from './strategies/facebook.strategy';
+import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtStrategy } from './strategies/jwt';
 
 @Module({
@@ -20,6 +31,8 @@ import { JwtStrategy } from './strategies/jwt';
       { name: User.name, schema: UserSchema },
       { name: Device.name, schema: DeviceSchema },
       { name: Session.name, schema: SessionSchema },
+      { name: LoyaltyAccount.name, schema: LoyaltyAccountSchema },
+      { name: LoyaltyLevel.name, schema: LoyaltyLevelSchema },
     ]),
     ConfigModule.forRoot(),
     JwtModule.registerAsync({
@@ -30,6 +43,7 @@ import { JwtStrategy } from './strategies/jwt';
       }),
       inject: [ConfigService],
     }),
+    ProductModule, // Import ProductModule for ProductService
   ],
   controllers: [AuthController],
   providers: [
@@ -40,6 +54,8 @@ import { JwtStrategy } from './strategies/jwt';
     SessionService,
     LocalStrategy,
     JwtStrategy,
+    FacebookStrategy,
+    GoogleStrategy,
   ],
 })
 export class AuthModule {}
