@@ -8,6 +8,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -20,6 +21,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { UpdateMeDto } from './dto/update-me.dto';
 import { UserService } from './user.service';
 
 class SetUserRoleDto {
@@ -55,12 +57,29 @@ export class UserController {
         facebookId: '1234567890',
         googleId: 'abcdefg123456',
         resetPasswordCode: '123456',
+        loyaltyLevel: {
+          id: '67c73504f555f43ff7a6ab8f',
+          name: 'Default',
+          bonusPercent: 0,
+        },
+        bonusBalance: 0,
       },
     },
   })
   @Get('me')
   async me(@UserDecorator('sub') sub: string) {
     return this.userService.me(sub);
+  }
+
+  /**
+   * Update current user profile (full name, email, password)
+   */
+  @Patch('me')
+  @ApiOperation({ summary: 'Update current user profile' })
+  @ApiBody({ type: UpdateMeDto })
+  @ApiResponse({ status: 200, description: 'Updated user profile' })
+  async updateMe(@UserDecorator('sub') sub: string, @Body() body: UpdateMeDto) {
+    return this.userService.updateMe(sub, body);
   }
 
   /**

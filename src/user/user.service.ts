@@ -152,7 +152,71 @@ export class UserService {
   }
 
   async me(userId: string) {
-    return await this.findOneByParams({ _id: userId });
+    const user = await this.findOneByParams({ _id: userId });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    const account = await this.loyaltyModel
+      .findOne({ userId: new Types.ObjectId(userId) })
+      .populate('levelId');
+    const level = account?.levelId as unknown as LoyaltyLevel | undefined;
+    const userObject =
+      typeof (user as any).toObject === 'function'
+        ? (user as any).toObject()
+        : (user as any);
+    return {
+      ...userObject,
+      loyaltyLevel: level
+        ? {
+            id: (level as any)._id,
+            name: (level as any).name,
+            bonusPercent: (level as any).bonusPercent,
+          }
+        : null,
+      bonusBalance: account ? (account as any).bonusBalance : 0,
+    };
+  }
+
+  /**
+   * Update current user profile fields (name, email, password)
+   */
+  async updateMe(
+    userId: string,
+    payload: { name?: string; email?: string; password?: string },
+  ) {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    if (payload.email && payload.email !== user.email) {
+      const exists = await this.userModel.countDocuments({
+        email: payload.email,
+      });
+      if (exists > 0) {
+        throw new ConflictException('Email already exists');
+      }
+      user.email = payload.email;
+      user.isVerifyEmail = false;
+      user.emailVerifyCode = null;
+    }
+    if (payload.name) {
+      user.name = payload.name;
+    }
+    if (payload.password) {
+      user.password = await bcrypt.hash(payload.password, 10);
+    }
+    await user.save();
+    return {
+      _id: user._id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      image: user.image,
+      isLoggedIn: user.isLoggedIn,
+      isVerifyEmail: user.isVerifyEmail,
+      createdAt: (user as any).createdAt,
+      updatedAt: (user as any).updatedAt,
+    };
   }
 
   async findOneByParams(
