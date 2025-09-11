@@ -166,6 +166,12 @@ export class LoyaltyService {
         (amount * appliedBonusPercent).toFixed(2),
       );
 
+      // Add earned bonuses to the user's loyalty account balance
+      if (earnedBonus > 0 && account) {
+        account.bonusBalance += earnedBonus;
+        await account.save();
+      }
+
       const purchase = await this.purchaseModel.create({
         userId: new Types.ObjectId(idStr),
         orderId,
