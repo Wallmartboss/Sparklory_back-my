@@ -140,14 +140,14 @@ export class CartController {
     type: Cart,
   })
   removeItem(@Req() req, @Body() removeFromCartDto: RemoveFromCartDto) {
+    // Overload for authenticated users: (userId, productId, size, material, insert)
     return this.cartService.removeItem(
       req.user.id,
-      undefined,
       removeFromCartDto.productId,
       removeFromCartDto.size,
       removeFromCartDto.material,
       removeFromCartDto.insert,
-    );
+    ) as any;
   }
 
   @UseGuards(JwtAuthGuard)

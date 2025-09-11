@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
-import { randomBytes } from 'crypto';
+import * as crypto from 'crypto';
 import { Model, Types } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 
@@ -49,7 +49,7 @@ export class UserService {
     }
 
     const newUser = new this.userModel(payload);
-    const token = randomBytes(2).toString('hex');
+    const token = crypto.randomBytes(2).toString('hex');
 
     newUser.password = await bcrypt.hash(payload.password, 10);
     newUser.emailVerifyCode = token;
@@ -138,7 +138,7 @@ export class UserService {
   }
 
   async addNewDevice(user: User) {
-    const verifyDeviceCode = randomBytes(2).toString('hex');
+    const verifyDeviceCode = crypto.randomBytes(2).toString('hex');
     user.verifyDeviceCode = verifyDeviceCode;
     await this.saveUser(user);
 
@@ -152,7 +152,71 @@ export class UserService {
   }
 
   async me(userId: string) {
-    return await this.findOneByParams({ _id: userId });
+    const user = await this.findOneByParams({ _id: userId });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    const account = await this.loyaltyModel
+      .findOne({ userId: new Types.ObjectId(userId) })
+      .populate('levelId');
+    const level = account?.levelId as unknown as LoyaltyLevel | undefined;
+    const userObject =
+      typeof (user as any).toObject === 'function'
+        ? (user as any).toObject()
+        : (user as any);
+    return {
+      ...userObject,
+      loyaltyLevel: level
+        ? {
+            id: (level as any)._id,
+            name: (level as any).name,
+            bonusPercent: (level as any).bonusPercent,
+          }
+        : null,
+      bonusBalance: account ? (account as any).bonusBalance : 0,
+    };
+  }
+
+  /**
+   * Update current user profile fields (name, email, password)
+   */
+  async updateMe(
+    userId: string,
+    payload: { name?: string; email?: string; password?: string },
+  ) {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    if (payload.email && payload.email !== user.email) {
+      const exists = await this.userModel.countDocuments({
+        email: payload.email,
+      });
+      if (exists > 0) {
+        throw new ConflictException('Email already exists');
+      }
+      user.email = payload.email;
+      user.isVerifyEmail = false;
+      user.emailVerifyCode = null;
+    }
+    if (payload.name) {
+      user.name = payload.name;
+    }
+    if (payload.password) {
+      user.password = await bcrypt.hash(payload.password, 10);
+    }
+    await user.save();
+    return {
+      _id: user._id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      image: user.image,
+      isLoggedIn: user.isLoggedIn,
+      isVerifyEmail: user.isVerifyEmail,
+      createdAt: (user as any).createdAt,
+      updatedAt: (user as any).updatedAt,
+    };
   }
 
   async findOneByParams(
