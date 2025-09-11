@@ -27,6 +27,18 @@ export class PurchaseHistory extends Document {
     required: true,
   })
   items: CartItem[];
+
+  /**
+   * Earned bonus amount at the time of purchase
+   */
+  @Prop({ default: 0 })
+  earnedBonus: number;
+
+  /**
+   * Applied bonus percent at the time of purchase
+   */
+  @Prop({ default: 0 })
+  appliedBonusPercent: number;
 }
 
 export const PurchaseHistorySchema =

@@ -30,9 +30,20 @@ export class LoyaltyService {
     if (!idStr || idStr.length !== 24) {
       throw new Error('Некорректний userId');
     }
-    return this.purchaseModel
+    const purchases = await this.purchaseModel
       .find({ userId: new Types.ObjectId(idStr) })
-      .sort({ date: -1 });
+      .sort({ date: -1 })
+      .lean();
+    return purchases.map(p => ({
+      ...p,
+      earnedBonus:
+        typeof (p as any).earnedBonus === 'number'
+          ? (p as any).earnedBonus
+          : Number(
+              (p.amount * ((p as any).appliedBonusPercent ?? 0)).toFixed(2),
+            ),
+      appliedBonusPercent: (p as any).appliedBonusPercent ?? 0,
+    }));
   }
 
   /**
@@ -146,6 +157,15 @@ export class LoyaltyService {
       );
       console.log('[DEBUG][addOrderToHistory] date:', date);
       console.log('[DEBUG][addOrderToHistory] description:', description);
+      const account = await this.loyaltyModel
+        .findOne({ userId: new Types.ObjectId(idStr) })
+        .populate('levelId');
+      const level = account?.levelId as unknown as LoyaltyLevel | undefined;
+      const appliedBonusPercent: number = level?.bonusPercent ?? 0;
+      const earnedBonus: number = Number(
+        (amount * appliedBonusPercent).toFixed(2),
+      );
+
       const purchase = await this.purchaseModel.create({
         userId: new Types.ObjectId(idStr),
         orderId,
@@ -153,6 +173,8 @@ export class LoyaltyService {
         amount,
         date,
         description,
+        earnedBonus,
+        appliedBonusPercent,
       });
       console.log('[DEBUG] Order added to history:', purchase);
     } catch (err) {
