@@ -39,7 +39,10 @@ export class LoyaltyController {
    */
   @Get('history')
   @ApiOperation({ summary: 'Get user purchase history' })
-  @ApiResponse({ status: 200, description: 'User purchase history' })
+  @ApiResponse({
+    status: 200,
+    description: 'User purchase history (includes earnedBonus per purchase)',
+  })
   async getHistory(@UserDecorator('_id') userId: string) {
     // Returns the user's purchase history
     return this.loyaltyService.getHistory(userId);
