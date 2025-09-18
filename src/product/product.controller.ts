@@ -379,6 +379,11 @@ export class ProductController {
           true: 40,
           false: 35,
         },
+        gender: {
+          female: 45,
+          male: 20,
+          unisex: 10,
+        },
         total: 75,
       },
       description:
@@ -420,6 +425,12 @@ export class ProductController {
     required: false,
     type: Boolean,
     description: 'Filter by engraving availability',
+  })
+  @ApiQuery({
+    name: 'gender',
+    required: false,
+    type: String,
+    description: 'Filter by gender (male, female, unisex, kids)',
   })
   async getProductCounts(@Query() query: ProductCountsQueryDto): Promise<any> {
     return this.productService.getProductCounts(query);

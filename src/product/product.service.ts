@@ -1009,6 +1009,16 @@ export class ProductService {
         filter.engraving = query.engraving;
       }
 
+      if (query.gender) {
+        const normalizedGender = this.normalizeSearchTerm(query.gender);
+        filter.gender = {
+          $regex: new RegExp(
+            `^${this.escapeRegexString(normalizedGender)}$`,
+            'i',
+          ),
+        };
+      }
+
       // Execute aggregation pipeline to get counts
       const pipeline: any[] = [
         { $match: filter },
@@ -1090,6 +1100,12 @@ export class ProductService {
               { $group: { _id: '$engraving', count: { $sum: 1 } } },
               { $sort: { count: -1 } },
             ],
+            // Count by gender
+            gender: [
+              { $match: { gender: { $exists: true, $ne: null } } },
+              { $group: { _id: '$gender', count: { $sum: 1 } } },
+              { $sort: { count: -1 } },
+            ],
             // Total count
             total: [{ $count: 'total' }],
           },
@@ -1109,6 +1125,7 @@ export class ProductService {
           true: result.engraving.find(item => item._id === true)?.count || 0,
           false: result.engraving.find(item => item._id === false)?.count || 0,
         },
+        gender: this.transformCounts(result.gender),
         total: result.total[0]?.total || 0,
       };
 

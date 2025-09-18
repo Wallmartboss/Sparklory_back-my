@@ -58,6 +58,16 @@ export class ProductCountsQueryDto {
   @IsOptional()
   @IsBoolean()
   engraving?: boolean;
+
+  /** Filter by gender */
+  @ApiPropertyOptional({
+    description: 'Filter by gender',
+    example: 'male',
+    enum: ['male', 'female', 'unisex', 'kids'],
+  })
+  @IsOptional()
+  @IsString()
+  gender?: string;
 }
 
 /**
@@ -84,6 +94,9 @@ export interface ProductCountsResponseDto {
     true: number;
     false: number;
   };
+
+  /** Counts grouped by gender */
+  gender: Record<string, number>;
 
   /** Total number of products */
   total: number;
