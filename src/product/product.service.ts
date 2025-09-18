@@ -13,6 +13,10 @@ import { EmailService } from '../email/email.service';
 import { BulkProductQueryDto } from './dto/bulk-product-query.dto';
 import { CreateProductDto } from './dto/create-product.dto';
 import { OptimizedProductQueryDto } from './dto/optimized-product-query.dto';
+import {
+  ProductCountsQueryDto,
+  ProductCountsResponseDto,
+} from './dto/product-counts.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import {
   BulkProductResult,
@@ -120,18 +124,30 @@ export class ProductService {
   ): Promise<ProductPaginationResult> {
     const filter: any = {};
     if (params?.category) {
-      filter.category = { $regex: `^${params.category}$`, $options: 'i' };
+      const normalizedCategory = this.normalizeSearchTerm(params.category);
+      filter.category = {
+        $regex: new RegExp(
+          `^${this.escapeRegexString(normalizedCategory)}$`,
+          'i',
+        ),
+      };
     }
     if (params?.material) {
+      const normalizedMaterial = this.normalizeSearchTerm(params.material);
       filter['variants.material'] = {
-        $regex: `^${params.material}$`,
-        $options: 'i',
+        $regex: new RegExp(
+          `^${this.escapeRegexString(normalizedMaterial)}$`,
+          'i',
+        ),
       };
     }
     if (params?.insert) {
+      const normalizedInsert = this.normalizeSearchTerm(params.insert);
       filter['variants.insert'] = {
-        $regex: `^${params.insert}$`,
-        $options: 'i',
+        $regex: new RegExp(
+          `^${this.escapeRegexString(normalizedInsert)}$`,
+          'i',
+        ),
       };
     }
     if (params?.inStock !== undefined) {
@@ -784,24 +800,42 @@ export class ProductService {
 
     // Only add filters if they are provided
     if (query.category && query.category.trim()) {
-      filter.category = { $regex: query.category, $options: 'i' };
+      const normalizedCategory = this.normalizeSearchTerm(query.category);
+      filter.category = {
+        $regex: new RegExp(
+          `^${this.escapeRegexString(normalizedCategory)}$`,
+          'i',
+        ),
+      };
     }
 
     if (query.subcategory && query.subcategory.trim()) {
-      filter.subcategory = { $regex: query.subcategory, $options: 'i' };
+      const normalizedSubcategory = this.normalizeSearchTerm(query.subcategory);
+      filter.subcategory = {
+        $regex: new RegExp(
+          `^${this.escapeRegexString(normalizedSubcategory)}$`,
+          'i',
+        ),
+      };
     }
 
     if (query.material && query.material.trim()) {
+      const normalizedMaterial = this.normalizeSearchTerm(query.material);
       filter['variants.material'] = {
-        $regex: query.material,
-        $options: 'i',
+        $regex: new RegExp(
+          `^${this.escapeRegexString(normalizedMaterial)}$`,
+          'i',
+        ),
       };
     }
 
     if (query.insert && query.insert.trim()) {
+      const normalizedInsert = this.normalizeSearchTerm(query.insert);
       filter['variants.insert'] = {
-        $regex: query.insert,
-        $options: 'i',
+        $regex: new RegExp(
+          `^${this.escapeRegexString(normalizedInsert)}$`,
+          'i',
+        ),
       };
     }
 
@@ -892,6 +926,394 @@ export class ProductService {
   }
 
   /**
+   * Get product counts grouped by different parameters
+   * Returns counts for category, subcategory, material, insert, size, and engraving
+   * Counts unique products, not variants - if a product has multiple variants with the same parameter, it counts as 1
+   */
+  async getProductCounts(
+    query: ProductCountsQueryDto = {},
+  ): Promise<ProductCountsResponseDto> {
+    const startTime = Date.now();
+    const cacheKey = `product-counts:${JSON.stringify(query)}`;
+
+    // Try to get from cache first
+    const cached = await this.cacheManager.get(cacheKey);
+    if (cached) {
+      return {
+        ...(cached as ProductCountsResponseDto),
+        executionTime: Date.now() - startTime,
+        cacheHit: true,
+      } as ProductCountsResponseDto & {
+        executionTime: number;
+        cacheHit: boolean;
+      };
+    }
+
+    try {
+      // Build base filter from query parameters
+      const filter: any = {};
+
+      if (query.category) {
+        const normalizedCategory = this.normalizeSearchTerm(query.category);
+        filter.category = {
+          $regex: new RegExp(
+            `^${this.escapeRegexString(normalizedCategory)}$`,
+            'i',
+          ),
+        };
+      }
+
+      if (query.subcategory) {
+        const normalizedSubcategory = this.normalizeSearchTerm(
+          query.subcategory,
+        );
+        filter.subcategory = {
+          $regex: new RegExp(
+            `^${this.escapeRegexString(normalizedSubcategory)}$`,
+            'i',
+          ),
+        };
+      }
+
+      if (query.material) {
+        const normalizedMaterial = this.normalizeSearchTerm(query.material);
+        filter['variants.material'] = {
+          $regex: new RegExp(
+            `^${this.escapeRegexString(normalizedMaterial)}$`,
+            'i',
+          ),
+        };
+      }
+
+      if (query.insert) {
+        const normalizedInsert = this.normalizeSearchTerm(query.insert);
+        filter['variants.insert'] = {
+          $regex: new RegExp(
+            `^${this.escapeRegexString(normalizedInsert)}$`,
+            'i',
+          ),
+        };
+      }
+
+      if (query.size) {
+        const normalizedSize = this.normalizeSearchTerm(query.size);
+        filter['variants.size'] = {
+          $regex: new RegExp(
+            `^${this.escapeRegexString(normalizedSize)}$`,
+            'i',
+          ),
+        };
+      }
+
+      if (query.engraving !== undefined) {
+        filter.engraving = query.engraving;
+      }
+
+      // Execute aggregation pipeline to get counts
+      const pipeline: any[] = [
+        { $match: filter },
+        {
+          $facet: {
+            // Count by category
+            category: [
+              { $group: { _id: '$category', count: { $sum: 1 } } },
+              { $sort: { count: -1 } },
+            ],
+            // Count by subcategory
+            subcategory: [
+              { $match: { subcategory: { $exists: true, $ne: null } } },
+              { $group: { _id: '$subcategory', count: { $sum: 1 } } },
+              { $sort: { count: -1 } },
+            ],
+            // Count by material from variants - count unique products
+            material: [
+              {
+                $unwind: {
+                  path: '$variants',
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
+              { $match: { 'variants.material': { $exists: true, $ne: null } } },
+              {
+                $group: {
+                  _id: {
+                    productId: '$_id',
+                    material: '$variants.material',
+                  },
+                },
+              },
+              { $group: { _id: '$_id.material', count: { $sum: 1 } } },
+              { $sort: { count: -1 } },
+            ],
+            // Count by insert from variants - count unique products
+            insert: [
+              {
+                $unwind: {
+                  path: '$variants',
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
+              { $match: { 'variants.insert': { $exists: true, $ne: null } } },
+              {
+                $group: {
+                  _id: {
+                    productId: '$_id',
+                    insert: '$variants.insert',
+                  },
+                },
+              },
+              { $group: { _id: '$_id.insert', count: { $sum: 1 } } },
+              { $sort: { count: -1 } },
+            ],
+            // Count by size from variants - count unique products
+            size: [
+              {
+                $unwind: {
+                  path: '$variants',
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
+              { $match: { 'variants.size': { $exists: true, $ne: null } } },
+              {
+                $group: {
+                  _id: {
+                    productId: '$_id',
+                    size: '$variants.size',
+                  },
+                },
+              },
+              { $group: { _id: '$_id.size', count: { $sum: 1 } } },
+              { $sort: { count: -1 } },
+            ],
+            // Count by engraving
+            engraving: [
+              { $group: { _id: '$engraving', count: { $sum: 1 } } },
+              { $sort: { count: -1 } },
+            ],
+            // Total count
+            total: [{ $count: 'total' }],
+          },
+        },
+      ];
+
+      const [result] = await this.productModel.aggregate(pipeline);
+
+      // Transform the results into the expected format with normalization
+      const response: ProductCountsResponseDto = {
+        category: this.transformCounts(result.category),
+        subcategory: this.normalizeAndTransformCounts(result.subcategory),
+        material: this.normalizeAndTransformCounts(result.material),
+        insert: this.normalizeAndTransformCounts(result.insert),
+        size: this.transformCounts(result.size),
+        engraving: {
+          true: result.engraving.find(item => item._id === true)?.count || 0,
+          false: result.engraving.find(item => item._id === false)?.count || 0,
+        },
+        total: result.total[0]?.total || 0,
+      };
+
+      // Cache the result for 30 minutes
+      await this.cacheManager.set(cacheKey, response, 1800);
+
+      return response;
+    } catch (error) {
+      console.error('Error in getProductCounts:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Transform aggregation results into a simple key-value object
+   */
+  private transformCounts(
+    counts: Array<{ _id: string; count: number }>,
+  ): Record<string, number> {
+    return counts.reduce(
+      (acc, item) => {
+        acc[item._id] = item.count;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+  }
+
+  /**
+   * Normalize and transform counts, combining similar values (case-insensitive, language variants)
+   */
+  private normalizeAndTransformCounts(
+    counts: Array<{ _id: string; count: number }>,
+  ): Record<string, number> {
+    const normalized: Record<string, number> = {};
+
+    // Define normalization rules for common variations
+    const normalizationRules: Record<string, string> = {
+      // Materials
+      срібло: 'Silver',
+      золото: 'Gold',
+      'біле золото': 'White Gold',
+      платина: 'Platinum',
+      platina: 'Platinum',
+      lether: 'Leather',
+
+      // Inserts
+      diamond: 'Diamond',
+      pearl: 'Pearl',
+      pearls: 'Pearl',
+      perl: 'Pearl',
+      sapphire: 'Sapphire',
+      emerald: 'Emerald',
+      ruby: 'Ruby',
+      amethyst: 'Amethyst',
+      opal: 'Opal',
+      onyx: 'Onyx',
+      topaz: 'Topaz',
+      moonstone: 'Moonstone',
+      crystal: 'Crystal',
+      zirconia: 'Zirconia',
+      'cubic zirconia': 'Cubic Zirconia',
+      enamel: 'Enamel',
+      silver: 'Silver',
+      gold: 'Gold',
+      'white gold': 'White Gold',
+
+      // Subcategories
+      'drop earrings': 'Drop Earrings',
+      'hoop earrings': 'Hoop Earrings',
+      'long earrings': 'Long Earrings',
+      'wide rings': 'Wide Rings',
+      'wedding ring': 'Wedding Ring',
+      'ear cuffs': 'Ear Cuffs',
+      studs: 'Studs',
+      stud: 'Studs',
+      threader: 'Threader',
+    };
+
+    counts.forEach(item => {
+      const originalValue = item._id;
+      const normalizedValue = this.normalizeValue(
+        originalValue,
+        normalizationRules,
+      );
+
+      if (normalized[normalizedValue]) {
+        normalized[normalizedValue] += item.count;
+      } else {
+        normalized[normalizedValue] = item.count;
+      }
+    });
+
+    return normalized;
+  }
+
+  /**
+   * Normalize a single value using the normalization rules
+   */
+  private normalizeValue(value: string, rules: Record<string, string>): string {
+    if (!value) return value;
+
+    // First check exact match in rules
+    const lowerValue = value.toLowerCase().trim();
+    if (rules[lowerValue]) {
+      return rules[lowerValue];
+    }
+
+    // Check if any rule key is contained in the value (for compound values)
+    for (const [ruleKey, ruleValue] of Object.entries(rules)) {
+      if (lowerValue.includes(ruleKey.toLowerCase())) {
+        return ruleValue;
+      }
+    }
+
+    // If no rule matches, return the original value with proper capitalization
+    return this.capitalizeFirstLetter(value.trim());
+  }
+
+  /**
+   * Capitalize the first letter of a string
+   */
+  private capitalizeFirstLetter(str: string): string {
+    if (!str) return str;
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  }
+
+  /**
+   * Escape special regex characters in a string
+   */
+  private escapeRegexString(str: string): string {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  /**
+   * Normalize a search term for consistent filtering across all endpoints
+   * Converts to lowercase and applies normalization rules
+   */
+  private normalizeSearchTerm(term: string): string {
+    if (!term) return term;
+
+    const trimmedTerm = term.trim().toLowerCase();
+
+    // Define normalization rules for search terms (convert to lowercase)
+    const searchNormalizationRules: Record<string, string> = {
+      // Materials
+      срібло: 'silver',
+      золото: 'gold',
+      'біле золото': 'white gold',
+      платина: 'platinum',
+      platina: 'platinum',
+      lether: 'leather',
+
+      // Inserts
+      diamond: 'diamond',
+      pearl: 'pearl',
+      pearls: 'pearl',
+      perl: 'pearl',
+      sapphire: 'sapphire',
+      emerald: 'emerald',
+      ruby: 'ruby',
+      amethyst: 'amethyst',
+      opal: 'opal',
+      onyx: 'onyx',
+      topaz: 'topaz',
+      moonstone: 'moonstone',
+      crystal: 'crystal',
+      zirconia: 'zirconia',
+      'cubic zirconia': 'cubic zirconia',
+      enamel: 'enamel',
+      silver: 'silver',
+      gold: 'gold',
+      'white gold': 'white gold',
+
+      // Subcategories
+      'drop earrings': 'drop earrings',
+      'hoop earrings': 'hoop earrings',
+      'long earrings': 'long earrings',
+      'wide rings': 'wide rings',
+      'wedding ring': 'wedding ring',
+      'ear cuffs': 'ear cuffs',
+      studs: 'studs',
+      stud: 'studs',
+      threader: 'threader',
+    };
+
+    // Check if we have a normalization rule for this term
+    if (searchNormalizationRules[trimmedTerm]) {
+      return searchNormalizationRules[trimmedTerm];
+    }
+
+    // Check for partial matches (for compound values)
+    for (const [ruleKey, ruleValue] of Object.entries(
+      searchNormalizationRules,
+    )) {
+      if (trimmedTerm.includes(ruleKey)) {
+        return ruleValue;
+      }
+    }
+
+    // Return the original term in lowercase
+    return trimmedTerm;
+  }
+
+  /**
    * Clear all product-related cache entries
    * This method helps maintain cache consistency when products are updated
    */
@@ -905,7 +1327,11 @@ export class ProductService {
     try {
       // Get all cache keys (this is a simplified approach)
       // In a production environment, you might want to use a more sophisticated cache key management system
-      const cachePatterns = ['products:compare:*', 'products:optimized:*'];
+      const cachePatterns = [
+        'products:compare:*',
+        'products:optimized:*',
+        'product-counts:*',
+      ];
 
       // Clear cache entries matching patterns
       for (const pattern of cachePatterns) {

@@ -32,6 +32,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { UserDecorator } from '../common/decorators/user.decorator';
 import { CreateProductDto, ReviewDto } from './dto/create-product.dto';
 
+import { ProductCountsQueryDto } from './dto/product-counts.dto';
 import { ProductFilterDto } from './dto/product-filter.dto';
 import { ProductDto } from './dto/product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -80,6 +81,8 @@ export class ProductController {
   @Get()
   @ApiOperation({
     summary: 'Get all products with filtering, sorting, and pagination',
+    description:
+      'Returns paginated products with filtering options. Search terms are normalized for consistent results across all endpoints (case-insensitive, language variants unified). Works with any case: pearl, PEARL, PeaRL, pEaRl.',
   })
   @ApiResponse({
     status: 200,
@@ -332,6 +335,94 @@ export class ProductController {
   })
   async findDiscountedProducts() {
     return this.productService.findDiscounted();
+  }
+
+  @Get('counts')
+  @ApiOperation({
+    summary: 'Get product counts grouped by different parameters',
+    description:
+      'Returns counts for UNIQUE PRODUCTS grouped by category, subcategory, material, insert, size, and engraving. If a product has multiple variants with the same parameter, it counts as 1 product. Values are normalized to combine similar entries (case-insensitive, language variants). Uses unified normalization rules across all endpoints. Can be filtered by any of these parameters.',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Returns UNIQUE PRODUCT counts grouped by different parameters',
+    schema: {
+      example: {
+        category: {
+          earrings: 25,
+          rings: 18,
+          necklaces: 12,
+        },
+        subcategory: {
+          studs: 15,
+          hoops: 10,
+          pendants: 8,
+        },
+        material: {
+          gold: 20,
+          silver: 35,
+          platinum: 5,
+        },
+        insert: {
+          diamond: 25,
+          sapphire: 12,
+          emerald: 8,
+        },
+        size: {
+          S: 15,
+          M: 30,
+          L: 20,
+          XL: 10,
+        },
+        engraving: {
+          true: 40,
+          false: 35,
+        },
+        total: 75,
+      },
+      description:
+        'Each count represents unique products. If a product has multiple variants with the same parameter (e.g., multiple gold variants), it counts as 1 product. Values are normalized to combine similar entries (e.g., "diamond" + "Diamond" = "Diamond", "срібло" = "Silver").',
+    },
+  })
+  @ApiQuery({
+    name: 'category',
+    required: false,
+    type: String,
+    description: 'Filter by specific category',
+  })
+  @ApiQuery({
+    name: 'subcategory',
+    required: false,
+    type: String,
+    description: 'Filter by specific subcategory',
+  })
+  @ApiQuery({
+    name: 'material',
+    required: false,
+    type: String,
+    description: 'Filter by specific material',
+  })
+  @ApiQuery({
+    name: 'insert',
+    required: false,
+    type: String,
+    description: 'Filter by specific insert',
+  })
+  @ApiQuery({
+    name: 'size',
+    required: false,
+    type: String,
+    description: 'Filter by specific size',
+  })
+  @ApiQuery({
+    name: 'engraving',
+    required: false,
+    type: Boolean,
+    description: 'Filter by engraving availability',
+  })
+  async getProductCounts(@Query() query: ProductCountsQueryDto): Promise<any> {
+    return this.productService.getProductCounts(query);
   }
 
   @Get('categories')
