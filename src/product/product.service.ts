@@ -1019,6 +1019,28 @@ export class ProductService {
         };
       }
 
+      if (query.action) {
+        const normalizedAction = this.normalizeSearchTerm(query.action);
+        filter.action = {
+          $regex: new RegExp(
+            `^${this.escapeRegexString(normalizedAction)}$`,
+            'i',
+          ),
+        };
+      }
+
+      if (query.prod_collection) {
+        const normalizedCollection = this.normalizeSearchTerm(
+          query.prod_collection,
+        );
+        filter.prod_collection = {
+          $regex: new RegExp(
+            `^${this.escapeRegexString(normalizedCollection)}$`,
+            'i',
+          ),
+        };
+      }
+
       // Execute aggregation pipeline to get counts
       const pipeline: any[] = [
         { $match: filter },
@@ -1027,13 +1049,13 @@ export class ProductService {
             // Count by category
             category: [
               { $group: { _id: '$category', count: { $sum: 1 } } },
-              { $sort: { count: -1 } },
+              { $sort: { _id: 1 } },
             ],
             // Count by subcategory
             subcategory: [
               { $match: { subcategory: { $exists: true, $ne: null } } },
               { $group: { _id: '$subcategory', count: { $sum: 1 } } },
-              { $sort: { count: -1 } },
+              { $sort: { _id: 1 } },
             ],
             // Count by material from variants - count unique products
             material: [
@@ -1053,7 +1075,7 @@ export class ProductService {
                 },
               },
               { $group: { _id: '$_id.material', count: { $sum: 1 } } },
-              { $sort: { count: -1 } },
+              { $sort: { _id: 1 } },
             ],
             // Count by insert from variants - count unique products
             insert: [
@@ -1073,7 +1095,7 @@ export class ProductService {
                 },
               },
               { $group: { _id: '$_id.insert', count: { $sum: 1 } } },
-              { $sort: { count: -1 } },
+              { $sort: { _id: 1 } },
             ],
             // Count by size from variants - count unique products
             size: [
@@ -1093,18 +1115,30 @@ export class ProductService {
                 },
               },
               { $group: { _id: '$_id.size', count: { $sum: 1 } } },
-              { $sort: { count: -1 } },
+              { $sort: { _id: 1 } },
             ],
             // Count by engraving
             engraving: [
               { $group: { _id: '$engraving', count: { $sum: 1 } } },
-              { $sort: { count: -1 } },
+              { $sort: { _id: 1 } },
             ],
             // Count by gender
             gender: [
               { $match: { gender: { $exists: true, $ne: null } } },
               { $group: { _id: '$gender', count: { $sum: 1 } } },
-              { $sort: { count: -1 } },
+              { $sort: { _id: 1 } },
+            ],
+            // Count by action
+            action: [
+              { $match: { action: { $exists: true, $ne: null } } },
+              { $group: { _id: '$action', count: { $sum: 1 } } },
+              { $sort: { _id: 1 } },
+            ],
+            // Count by prod_collection
+            prod_collection: [
+              { $match: { prod_collection: { $exists: true, $ne: null } } },
+              { $group: { _id: '$prod_collection', count: { $sum: 1 } } },
+              { $sort: { _id: 1 } },
             ],
             // Total count
             total: [{ $count: 'total' }],
@@ -1121,6 +1155,8 @@ export class ProductService {
         material: this.normalizeAndTransformCounts(result.material),
         insert: this.normalizeAndTransformCounts(result.insert),
         size: this.transformCounts(result.size),
+        action: this.transformCounts(result.action),
+        prod_collection: this.transformCounts(result.prod_collection),
         engraving: {
           true: result.engraving.find(item => item._id === true)?.count || 0,
           false: result.engraving.find(item => item._id === false)?.count || 0,
