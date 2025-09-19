@@ -13,6 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
   ApiOperation,
@@ -20,7 +21,9 @@ import {
   ApiProperty,
   ApiResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateMeDto } from './dto/update-me.dto';
 import { UserService } from './user.service';
 
@@ -80,6 +83,46 @@ export class UserController {
   @ApiResponse({ status: 200, description: 'Updated user profile' })
   async updateMe(@UserDecorator('sub') sub: string, @Body() body: UpdateMeDto) {
     return this.userService.updateMe(sub, body);
+  }
+
+  /**
+   * Change current user's password with previous password verification
+   */
+  @Patch('me/password')
+  @ApiOperation({ summary: 'Change password (requires previous password)' })
+  @ApiBody({ type: ChangePasswordDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Password changed successfully',
+    schema: {
+      example: { success: true },
+    },
+  })
+  @ApiBadRequestResponse({
+    description:
+      'Previous password incorrect, new password too short, or validation error',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Previous password is incorrect',
+        error: 'Bad Request',
+      },
+    },
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Missing or invalid JWT',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'Unauthorized',
+      },
+    },
+  })
+  async changeMyPassword(
+    @UserDecorator('sub') sub: string,
+    @Body() body: ChangePasswordDto,
+  ) {
+    return this.userService.changePassword(sub, body);
   }
 
   /**

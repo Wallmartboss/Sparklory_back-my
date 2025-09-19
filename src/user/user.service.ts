@@ -219,6 +219,37 @@ export class UserService {
     };
   }
 
+  /**
+   * Change user's password after verifying the previous one
+   */
+  async changePassword(
+    userId: string,
+    payload: { previousPassword: string; newPassword: string },
+  ): Promise<{ success: boolean }> {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    if (!user.password) {
+      throw new BadRequestException('You must set a password for your account');
+    }
+    const isPreviousCorrect = await bcrypt.compare(
+      payload.previousPassword,
+      user.password,
+    );
+    if (!isPreviousCorrect) {
+      throw new BadRequestException('Previous password is incorrect');
+    }
+    if (payload.newPassword.length < 8) {
+      throw new BadRequestException(
+        'New password must be at least 8 characters',
+      );
+    }
+    user.password = await bcrypt.hash(payload.newPassword, 10);
+    await user.save();
+    return { success: true };
+  }
+
   async findOneByParams(
     params: Record<string, string | number | boolean>,
   ): Promise<User | null> {
