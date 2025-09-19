@@ -41,6 +41,24 @@ export class ProductCountsQueryDto {
   @IsString()
   insert?: string;
 
+  /** Filter by specific action */
+  @ApiPropertyOptional({
+    description: 'Filter by specific action',
+    example: 'Summer Sale',
+  })
+  @IsOptional()
+  @IsString()
+  action?: string;
+
+  /** Filter by specific collection */
+  @ApiPropertyOptional({
+    description: 'Filter by specific collection',
+    example: 'Spring 2025',
+  })
+  @IsOptional()
+  @IsString()
+  prod_collection?: string;
+
   /** Filter by specific size */
   @ApiPropertyOptional({
     description: 'Filter by specific size',
@@ -100,4 +118,10 @@ export interface ProductCountsResponseDto {
 
   /** Total number of products */
   total: number;
+
+  /** Counts grouped by action */
+  action: Record<string, number>;
+
+  /** Counts grouped by product collection */
+  prod_collection: Record<string, number>;
 }
