@@ -786,110 +786,97 @@ export class ProductService {
   private buildOptimizedFilter(query: OptimizedProductQueryDto): any {
     const filter: any = {};
 
+    // Helper for null/empty filter
+    function buildNullOrValuesFilter(field: string, values: string[], isVariant = false) {
+      const hasNull = values.some(v => v === null || v === 'null');
+      const notNullValues = values.filter(v => v !== null && v !== 'null');
+      const regexValues = notNullValues.map(v =>
+        new RegExp(`^${this.escapeRegexString(this.normalizeSearchTerm(v))}$`, 'i'),
+      );
+      const fieldName = isVariant ? `variants.${field}` : field;
+      // Для action, subcategory, category, insert, prod_collection, size добавляем строгую фильтрацию по отсутствию/пустоте
+      // Только для массивов: action
+      const arrayFields = ['action'];
+      const strictNullFields = ['action', 'subcategory', 'category', 'insert', 'prod_collection', 'size'];
+      if (strictNullFields.includes(field) && hasNull) {
+        const baseOr = {
+          $or: [
+            { [fieldName]: { $exists: false } },
+            { [fieldName]: null },
+            { [fieldName]: '' },
+            { [fieldName]: [] }
+          ]
+        };
+        if (arrayFields.includes(field)) {
+          // Только для action добавляем $not/$elemMatch
+          return {
+            ...baseOr,
+            [fieldName]: { $not: { $elemMatch: { $exists: true } } }
+          };
+        } else {
+          // Для строк — только $or
+          return baseOr;
+        }
+      }
+      // Для остальных полей
+      if (hasNull && regexValues.length > 0) {
+        return {
+          $or: [
+            { [fieldName]: { $in: regexValues } },
+            { [fieldName]: { $exists: false } },
+            { [fieldName]: null },
+            { [fieldName]: '' },
+          ],
+        };
+      } else if (hasNull) {
+        return {
+          $or: [
+            { [fieldName]: { $exists: false } },
+            { [fieldName]: null },
+            { [fieldName]: '' },
+          ],
+        };
+      } else if (regexValues.length > 0) {
+        return {
+          [fieldName]: { $in: regexValues },
+        };
+      } else {
+        return {};
+      }
+    }
+
     // Only add filters if they are provided
     if (query.category && query.category.length > 0) {
-      const normalizedCategories = query.category.map(category =>
-        this.normalizeSearchTerm(category),
-      );
-      filter.category = {
-        $in: normalizedCategories.map(
-          category => new RegExp(`^${this.escapeRegexString(category)}$`, 'i'),
-        ),
-      };
+      Object.assign(filter, buildNullOrValuesFilter.call(this, 'category', query.category));
     }
-
     if (query.subcategory && query.subcategory.length > 0) {
-      const normalizedSubcategories = query.subcategory.map(subcategory =>
-        this.normalizeSearchTerm(subcategory),
-      );
-      filter.subcategory = {
-        $in: normalizedSubcategories.map(
-          subcategory =>
-            new RegExp(`^${this.escapeRegexString(subcategory)}$`, 'i'),
-        ),
-      };
+      Object.assign(filter, buildNullOrValuesFilter.call(this, 'subcategory', query.subcategory));
     }
-
     if (query.material && query.material.length > 0) {
-      const normalizedMaterials = query.material.map(material =>
-        this.normalizeSearchTerm(material),
-      );
-      filter['variants.material'] = {
-        $in: normalizedMaterials.map(
-          material => new RegExp(`^${this.escapeRegexString(material)}$`, 'i'),
-        ),
-      };
+      Object.assign(filter, buildNullOrValuesFilter.call(this, 'material', query.material, true));
     }
-
     if (query.insert && query.insert.length > 0) {
-      const normalizedInserts = query.insert.map(insert =>
-        this.normalizeSearchTerm(insert),
-      );
-      filter['variants.insert'] = {
-        $in: normalizedInserts.map(
-          insert => new RegExp(`^${this.escapeRegexString(insert)}$`, 'i'),
-        ),
-      };
+      Object.assign(filter, buildNullOrValuesFilter.call(this, 'insert', query.insert, true));
+    }
+    if (query.gender && query.gender.length > 0) {
+      Object.assign(filter, buildNullOrValuesFilter.call(this, 'gender', query.gender));
+    }
+    if (query.collection && query.collection.length > 0) {
+      Object.assign(filter, buildNullOrValuesFilter.call(this, 'prod_collection', query.collection));
+    }
+    if (query.size && query.size.length > 0) {
+      Object.assign(filter, buildNullOrValuesFilter.call(this, 'size', query.size, true));
+    }
+    if (query.action && query.action.length > 0) {
+      Object.assign(filter, buildNullOrValuesFilter.call(this, 'action', query.action));
     }
 
     if (query.inStock !== undefined && query.inStock !== null) {
       filter['variants.inStock'] = { $gte: Number(query.inStock) };
     }
-
-    if (query.gender && query.gender.length > 0) {
-      const normalizedGenders = query.gender.map(gender =>
-        this.normalizeSearchTerm(gender),
-      );
-      filter.gender = {
-        $in: normalizedGenders.map(
-          gender => new RegExp(`^${this.escapeRegexString(gender)}$`, 'i'),
-        ),
-      };
-    }
-
-    if (query.collection && query.collection.length > 0) {
-      const normalizedCollections = query.collection.map(collection =>
-        this.normalizeSearchTerm(collection),
-      );
-      filter.prod_collection = {
-        $in: normalizedCollections.map(
-          collection =>
-            new RegExp(`^${this.escapeRegexString(collection)}$`, 'i'),
-        ),
-      };
-    }
-
-    if (query.size && query.size.length > 0) {
-      const normalizedSizes = query.size.map(size =>
-        this.normalizeSearchTerm(size),
-      );
-      filter['variants.size'] = {
-        $in: normalizedSizes.map(
-          size => new RegExp(`^${this.escapeRegexString(size)}$`, 'i'),
-        ),
-      };
-    }
-
     if (query.engraving !== undefined && query.engraving !== null) {
       filter.engraving = query.engraving;
     }
-
-    if (query.action && query.action.length > 0) {
-      const actions = query.action
-        .filter(action => action && action.trim())
-        .map(action => action.trim());
-
-      if (actions.length > 0) {
-        // Since action is an array field, we need to check if any of the actions
-        // are contained in the product's action array (case-insensitive)
-        filter.action = {
-          $in: actions.map(
-            action => new RegExp(`^${this.escapeRegexString(action)}$`, 'i'),
-          ),
-        };
-      }
-    }
-
     if (query.hasDiscount === true) {
       filter.$or = [
         { discount: { $gt: 0 } },
@@ -901,7 +888,6 @@ export class ProductService {
         },
       ];
     }
-
     if (query.search && query.search.trim()) {
       filter.$or = [
         { name: { $regex: query.search, $options: 'i' } },
@@ -910,7 +896,6 @@ export class ProductService {
         { subcategory: { $regex: query.search, $options: 'i' } },
       ];
     }
-
     return filter;
   }
 
