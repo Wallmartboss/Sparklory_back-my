@@ -32,14 +32,14 @@ import { Product, ProductDocument } from './schema/product.schema';
 interface FindAllProductsParams {
   limit?: number;
   page?: number;
-  category?: string;
-  subcategory?: string;
-  material?: string;
-  insert?: string;
+  category?: string[];
+  subcategory?: string[];
+  material?: string[];
+  insert?: string[];
   inStock?: number;
-  gender?: string;
-  collection?: string;
-  size?: string;
+  gender?: string[];
+  collection?: string[];
+  size?: string[];
   engraving?: boolean;
   action?: string[];
   hasDiscount?: boolean;
@@ -675,7 +675,7 @@ export class ProductService {
     options: {
       limit?: number;
       page?: number;
-      category?: string;
+      category?: string[];
       useCache?: boolean;
     } = {},
   ): Promise<OptimizedProductResult> {
@@ -705,8 +705,16 @@ export class ProductService {
         ],
       };
 
-      if (options.category) {
-        filter.category = { $regex: `^${options.category}$`, $options: 'i' };
+      if (options.category && options.category.length > 0) {
+        const normalizedCategories = options.category.map(category =>
+          this.normalizeSearchTerm(category),
+        );
+        filter.category = {
+          $in: normalizedCategories.map(
+            category =>
+              new RegExp(`^${this.escapeRegexString(category)}$`, 'i'),
+          ),
+        };
       }
 
       // Pagination
@@ -779,42 +787,47 @@ export class ProductService {
     const filter: any = {};
 
     // Only add filters if they are provided
-    if (query.category && query.category.trim()) {
-      const normalizedCategory = this.normalizeSearchTerm(query.category);
+    if (query.category && query.category.length > 0) {
+      const normalizedCategories = query.category.map(category =>
+        this.normalizeSearchTerm(category),
+      );
       filter.category = {
-        $regex: new RegExp(
-          `^${this.escapeRegexString(normalizedCategory)}$`,
-          'i',
+        $in: normalizedCategories.map(
+          category => new RegExp(`^${this.escapeRegexString(category)}$`, 'i'),
         ),
       };
     }
 
-    if (query.subcategory && query.subcategory.trim()) {
-      const normalizedSubcategory = this.normalizeSearchTerm(query.subcategory);
+    if (query.subcategory && query.subcategory.length > 0) {
+      const normalizedSubcategories = query.subcategory.map(subcategory =>
+        this.normalizeSearchTerm(subcategory),
+      );
       filter.subcategory = {
-        $regex: new RegExp(
-          `^${this.escapeRegexString(normalizedSubcategory)}$`,
-          'i',
+        $in: normalizedSubcategories.map(
+          subcategory =>
+            new RegExp(`^${this.escapeRegexString(subcategory)}$`, 'i'),
         ),
       };
     }
 
-    if (query.material && query.material.trim()) {
-      const normalizedMaterial = this.normalizeSearchTerm(query.material);
+    if (query.material && query.material.length > 0) {
+      const normalizedMaterials = query.material.map(material =>
+        this.normalizeSearchTerm(material),
+      );
       filter['variants.material'] = {
-        $regex: new RegExp(
-          `^${this.escapeRegexString(normalizedMaterial)}$`,
-          'i',
+        $in: normalizedMaterials.map(
+          material => new RegExp(`^${this.escapeRegexString(material)}$`, 'i'),
         ),
       };
     }
 
-    if (query.insert && query.insert.trim()) {
-      const normalizedInsert = this.normalizeSearchTerm(query.insert);
+    if (query.insert && query.insert.length > 0) {
+      const normalizedInserts = query.insert.map(insert =>
+        this.normalizeSearchTerm(insert),
+      );
       filter['variants.insert'] = {
-        $regex: new RegExp(
-          `^${this.escapeRegexString(normalizedInsert)}$`,
-          'i',
+        $in: normalizedInserts.map(
+          insert => new RegExp(`^${this.escapeRegexString(insert)}$`, 'i'),
         ),
       };
     }
@@ -823,24 +836,37 @@ export class ProductService {
       filter['variants.inStock'] = { $gte: Number(query.inStock) };
     }
 
-    if (query.gender && query.gender.trim()) {
-      filter.gender = { $regex: query.gender, $options: 'i' };
-    }
-
-    if (query.collection && query.collection.trim()) {
-      const normalizedCollection = this.normalizeSearchTerm(query.collection);
-      filter.prod_collection = {
-        $regex: new RegExp(
-          `^${this.escapeRegexString(normalizedCollection)}$`,
-          'i',
+    if (query.gender && query.gender.length > 0) {
+      const normalizedGenders = query.gender.map(gender =>
+        this.normalizeSearchTerm(gender),
+      );
+      filter.gender = {
+        $in: normalizedGenders.map(
+          gender => new RegExp(`^${this.escapeRegexString(gender)}$`, 'i'),
         ),
       };
     }
 
-    if (query.size && query.size.trim()) {
-      const normalizedSize = this.normalizeSearchTerm(query.size);
+    if (query.collection && query.collection.length > 0) {
+      const normalizedCollections = query.collection.map(collection =>
+        this.normalizeSearchTerm(collection),
+      );
+      filter.prod_collection = {
+        $in: normalizedCollections.map(
+          collection =>
+            new RegExp(`^${this.escapeRegexString(collection)}$`, 'i'),
+        ),
+      };
+    }
+
+    if (query.size && query.size.length > 0) {
+      const normalizedSizes = query.size.map(size =>
+        this.normalizeSearchTerm(size),
+      );
       filter['variants.size'] = {
-        $regex: new RegExp(`^${this.escapeRegexString(normalizedSize)}$`, 'i'),
+        $in: normalizedSizes.map(
+          size => new RegExp(`^${this.escapeRegexString(size)}$`, 'i'),
+        ),
       };
     }
 

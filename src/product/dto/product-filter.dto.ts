@@ -10,36 +10,74 @@ import {
 
 export class ProductFilterDto {
   @ApiPropertyOptional({
-    description: 'Product category filter',
+    description:
+      'Product category filter (single category or array of categories)',
     example: 'earrings',
+    oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
   })
   @IsOptional()
-  @IsString()
-  category?: string;
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return [value];
+    }
+    return value;
+  })
+  @Type(() => String)
+  @IsArray()
+  @IsString({ each: true })
+  category?: string[];
 
   @ApiPropertyOptional({
-    description: 'Product subcategory filter',
+    description:
+      'Product subcategory filter (single subcategory or array of subcategories)',
     example: 'studs',
+    oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
   })
   @IsOptional()
-  @IsString()
-  subcategory?: string;
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return [value];
+    }
+    return value;
+  })
+  @Type(() => String)
+  @IsArray()
+  @IsString({ each: true })
+  subcategory?: string[];
 
   @ApiPropertyOptional({
-    description: 'Material filter',
+    description: 'Material filter (single material or array of materials)',
     example: 'gold',
+    oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
   })
   @IsOptional()
-  @IsString()
-  material?: string;
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return [value];
+    }
+    return value;
+  })
+  @Type(() => String)
+  @IsArray()
+  @IsString({ each: true })
+  material?: string[];
 
   @ApiPropertyOptional({
-    description: 'Insert filter',
+    description: 'Insert filter (single insert or array of inserts)',
     example: 'diamond',
+    oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
   })
   @IsOptional()
-  @IsString()
-  insert?: string;
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return [value];
+    }
+    return value;
+  })
+  @Type(() => String)
+  @IsArray()
+  @IsString({ each: true })
+  insert?: string[];
 
   @ApiPropertyOptional({
     description: 'Minimum stock quantity',
@@ -51,28 +89,56 @@ export class ProductFilterDto {
   inStock?: number;
 
   @ApiPropertyOptional({
-    description: 'Gender filter',
+    description: 'Gender filter (single gender or array of genders)',
     example: 'female',
+    oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
   })
   @IsOptional()
-  @IsString()
-  gender?: string;
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return [value];
+    }
+    return value;
+  })
+  @Type(() => String)
+  @IsArray()
+  @IsString({ each: true })
+  gender?: string[];
 
   @ApiPropertyOptional({
-    description: 'Collection filter',
+    description:
+      'Collection filter (single collection or array of collections)',
     example: 'Spring 2025',
+    oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
   })
   @IsOptional()
-  @IsString()
-  collection?: string;
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return [value];
+    }
+    return value;
+  })
+  @Type(() => String)
+  @IsArray()
+  @IsString({ each: true })
+  collection?: string[];
 
   @ApiPropertyOptional({
-    description: 'Size filter',
+    description: 'Size filter (single size or array of sizes)',
     example: '16',
+    oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
   })
   @IsOptional()
-  @IsString()
-  size?: string;
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return [value];
+    }
+    return value;
+  })
+  @Type(() => String)
+  @IsArray()
+  @IsString({ each: true })
+  size?: string[];
 
   @ApiPropertyOptional({
     description: 'Engraving filter',
