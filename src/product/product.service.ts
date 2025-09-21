@@ -787,31 +787,46 @@ export class ProductService {
     const filter: any = {};
 
     // Helper for null/empty filter
-    function buildNullOrValuesFilter(field: string, values: string[], isVariant = false) {
+    function buildNullOrValuesFilter(
+      field: string,
+      values: string[],
+      isVariant = false,
+    ) {
       const hasNull = values.some(v => v === null || v === 'null');
       const notNullValues = values.filter(v => v !== null && v !== 'null');
-      const regexValues = notNullValues.map(v =>
-        new RegExp(`^${this.escapeRegexString(this.normalizeSearchTerm(v))}$`, 'i'),
+      const regexValues = notNullValues.map(
+        v =>
+          new RegExp(
+            `^${this.escapeRegexString(this.normalizeSearchTerm(v))}$`,
+            'i',
+          ),
       );
       const fieldName = isVariant ? `variants.${field}` : field;
       // Для action, subcategory, category, insert, prod_collection, size добавляем строгую фильтрацию по отсутствию/пустоте
       // Только для массивов: action
       const arrayFields = ['action'];
-      const strictNullFields = ['action', 'subcategory', 'category', 'insert', 'prod_collection', 'size'];
+      const strictNullFields = [
+        'action',
+        'subcategory',
+        'category',
+        'insert',
+        'prod_collection',
+        'size',
+      ];
       if (strictNullFields.includes(field) && hasNull) {
         const baseOr = {
           $or: [
             { [fieldName]: { $exists: false } },
             { [fieldName]: null },
             { [fieldName]: '' },
-            { [fieldName]: [] }
-          ]
+            { [fieldName]: [] },
+          ],
         };
         if (arrayFields.includes(field)) {
           // Только для action добавляем $not/$elemMatch
           return {
             ...baseOr,
-            [fieldName]: { $not: { $elemMatch: { $exists: true } } }
+            [fieldName]: { $not: { $elemMatch: { $exists: true } } },
           };
         } else {
           // Для строк — только $or
@@ -847,28 +862,52 @@ export class ProductService {
 
     // Only add filters if they are provided
     if (query.category && query.category.length > 0) {
-      Object.assign(filter, buildNullOrValuesFilter.call(this, 'category', query.category));
+      Object.assign(
+        filter,
+        buildNullOrValuesFilter.call(this, 'category', query.category),
+      );
     }
     if (query.subcategory && query.subcategory.length > 0) {
-      Object.assign(filter, buildNullOrValuesFilter.call(this, 'subcategory', query.subcategory));
+      Object.assign(
+        filter,
+        buildNullOrValuesFilter.call(this, 'subcategory', query.subcategory),
+      );
     }
     if (query.material && query.material.length > 0) {
-      Object.assign(filter, buildNullOrValuesFilter.call(this, 'material', query.material, true));
+      Object.assign(
+        filter,
+        buildNullOrValuesFilter.call(this, 'material', query.material, true),
+      );
     }
     if (query.insert && query.insert.length > 0) {
-      Object.assign(filter, buildNullOrValuesFilter.call(this, 'insert', query.insert, true));
+      Object.assign(
+        filter,
+        buildNullOrValuesFilter.call(this, 'insert', query.insert, true),
+      );
     }
     if (query.gender && query.gender.length > 0) {
-      Object.assign(filter, buildNullOrValuesFilter.call(this, 'gender', query.gender));
+      Object.assign(
+        filter,
+        buildNullOrValuesFilter.call(this, 'gender', query.gender),
+      );
     }
     if (query.collection && query.collection.length > 0) {
-      Object.assign(filter, buildNullOrValuesFilter.call(this, 'prod_collection', query.collection));
+      Object.assign(
+        filter,
+        buildNullOrValuesFilter.call(this, 'prod_collection', query.collection),
+      );
     }
     if (query.size && query.size.length > 0) {
-      Object.assign(filter, buildNullOrValuesFilter.call(this, 'size', query.size, true));
+      Object.assign(
+        filter,
+        buildNullOrValuesFilter.call(this, 'size', query.size, true),
+      );
     }
     if (query.action && query.action.length > 0) {
-      Object.assign(filter, buildNullOrValuesFilter.call(this, 'action', query.action));
+      Object.assign(
+        filter,
+        buildNullOrValuesFilter.call(this, 'action', query.action),
+      );
     }
 
     if (query.inStock !== undefined && query.inStock !== null) {
