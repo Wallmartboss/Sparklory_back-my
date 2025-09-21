@@ -33,10 +33,19 @@ interface FindAllProductsParams {
   limit?: number;
   page?: number;
   category?: string;
+  subcategory?: string;
   material?: string;
   insert?: string;
   inStock?: number;
+  gender?: string;
+  collection?: string;
+  size?: string;
+  engraving?: boolean;
+  action?: string[];
+  hasDiscount?: boolean;
+  search?: string;
   sort?: string;
+  fields?: string[];
 }
 
 interface ReviewPaginationResult {
@@ -122,51 +131,20 @@ export class ProductService {
   async findAll(
     params?: FindAllProductsParams,
   ): Promise<ProductPaginationResult> {
-    const filter: any = {};
-    if (params?.category) {
-      const normalizedCategory = this.normalizeSearchTerm(params.category);
-      filter.category = {
-        $regex: new RegExp(
-          `^${this.escapeRegexString(normalizedCategory)}$`,
-          'i',
-        ),
-      };
-    }
-    if (params?.material) {
-      const normalizedMaterial = this.normalizeSearchTerm(params.material);
-      filter['variants.material'] = {
-        $regex: new RegExp(
-          `^${this.escapeRegexString(normalizedMaterial)}$`,
-          'i',
-        ),
-      };
-    }
-    if (params?.insert) {
-      const normalizedInsert = this.normalizeSearchTerm(params.insert);
-      filter['variants.insert'] = {
-        $regex: new RegExp(
-          `^${this.escapeRegexString(normalizedInsert)}$`,
-          'i',
-        ),
-      };
-    }
-    if (params?.inStock !== undefined) {
-      filter['variants.inStock'] = { $gte: Number(params.inStock) };
-    }
-    const sortOption: any = {};
-    if (params?.sort) {
-      if (params.sort === 'price_desc') {
-        sortOption['variants.price'] = -1;
-      } else if (params.sort === 'price_asc') {
-        sortOption['variants.price'] = 1;
-      }
-    }
+    // Use the same filter logic as buildOptimizedFilter
+    const filter = this.buildOptimizedFilter(
+      params as OptimizedProductQueryDto,
+    );
+    const projection = this.buildProjection(params?.fields);
+    const sortOption = this.buildSort(params?.sort);
+
     const limit = params?.limit ? Number(params.limit) : 16;
     const page = params?.page ? Number(params.page) : 1;
     const skip = (page - 1) * limit;
+
     const [products, total] = await Promise.all([
       this.productModel
-        .find(filter)
+        .find(filter, projection)
         .sort(sortOption)
         .skip(skip)
         .limit(limit)
@@ -785,7 +763,9 @@ export class ProductService {
       query.inStock || 'all',
       query.gender || 'all',
       query.collection || 'all',
-      query.action || 'all',
+      query.size || 'all',
+      query.engraving || 'all',
+      query.action ? query.action.sort().join(',') : 'all',
       query.hasDiscount || 'all',
       query.search || 'all',
       query.sort || 'default',
@@ -848,11 +828,40 @@ export class ProductService {
     }
 
     if (query.collection && query.collection.trim()) {
-      filter.prod_collection = { $regex: query.collection, $options: 'i' };
+      const normalizedCollection = this.normalizeSearchTerm(query.collection);
+      filter.prod_collection = {
+        $regex: new RegExp(
+          `^${this.escapeRegexString(normalizedCollection)}$`,
+          'i',
+        ),
+      };
     }
 
-    if (query.action && query.action.trim()) {
-      filter.action = { $regex: query.action, $options: 'i' };
+    if (query.size && query.size.trim()) {
+      const normalizedSize = this.normalizeSearchTerm(query.size);
+      filter['variants.size'] = {
+        $regex: new RegExp(`^${this.escapeRegexString(normalizedSize)}$`, 'i'),
+      };
+    }
+
+    if (query.engraving !== undefined && query.engraving !== null) {
+      filter.engraving = query.engraving;
+    }
+
+    if (query.action && query.action.length > 0) {
+      const actions = query.action
+        .filter(action => action && action.trim())
+        .map(action => action.trim());
+
+      if (actions.length > 0) {
+        // Since action is an array field, we need to check if any of the actions
+        // are contained in the product's action array (case-insensitive)
+        filter.action = {
+          $in: actions.map(
+            action => new RegExp(`^${this.escapeRegexString(action)}$`, 'i'),
+          ),
+        };
+      }
     }
 
     if (query.hasDiscount === true) {
@@ -1019,14 +1028,20 @@ export class ProductService {
         };
       }
 
-      if (query.action) {
-        const normalizedAction = this.normalizeSearchTerm(query.action);
-        filter.action = {
-          $regex: new RegExp(
-            `^${this.escapeRegexString(normalizedAction)}$`,
-            'i',
-          ),
-        };
+      if (query.action && query.action.length > 0) {
+        const actions = query.action
+          .filter(action => action && action.trim())
+          .map(action => action.trim());
+
+        if (actions.length > 0) {
+          // Since action is an array field, we need to check if any of the actions
+          // are contained in the product's action array (case-insensitive)
+          filter.action = {
+            $in: actions.map(
+              action => new RegExp(`^${this.escapeRegexString(action)}$`, 'i'),
+            ),
+          };
+        }
       }
 
       if (query.prod_collection) {

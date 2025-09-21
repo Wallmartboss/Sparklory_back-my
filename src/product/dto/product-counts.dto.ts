@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsArray, IsBoolean, IsOptional, IsString } from 'class-validator';
 
 /**
  * DTO for product counts query parameters
@@ -43,12 +44,22 @@ export class ProductCountsQueryDto {
 
   /** Filter by specific action */
   @ApiPropertyOptional({
-    description: 'Filter by specific action',
-    example: 'Summer Sale',
+    description:
+      'Filter by specific action (single action or array of actions)',
+    example: 'sale',
+    oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
   })
   @IsOptional()
-  @IsString()
-  action?: string;
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return [value];
+    }
+    return value;
+  })
+  @Type(() => String)
+  @IsArray()
+  @IsString({ each: true })
+  action?: string[];
 
   /** Filter by specific collection */
   @ApiPropertyOptional({

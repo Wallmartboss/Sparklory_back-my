@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -74,13 +74,41 @@ export class OptimizedProductQueryDto {
   collection?: string;
 
   @ApiProperty({
-    description: 'Action filter',
+    description: 'Size filter',
     required: false,
-    example: 'sale',
+    example: '16',
   })
   @IsOptional()
   @IsString()
-  action?: string;
+  size?: string;
+
+  @ApiProperty({
+    description: 'Engraving filter',
+    required: false,
+    example: true,
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true')
+  @IsBoolean()
+  engraving?: boolean;
+
+  @ApiProperty({
+    description: 'Action filter (single action or array of actions)',
+    required: false,
+    example: 'sale',
+    oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
+  })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return [value];
+    }
+    return value;
+  })
+  @Type(() => String)
+  @IsArray()
+  @IsString({ each: true })
+  action?: string[];
 
   @ApiProperty({
     description: 'Has discount',
