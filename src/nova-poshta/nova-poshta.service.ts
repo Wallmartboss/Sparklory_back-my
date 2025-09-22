@@ -48,7 +48,7 @@ export class NovaPoshtaService {
     // If API key is not configured, return mock data
     if (!this.apiKey) {
       this.logger.debug('Returning mock data - API key not configured');
-      return this.getMockData(model, method);
+      return this.getMockData(model, method, methodProperties);
     }
 
     const body = {
@@ -76,21 +76,30 @@ export class NovaPoshtaService {
           `Nova Poshta API error: ${JSON.stringify(data.errors)}`,
         );
         this.logger.error(`Full API response: ${JSON.stringify(data)}`);
-        throw new Error(`Nova Poshta API error: ${data.errors?.join(', ')}`);
+        this.logger.warn('API returned error, falling back to mock data');
+        return this.getMockData(model, method, methodProperties);
       }
 
+      this.logger.log(
+        `✅ Nova Poshta API success: ${JSON.stringify(data.data)}`,
+      );
       return data.data;
     } catch (error) {
       this.logger.error(`Nova Poshta API request failed: ${error.message}`);
-      this.logger.warn('Falling back to mock data due to API error');
-      return this.getMockData(model, method);
+      this.logger.error(`Error stack: ${error.stack}`);
+      this.logger.warn('Network/HTTP error, falling back to mock data');
+      return this.getMockData(model, method, methodProperties);
     }
   }
 
   /**
    * Get mock data when API is not available
    */
-  private getMockData(model: string, method: string): any {
+  private getMockData(
+    model: string,
+    method: string,
+    methodProperties?: Record<string, unknown>,
+  ): any {
     this.logger.debug(`Generating mock data for ${model}.${method}`);
 
     if (model === 'Address' && method === 'getCities') {
@@ -137,6 +146,54 @@ export class NovaPoshtaService {
           CityDescription: 'Львів',
           WarehouseIndex: '2',
           CategoryOfWarehouse: 'Postomat',
+        },
+      ];
+    }
+
+    if (model === 'Address' && method === 'getWarehouses') {
+      return [
+        {
+          Ref: '7b422fc3-e1b8-11e3-8c4a-0050568002cf',
+          Description: 'Відділення №1',
+          CityRef: 'db5c88f5-391c-11dd-90d9-001a92567626',
+          CityDescription: 'Львів',
+          WarehouseIndex: '1',
+          CategoryOfWarehouse: 'Branch',
+        },
+        {
+          Ref: '7b422fc4-e1b8-11e3-8c4a-0050568002cf',
+          Description: 'Поштомат №1',
+          CityRef: 'db5c88f5-391c-11dd-90d9-001a92567626',
+          CityDescription: 'Львів',
+          WarehouseIndex: '2',
+          CategoryOfWarehouse: 'Postomat',
+        },
+      ];
+    }
+
+    if (model === 'InternetDocument' && method === 'getDocumentPrice') {
+      // Calculate mock cost based on weight
+      const weight = methodProperties?.Weight
+        ? parseFloat(String(methodProperties.Weight))
+        : 1.0;
+
+      // Base cost + weight multiplier (simulate real Nova Poshta pricing)
+      // Realistic Nova Poshta pricing: ~80-120 UAH base + weight surcharge
+      const baseCost = 80.0; // Base delivery cost (realistic)
+      const weightMultiplier = Math.max(0, (weight - 1) * 2.0); // 2 UAH per kg over 1kg
+      const mockCost = Math.round((baseCost + weightMultiplier) * 100) / 100;
+
+      this.logger.debug(
+        `Mock delivery cost calculation: weight=${weight}kg, base=${baseCost}, multiplier=${weightMultiplier}, total=${mockCost}`,
+      );
+
+      return [
+        {
+          Cost: mockCost,
+          DeliveryCost: mockCost,
+          DocumentsCost: 0,
+          TotalCost: mockCost,
+          Description: `Mock delivery cost for development (weight: ${weight}kg)`,
         },
       ];
     }
@@ -225,13 +282,11 @@ export class NovaPoshtaService {
   }
 
   /**
-   * Get warehouses by city reference with caching and optimization
+   * Get all warehouses by city reference with caching (no filtering)
    * @param cityRef City reference
-   * @param type Warehouse type filter
-   * @param search Search by name, description, or index
    */
-  async getWarehouses(cityRef: string, type?: string, search?: string) {
-    const cacheKey = `warehouses:${cityRef}:all`; // Always cache all warehouses for city
+  async getAllWarehouses(cityRef: string) {
+    const cacheKey = `warehouses:${cityRef}:all`;
     const startTime = Date.now();
 
     try {
@@ -241,53 +296,7 @@ export class NovaPoshtaService {
         this.logger.debug(
           `Returning cached warehouses for city: ${cityRef} (${Date.now() - startTime}ms)`,
         );
-
-        let filtered = Array.isArray(cached) ? cached : [];
-
-        // Apply type filter
-        if (type) {
-          filtered = filtered.filter(w => {
-            const warehouseType =
-              w.CategoryOfWarehouse ||
-              w.TypeOfWarehouse ||
-              w.WarehouseType ||
-              w.Type ||
-              w.Category;
-            return warehouseType === type;
-          });
-        }
-
-        // Map warehouses BEFORE filtering to preserve all fields for search
-        filtered = filtered.map(this.mapWarehouse);
-
-        // Apply search filter AFTER mapping
-        if (search && search.trim()) {
-          const searchLower = search.toLowerCase();
-          this.logger.debug(
-            `Searching for: "${searchLower}" in ${filtered.length} warehouses`,
-          );
-
-          const beforeFilter = filtered.length;
-          filtered = filtered.filter(w => {
-            const matches = this.matchesSearch(w, searchLower);
-
-            if (matches) {
-              this.logger.debug(
-                `Match found: ${w.Description} (${w.WarehouseIndex})`,
-              );
-            }
-
-            return matches;
-          });
-
-          this.logger.debug(
-            `Search filtered from ${beforeFilter} to ${filtered.length} warehouses`,
-          );
-        }
-        this.logger.debug(
-          `Filtered warehouses for type '${type || 'all'}': ${filtered.length}`,
-        );
-        return filtered;
+        return Array.isArray(cached) ? cached : [];
       }
 
       // If not in cache, fetch from API
@@ -316,7 +325,32 @@ export class NovaPoshtaService {
         `Warehouses fetched and cached for city: ${cityRef} (${Date.now() - startTime}ms)`,
       );
 
-      let filtered = Array.isArray(result) ? result : [];
+      return Array.isArray(result) ? result : [];
+    } catch (error) {
+      this.logger.error(
+        `Failed to get warehouses for city ${cityRef}: ${error.message}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get warehouses by city reference with caching and optimization
+   * @param cityRef City reference
+   * @param type Warehouse type filter
+   * @param search Search by name, description, or index
+   */
+  async getWarehouses(cityRef: string, type?: string, search?: string) {
+    const startTime = Date.now();
+
+    try {
+      // Get all warehouses first
+      const warehouses = await this.getAllWarehouses(cityRef);
+      this.logger.debug(
+        `Got ${warehouses.length} warehouses for city: ${cityRef} (${Date.now() - startTime}ms)`,
+      );
+
+      let filtered = warehouses;
 
       // Apply type filter
       if (type) {
@@ -329,6 +363,9 @@ export class NovaPoshtaService {
             w.Category;
           return warehouseType === type;
         });
+        this.logger.debug(
+          `After type filter '${type}': ${filtered.length} warehouses`,
+        );
       }
 
       // Map warehouses BEFORE filtering to preserve all fields for search
@@ -358,12 +395,8 @@ export class NovaPoshtaService {
           `Search filtered from ${beforeFilter} to ${filtered.length} warehouses`,
         );
       }
-      this.logger.debug(
-        'After filtering warehouses:',
-        Array.isArray(filtered),
-        typeof filtered,
-        Array.isArray(filtered) ? filtered.length : undefined,
-      );
+
+      this.logger.debug(`Final filtered warehouses: ${filtered.length}`);
       return filtered;
     } catch (error) {
       this.logger.error(
@@ -392,24 +425,64 @@ export class NovaPoshtaService {
     }
 
     try {
-      // Get all warehouses for the city
-      const warehouses = await this.getWarehouses(cityRef);
-
-      // Find warehouse by name (case-insensitive search)
-      const warehouse = warehouses.find(
-        w =>
-          w.Description?.toLowerCase().includes(warehouseName.toLowerCase()) ||
-          w.ShortAddress?.toLowerCase().includes(warehouseName.toLowerCase()) ||
-          w.Number === warehouseName,
+      // Get all warehouses for the city (without filtering)
+      const warehouses = await this.getAllWarehouses(cityRef);
+      this.logger.debug(
+        `Searching for warehouse "${warehouseName}" among ${warehouses.length} warehouses`,
       );
+
+      // Find warehouse by name with improved search
+      const warehouse = warehouses.find(w => {
+        const description = (w.Description || '').toLowerCase();
+        const searchName = warehouseName.toLowerCase();
+
+        // Exact match
+        if (description === searchName) {
+          this.logger.debug(`Exact match found: ${w.Description}`);
+          return true;
+        }
+
+        // Contains match
+        if (description.includes(searchName)) {
+          this.logger.debug(`Contains match found: ${w.Description}`);
+          return true;
+        }
+
+        // Check if search name contains key parts of description
+        const descriptionParts = description
+          .split(/[№\s:(),.-]+/)
+          .filter(part => part.length > 2);
+        const searchParts = searchName
+          .split(/[№\s:(),.-]+/)
+          .filter(part => part.length > 2);
+
+        if (descriptionParts.some(part => searchParts.includes(part))) {
+          this.logger.debug(`Partial match found: ${w.Description}`);
+          return true;
+        }
+
+        return false;
+      });
 
       if (warehouse) {
         const warehouseRef = warehouse.Ref;
+        this.logger.debug(
+          `Found warehouse ref: ${warehouseRef} for "${warehouseName}"`,
+        );
         // Cache the result
         await this.cacheManager.set(cacheKey, warehouseRef, this.cacheTtl);
         return warehouseRef;
       }
 
+      this.logger.warn(
+        `Warehouse "${warehouseName}" not found in city ${cityRef}`,
+      );
+      this.logger.debug(
+        `Available warehouses: ${warehouses
+          .slice(0, 5)
+          .map(w => w.Description)
+          .join(', ')}...`,
+      );
       return null;
     } catch (error) {
       this.logger.error(
@@ -501,96 +574,133 @@ export class NovaPoshtaService {
   async getDeliveryCost(
     cityRef: string,
     warehouseRef: string,
-    weight: number,
-    cartTotal: number = 0,
+    weight: number | string,
+    cartTotal: number | string = 0,
   ): Promise<DeliveryCostResponseDto> {
-    // Get sender city and warehouse from environment variables
-    const senderCityRef = this.configService.get<string>(
-      'NOVA_POSHTA_CITY_REF',
-    );
-    const senderWarehouseName = this.configService.get<string>(
-      'NOVA_POSHTA_WAREHOUSE_NAME',
-    );
-
-    if (!senderCityRef || !senderWarehouseName) {
-      throw new Error(
-        'Nova Poshta sender configuration is missing in environment variables (NOVA_POSHTA_CITY_REF and NOVA_POSHTA_WAREHOUSE_NAME)',
+    try {
+      this.logger.debug(
+        `getDeliveryCost called with: cityRef=${cityRef}, warehouseRef=${warehouseRef}, weight=${weight}, cartTotal=${cartTotal}`,
       );
-    }
 
-    // Get sender warehouse reference by name
-    const senderWarehouseRef = await this.getWarehouseRefByName(
-      senderCityRef,
-      senderWarehouseName,
-    );
+      // Convert string parameters to numbers
+      const weightNum =
+        typeof weight === 'string' ? parseFloat(weight) : weight;
+      const cartTotalNum =
+        typeof cartTotal === 'string' ? parseFloat(cartTotal) : cartTotal;
 
-    if (!senderWarehouseRef) {
-      throw new Error(
-        `Sender warehouse with name "${senderWarehouseName}" not found in city ${senderCityRef}`,
+      this.logger.debug(
+        `Converted parameters: weightNum=${weightNum}, cartTotalNum=${cartTotalNum}`,
       );
-    }
 
-    const cacheKey = `delivery_cost:${senderCityRef}:${senderWarehouseName}:${cityRef}:${warehouseRef}:${weight}:${cartTotal}`;
+      // Get sender city and warehouse from environment variables
+      const senderCityRef = this.configService.get<string>(
+        'NOVA_POSHTA_CITY_REF',
+      );
+      const senderWarehouseRef = this.configService.get<string>(
+        'NOVA_POSHTA_WAREHOUSE_REF',
+      );
+      const senderWarehouseName = this.configService.get<string>(
+        'NOVA_POSHTA_WAREHOUSE_NAME',
+      );
 
-    const cached =
-      await this.cacheManager.get<DeliveryCostResponseDto>(cacheKey);
-    if (cached) {
-      return cached;
-    }
+      let finalSenderWarehouseRef: string;
 
-    const result = await this.request('InternetDocument', 'getDocumentPrice', {
-      CitySender: senderCityRef,
-      WarehouseSender: senderWarehouseRef, // Add specific sender warehouse
-      CityRecipient: cityRef,
-      WarehouseRecipient: warehouseRef, // Add specific warehouse for recipient
-      Weight: weight,
-      ServiceType: 'WarehouseWarehouse',
-      Cost: cartTotal || 1000, // Use cart total for insurance calculation
-      CargoType: 'Parcel', // Changed from 'Cargo' to 'Parcel' as suggested by API
-      SeatsAmount: 1,
-      DateTime: new Date().toLocaleDateString('uk-UA'),
-      PaymentMethod: 'Cash',
-      PayerType: 'Sender',
-      DeliveryType: 'WarehouseWarehouse',
-      VolumeGeneral: '0.0004',
-      // Additional required parameters
-      CargoDetails: [
+      // If API key is not configured, use mock sender warehouse
+      if (!this.apiKey) {
+        this.logger.debug(
+          'Using mock sender warehouse - API key not configured',
+        );
+        finalSenderWarehouseRef = 'mock-sender-warehouse-ref';
+      } else {
+        // Use direct warehouse reference if available
+        if (senderWarehouseRef) {
+          this.logger.debug(
+            `Using direct warehouse reference: ${senderWarehouseRef}`,
+          );
+          finalSenderWarehouseRef = senderWarehouseRef;
+        } else if (senderWarehouseName && senderCityRef) {
+          // Fallback to searching by name
+          this.logger.debug(
+            `Searching for warehouse by name: ${senderWarehouseName}`,
+          );
+          finalSenderWarehouseRef = await this.getWarehouseRefByName(
+            senderCityRef,
+            senderWarehouseName,
+          );
+
+          if (!finalSenderWarehouseRef) {
+            // Try to get any warehouse as fallback
+            const allWarehouses = await this.getAllWarehouses(senderCityRef);
+            if (allWarehouses.length > 0) {
+              finalSenderWarehouseRef = allWarehouses[0].Ref;
+              this.logger.warn(
+                `Sender warehouse "${senderWarehouseName}" not found, using fallback: ${allWarehouses[0].Description}`,
+              );
+            } else {
+              throw new Error(
+                `Sender warehouse configuration is missing. Please set NOVA_POSHTA_WAREHOUSE_REF or NOVA_POSHTA_WAREHOUSE_NAME with NOVA_POSHTA_CITY_REF`,
+              );
+            }
+          }
+        } else {
+          throw new Error(
+            'Nova Poshta sender configuration is missing. Please set NOVA_POSHTA_WAREHOUSE_REF or NOVA_POSHTA_WAREHOUSE_NAME with NOVA_POSHTA_CITY_REF',
+          );
+        }
+      }
+
+      const cacheKey = `delivery_cost:${senderCityRef || 'mock'}:${finalSenderWarehouseRef}:${cityRef}:${warehouseRef}:${weightNum}:${cartTotalNum}`;
+
+      const cached =
+        await this.cacheManager.get<DeliveryCostResponseDto>(cacheKey);
+      if (cached) {
+        this.logger.debug('Returning cached delivery cost result');
+        return cached;
+      }
+
+      this.logger.debug(
+        'Making Nova Poshta API request for delivery cost calculation',
+      );
+      const result = await this.request(
+        'InternetDocument',
+        'getDocumentPrice',
         {
-          CargoDescription: 'Прикраси',
-          Amount: 1,
-          Weight: '0.5',
-          Volume: '0.0004',
+          // Минимальный набор параметров, который работает с Nova Poshta API
+          CitySender: senderCityRef || 'mock-sender-city',
+          CityRecipient: cityRef,
+          Weight: weightNum,
+          ServiceType: 'WarehouseWarehouse',
+          Cost: cartTotalNum || 1000, // Use cart total for insurance calculation
         },
-      ],
-      PackCalculate: {
-        PackCount: 1,
-        PackRef: '14945687-76a8-11de-8a39-000c2965ae0e',
-      },
-      // Required for cost calculation
-      RedeliveryCalculate: {
-        CargoType: 'Money',
-        Amount: 0,
-      },
-    });
+      );
 
-    // Calculate insurance cost (0.5% of cart total)
-    const insurancePercentage = 0.005; // 0.5%
-    const insuranceCost = cartTotal * insurancePercentage;
+      this.logger.debug(`Nova Poshta API result: ${JSON.stringify(result)}`);
 
-    // Extract delivery cost from Nova Poshta response
-    const deliveryCost =
-      Array.isArray(result) && result.length > 0 ? result[0].Cost || 0 : 0;
+      // Calculate insurance cost (0.5% of cart total)
+      const insurancePercentage = 0.005; // 0.5%
+      const insuranceCost = cartTotalNum * insurancePercentage;
 
-    const response = {
-      deliveryCost,
-      insuranceCost: Math.round(insuranceCost * 100) / 100, // Round to 2 decimal places
-      totalCost: Math.round((deliveryCost + insuranceCost) * 100) / 100,
-      cartTotal,
-      insurancePercentage,
-    };
+      // Extract delivery cost from Nova Poshta response
+      const deliveryCost =
+        Array.isArray(result) && result.length > 0 ? result[0].Cost || 0 : 0;
 
-    await this.cacheManager.set(cacheKey, response, this.cacheTtl);
-    return response as DeliveryCostResponseDto;
+      const response = {
+        deliveryCost,
+        insuranceCost: Math.round(insuranceCost * 100) / 100, // Round to 2 decimal places
+        totalCost: Math.round((deliveryCost + insuranceCost) * 100) / 100,
+        cartTotal: cartTotalNum,
+        insurancePercentage,
+      };
+
+      this.logger.debug(`Final response: ${JSON.stringify(response)}`);
+
+      await this.cacheManager.set(cacheKey, response, this.cacheTtl);
+      return response as DeliveryCostResponseDto;
+    } catch (error) {
+      this.logger.error(`Error in getDeliveryCost: ${error.message}`);
+      this.logger.error(`Error stack: ${error.stack}`);
+      throw error;
+    }
   }
 
   /**
