@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString, MinLength } from 'class-validator';
 
 /**
  * Data Transfer Object for creating a new user.
@@ -31,6 +31,7 @@ export class CreateUserDto {
   @ApiProperty({ example: '0we9r8wejfkl' })
   @IsString()
   @IsNotEmpty()
+  @MinLength(8, { message: 'Password must be at least 8 characters long' })
   password: string;
 
   /**
