@@ -69,6 +69,8 @@ NOVA_POSHTA_API_URL=https://api.novaposhta.ua/v2.0/json/
 NOVA_POSHTA_API_KEY=your_api_key_here
 NOVA_POSHTA_CITY_REF=your_sender_city_reference
 NOVA_POSHTA_WAREHOUSE_REF=your_sender_warehouse_reference
+# Alternative: use NOVA_POSHTA_WAREHOUSE_NAME instead of NOVA_POSHTA_WAREHOUSE_REF
+# NOVA_POSHTA_WAREHOUSE_NAME=your_warehouse_name
 ```
 
 ### Getting Warehouse Reference
@@ -94,8 +96,11 @@ NOVA_POSHTA_WAREHOUSE_REF=1ec09d88-e1c2-11e3-8c4a-0050568002cf
 The delivery cost calculation uses both sender and recipient warehouse information:
 
 - **Sender City**: `NOVA_POSHTA_CITY_REF` - City where packages are sent from
-- **Sender Warehouse**: `NOVA_POSHTA_WAREHOUSE_REF` - Specific warehouse reference where packages are sent from
+- **Sender Warehouse**: `NOVA_POSHTA_WAREHOUSE_REF` - Specific warehouse reference where packages are sent from (preferred)
+- **Alternative**: `NOVA_POSHTA_WAREHOUSE_NAME` - Warehouse name for lookup (fallback)
 - **Recipient City**: Provided in the API request
 - **Recipient Warehouse**: Provided in the API request (either as warehouseRef or warehouseIndex)
+
+**Priority**: If `NOVA_POSHTA_WAREHOUSE_REF` is set, it will be used directly. Otherwise, the system will search for a warehouse by `NOVA_POSHTA_WAREHOUSE_NAME` in the specified city.
 
 This ensures the most accurate delivery cost calculation by specifying exact pickup and delivery locations.

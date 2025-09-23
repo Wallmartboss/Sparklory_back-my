@@ -203,6 +203,11 @@ export class UserService {
       user.name = payload.name;
     }
     if (payload.password) {
+      if (payload.password.length < 8) {
+        throw new BadRequestException(
+          'Password must be at least 8 characters long',
+        );
+      }
       user.password = await bcrypt.hash(payload.password, 10);
     }
     await user.save();
@@ -242,7 +247,7 @@ export class UserService {
     }
     if (payload.newPassword.length < 8) {
       throw new BadRequestException(
-        'New password must be at least 8 characters',
+        'New password must be at least 8 characters long',
       );
     }
     user.password = await bcrypt.hash(payload.newPassword, 10);
