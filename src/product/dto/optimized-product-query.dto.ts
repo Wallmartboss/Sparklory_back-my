@@ -187,6 +187,26 @@ export class OptimizedProductQueryDto {
   hasDiscount?: boolean;
 
   @ApiProperty({
+    description: 'Minimum variant price',
+    required: false,
+    example: 500,
+  })
+  @IsOptional()
+  @Transform(({ value }) => (value !== undefined ? Number(value) : undefined))
+  @IsNumber()
+  minPrice?: number;
+
+  @ApiProperty({
+    description: 'Maximum variant price',
+    required: false,
+    example: 5000,
+  })
+  @IsOptional()
+  @Transform(({ value }) => (value !== undefined ? Number(value) : undefined))
+  @IsNumber()
+  maxPrice?: number;
+
+  @ApiProperty({
     description: 'Search text',
     required: false,
     example: 'earrings gold',
