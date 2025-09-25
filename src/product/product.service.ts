@@ -848,6 +848,17 @@ export class ProductService {
   private buildOptimizedFilter(query: OptimizedProductQueryDto): any {
     const filter: any = {};
 
+    // Validate price range
+    if (
+      query.minPrice !== undefined &&
+      query.minPrice !== null &&
+      query.maxPrice !== undefined &&
+      query.maxPrice !== null &&
+      Number(query.minPrice) > Number(query.maxPrice)
+    ) {
+      throw new BadRequestException('minPrice must be less than maxPrice');
+    }
+
     // Helper for null/empty filter
     function buildNullOrValuesFilter(
       field: string,
