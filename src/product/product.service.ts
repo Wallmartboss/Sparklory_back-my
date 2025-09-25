@@ -37,6 +37,8 @@ interface FindAllProductsParams {
   material?: string[];
   insert?: string[];
   inStock?: number;
+  minPrice?: number;
+  maxPrice?: number;
   gender?: string[];
   collection?: string[];
   size?: string[];
@@ -153,6 +155,36 @@ export class ProductService {
         .exec(),
       this.productModel.countDocuments(filter),
     ]);
+
+    // Strip out-of-range variants if price bounds are provided
+    if (
+      (params?.minPrice !== undefined && params?.minPrice !== null) ||
+      (params?.maxPrice !== undefined && params?.maxPrice !== null)
+    ) {
+      products.forEach((product: any) => {
+        if (Array.isArray(product?.variants)) {
+          const min =
+            params?.minPrice !== undefined && params?.minPrice !== null
+              ? Number(params.minPrice)
+              : undefined;
+          const max =
+            params?.maxPrice !== undefined && params?.maxPrice !== null
+              ? Number(params.maxPrice)
+              : undefined;
+          const filtered = product.variants.filter((v: any) => {
+            if (v == null || typeof v.price !== 'number') {
+              if (min == null && max == null) return true;
+              return false;
+            }
+            if (min != null && v.price < min) return false;
+            if (max != null && v.price > max) return false;
+            return true;
+          });
+          // For mongoose docs and lean objects assignment both work
+          product.variants = filtered;
+        }
+      });
+    }
     const pages = Math.ceil(total / limit) || 1;
     return { total, page, limit, pages, products };
   }
@@ -567,6 +599,34 @@ export class ProductService {
         this.productModel.countDocuments(filter).exec(),
       ]);
 
+      // Strip out-of-range variants if price bounds are provided
+      if (
+        (query.minPrice !== undefined && query.minPrice !== null) ||
+        (query.maxPrice !== undefined && query.maxPrice !== null)
+      ) {
+        const min =
+          query.minPrice !== undefined && query.minPrice !== null
+            ? Number(query.minPrice)
+            : undefined;
+        const max =
+          query.maxPrice !== undefined && query.maxPrice !== null
+            ? Number(query.maxPrice)
+            : undefined;
+        products.forEach((product: any) => {
+          if (Array.isArray(product?.variants)) {
+            product.variants = product.variants.filter((v: any) => {
+              if (v == null || typeof v.price !== 'number') {
+                if (min == null && max == null) return true;
+                return false;
+              }
+              if (min != null && v.price < min) return false;
+              if (max != null && v.price > max) return false;
+              return true;
+            });
+          }
+        });
+      }
+
       // Calculate pagination info
       const pages = Math.ceil(total / limit);
       const hasNext = page < pages;
@@ -769,6 +829,8 @@ export class ProductService {
       query.material || 'all',
       query.insert || 'all',
       query.inStock || 'all',
+      query.minPrice ?? 'all',
+      query.maxPrice ?? 'all',
       query.gender || 'all',
       query.collection || 'all',
       query.size || 'all',
@@ -915,6 +977,19 @@ export class ProductService {
     }
     if (query.engraving !== undefined && query.engraving !== null) {
       filter.engraving = query.engraving;
+    }
+    if (
+      (query.minPrice !== undefined && query.minPrice !== null) ||
+      (query.maxPrice !== undefined && query.maxPrice !== null)
+    ) {
+      const priceCond: any = {};
+      if (query.minPrice !== undefined && query.minPrice !== null) {
+        priceCond.$gte = Number(query.minPrice);
+      }
+      if (query.maxPrice !== undefined && query.maxPrice !== null) {
+        priceCond.$lte = Number(query.maxPrice);
+      }
+      filter['variants.price'] = priceCond;
     }
     if (query.hasDiscount === true) {
       filter.$or = [

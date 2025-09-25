@@ -167,6 +167,24 @@ export class ProductFilterDto {
   action?: string[];
 
   @ApiPropertyOptional({
+    description: 'Minimum variant price',
+    example: 500,
+  })
+  @IsOptional()
+  @Transform(({ value }) => (value !== undefined ? Number(value) : undefined))
+  @IsNumber()
+  minPrice?: number;
+
+  @ApiPropertyOptional({
+    description: 'Maximum variant price',
+    example: 5000,
+  })
+  @IsOptional()
+  @Transform(({ value }) => (value !== undefined ? Number(value) : undefined))
+  @IsNumber()
+  maxPrice?: number;
+
+  @ApiPropertyOptional({
     description: 'Has discount',
     example: true,
   })
