@@ -432,6 +432,18 @@ export class ProductController {
     type: String,
     description: 'Filter by gender (male, female, unisex, kids)',
   })
+  @ApiQuery({
+    name: 'minPrice',
+    required: false,
+    type: Number,
+    description: 'Minimum product price (inclusive)',
+  })
+  @ApiQuery({
+    name: 'maxPrice',
+    required: false,
+    type: Number,
+    description: 'Maximum product price (inclusive)',
+  })
   async getProductCounts(@Query() query: ProductCountsQueryDto): Promise<any> {
     return this.productService.getProductCounts(query);
   }

@@ -1,6 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 /**
  * DTO for product counts query parameters
@@ -97,6 +103,26 @@ export class ProductCountsQueryDto {
   @IsOptional()
   @IsString()
   gender?: string;
+
+  /** Minimum price filter */
+  @ApiPropertyOptional({
+    description: 'Minimum product price (inclusive)',
+    example: 1000,
+  })
+  @IsOptional()
+  @Transform(({ value }) => (value !== undefined ? Number(value) : undefined))
+  @IsNumber()
+  minPrice?: number;
+
+  /** Maximum price filter */
+  @ApiPropertyOptional({
+    description: 'Maximum product price (inclusive)',
+    example: 5000,
+  })
+  @IsOptional()
+  @Transform(({ value }) => (value !== undefined ? Number(value) : undefined))
+  @IsNumber()
+  maxPrice?: number;
 }
 
 /**
