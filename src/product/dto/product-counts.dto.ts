@@ -161,4 +161,10 @@ export interface ProductCountsResponseDto {
 
   /** Counts grouped by product collection */
   prod_collection: Record<string, number>;
+
+  /** Price range across matching products (ignores requested min/max bounds) */
+  price: {
+    min: number;
+    max: number;
+  };
 }

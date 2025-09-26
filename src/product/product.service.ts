@@ -1204,33 +1204,51 @@ export class ProductService {
         };
       }
 
-      // Apply price range on variants if provided
-      if (
+      // Prepare price condition and a base filter without price for price range facet
+      const priceCond: any = {};
+      const hasPriceBounds =
         (query.minPrice !== undefined && query.minPrice !== null) ||
-        (query.maxPrice !== undefined && query.maxPrice !== null)
-      ) {
-        const priceCond: any = {};
+        (query.maxPrice !== undefined && query.maxPrice !== null);
+      if (hasPriceBounds) {
         if (query.minPrice !== undefined && query.minPrice !== null) {
           priceCond.$gte = Number(query.minPrice);
         }
         if (query.maxPrice !== undefined && query.maxPrice !== null) {
           priceCond.$lte = Number(query.maxPrice);
         }
+      }
+
+      const baseFilterWithoutPrice = { ...filter };
+      if (hasPriceBounds) {
         filter['variants.price'] = priceCond;
       }
 
-      // Execute aggregation pipeline to get counts
+      // Execute aggregation pipeline to get counts and price range
       const pipeline: any[] = [
-        { $match: filter },
+        { $match: baseFilterWithoutPrice },
         {
           $facet: {
             // Count by category
             category: [
+              ...(hasPriceBounds
+                ? [
+                    {
+                      $match: { 'variants.price': priceCond },
+                    },
+                  ]
+                : []),
               { $group: { _id: '$category', count: { $sum: 1 } } },
               { $sort: { _id: 1 } },
             ],
             // Count by subcategory
             subcategory: [
+              ...(hasPriceBounds
+                ? [
+                    {
+                      $match: { 'variants.price': priceCond },
+                    },
+                  ]
+                : []),
               { $match: { subcategory: { $exists: true, $ne: null } } },
               { $group: { _id: '$subcategory', count: { $sum: 1 } } },
               { $sort: { _id: 1 } },
@@ -1243,6 +1261,13 @@ export class ProductService {
                   preserveNullAndEmptyArrays: true,
                 },
               },
+              ...(hasPriceBounds
+                ? [
+                    {
+                      $match: { 'variants.price': priceCond },
+                    },
+                  ]
+                : []),
               { $match: { 'variants.material': { $exists: true, $ne: null } } },
               {
                 $group: {
@@ -1263,6 +1288,13 @@ export class ProductService {
                   preserveNullAndEmptyArrays: true,
                 },
               },
+              ...(hasPriceBounds
+                ? [
+                    {
+                      $match: { 'variants.price': priceCond },
+                    },
+                  ]
+                : []),
               { $match: { 'variants.insert': { $exists: true, $ne: null } } },
               {
                 $group: {
@@ -1283,6 +1315,13 @@ export class ProductService {
                   preserveNullAndEmptyArrays: true,
                 },
               },
+              ...(hasPriceBounds
+                ? [
+                    {
+                      $match: { 'variants.price': priceCond },
+                    },
+                  ]
+                : []),
               { $match: { 'variants.size': { $exists: true, $ne: null } } },
               {
                 $group: {
@@ -1297,29 +1336,83 @@ export class ProductService {
             ],
             // Count by engraving
             engraving: [
+              ...(hasPriceBounds
+                ? [
+                    {
+                      $match: { 'variants.price': priceCond },
+                    },
+                  ]
+                : []),
               { $group: { _id: '$engraving', count: { $sum: 1 } } },
               { $sort: { _id: 1 } },
             ],
             // Count by gender
             gender: [
+              ...(hasPriceBounds
+                ? [
+                    {
+                      $match: { 'variants.price': priceCond },
+                    },
+                  ]
+                : []),
               { $match: { gender: { $exists: true, $ne: null } } },
               { $group: { _id: '$gender', count: { $sum: 1 } } },
               { $sort: { _id: 1 } },
             ],
             // Count by action
             action: [
+              ...(hasPriceBounds
+                ? [
+                    {
+                      $match: { 'variants.price': priceCond },
+                    },
+                  ]
+                : []),
               { $match: { action: { $exists: true, $ne: null } } },
               { $group: { _id: '$action', count: { $sum: 1 } } },
               { $sort: { _id: 1 } },
             ],
             // Count by prod_collection
             prod_collection: [
+              ...(hasPriceBounds
+                ? [
+                    {
+                      $match: { 'variants.price': priceCond },
+                    },
+                  ]
+                : []),
               { $match: { prod_collection: { $exists: true, $ne: null } } },
               { $group: { _id: '$prod_collection', count: { $sum: 1 } } },
               { $sort: { _id: 1 } },
             ],
             // Total count
-            total: [{ $count: 'total' }],
+            total: [
+              ...(hasPriceBounds
+                ? [
+                    {
+                      $match: { 'variants.price': priceCond },
+                    },
+                  ]
+                : []),
+              { $count: 'total' },
+            ],
+            // Price range across matching products ignoring requested price bounds
+            price: [
+              {
+                $unwind: {
+                  path: '$variants',
+                  preserveNullAndEmptyArrays: false,
+                },
+              },
+              { $match: { 'variants.price': { $type: 'number' } } },
+              {
+                $group: {
+                  _id: null,
+                  min: { $min: '$variants.price' },
+                  max: { $max: '$variants.price' },
+                },
+              },
+            ],
           },
         },
       ];
@@ -1341,6 +1434,10 @@ export class ProductService {
         },
         gender: this.transformCounts(result.gender),
         total: result.total[0]?.total || 0,
+        price: {
+          min: result.price[0]?.min ?? 0,
+          max: result.price[0]?.max ?? 0,
+        },
       };
 
       // Cache the result for 30 minutes
