@@ -1095,6 +1095,18 @@ export class ProductService {
     }
 
     try {
+      // Validate price range if both provided
+      if (
+        query.minPrice !== undefined &&
+        query.minPrice !== null &&
+        query.maxPrice !== undefined &&
+        query.maxPrice !== null &&
+        Number(query.minPrice) > Number(query.maxPrice)
+      ) {
+        throw new BadRequestException(
+          'minPrice must be less than or equal to maxPrice',
+        );
+      }
       // Build base filter from query parameters
       const filter: any = {};
 
@@ -1190,6 +1202,21 @@ export class ProductService {
             'i',
           ),
         };
+      }
+
+      // Apply price range on variants if provided
+      if (
+        (query.minPrice !== undefined && query.minPrice !== null) ||
+        (query.maxPrice !== undefined && query.maxPrice !== null)
+      ) {
+        const priceCond: any = {};
+        if (query.minPrice !== undefined && query.minPrice !== null) {
+          priceCond.$gte = Number(query.minPrice);
+        }
+        if (query.maxPrice !== undefined && query.maxPrice !== null) {
+          priceCond.$lte = Number(query.maxPrice);
+        }
+        filter['variants.price'] = priceCond;
       }
 
       // Execute aggregation pipeline to get counts
