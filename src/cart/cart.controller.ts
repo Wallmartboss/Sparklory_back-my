@@ -140,9 +140,10 @@ export class CartController {
     type: Cart,
   })
   removeItem(@Req() req, @Body() removeFromCartDto: RemoveFromCartDto) {
-    // Overload for authenticated users: (userId, productId, size, material, insert)
+    // Overload for authenticated users: (userId, guestId, productId, size, material, insert)
     return this.cartService.removeItem(
       req.user.id,
+      undefined, // guestId is undefined for authenticated users
       removeFromCartDto.productId,
       removeFromCartDto.size,
       removeFromCartDto.material,
