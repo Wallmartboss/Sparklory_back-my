@@ -65,14 +65,6 @@ interface ProductPaginationResult {
   products: Product[];
 }
 
-interface CategoryPaginationResult {
-  total: number;
-  page: number;
-  limit: number;
-  pages: number;
-  categories: any[];
-}
-
 @Injectable()
 export class ProductService {
   constructor(
@@ -510,10 +502,10 @@ export class ProductService {
   /**
    * Get all categories with their subcategories and image
    */
-  async getCategoriesWithSubcategories(
-    limit?: number,
-    page?: number,
-  ): Promise<CategoryPaginationResult> {
+  async getCategoriesWithSubcategories(): Promise<{
+    total: number;
+    categories: any[];
+  }> {
     const categories = await this.categoryService['categoryModel']
       .find()
       .lean();
@@ -536,22 +528,7 @@ export class ProductService {
       }
     });
     const result = Object.values(categoryMap);
-    const total = result.length;
-    const usedLimit = limit !== undefined ? Number(limit) : total;
-    const usedPage = page !== undefined ? Number(page) : 1;
-    let paged = result;
-    if (limit !== undefined && page !== undefined) {
-      const skip = (usedPage - 1) * usedLimit;
-      paged = result.slice(skip, skip + usedLimit);
-    }
-    const pages = Math.ceil(total / usedLimit) || 1;
-    return {
-      total,
-      page: usedPage,
-      limit: usedLimit,
-      pages,
-      categories: paged,
-    };
+    return { total: result.length, categories: result };
   }
 
   /**
