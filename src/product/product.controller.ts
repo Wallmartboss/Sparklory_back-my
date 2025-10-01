@@ -454,14 +454,10 @@ export class ProductController {
   })
   @ApiResponse({
     status: 200,
-    description:
-      'Returns paginated categories with their subcategories and image.',
+    description: 'Returns categories with their subcategories and image.',
     schema: {
       example: {
-        total: 10,
-        page: 1,
-        limit: 5,
-        pages: 2,
+        total: 5,
         categories: [
           {
             _id: '60f7c2b8e1d2c8001c8e4c1b',
@@ -480,23 +476,8 @@ export class ProductController {
       },
     },
   })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Number of categories per page',
-  })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    description: 'Page number',
-  })
-  async getAllCategories(
-    @Query('limit') limit?: number,
-    @Query('page') page?: number,
-  ): Promise<any> {
-    return this.productService.getCategoriesWithSubcategories(limit, page);
+  async getAllCategories(): Promise<any> {
+    return this.productService.getCategoriesWithSubcategories();
   }
 
   @Post(':productId/reviews/:reviewId/upload')
