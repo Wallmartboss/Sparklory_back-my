@@ -1031,8 +1031,14 @@ export class ProductService {
         case 'name_desc':
           sortOption.name = -1;
           break;
+        case 'discount_asc':
+          sortOption.discount = 1;
+          break;
         case 'discount_desc':
           sortOption.discount = -1;
+          break;
+        case 'created_asc':
+          sortOption._id = 1; // Older first assuming lower ObjectIds are older
           break;
         case 'created_desc':
           sortOption._id = -1; // Assuming newer documents have higher ObjectIds

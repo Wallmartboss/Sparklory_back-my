@@ -204,6 +204,16 @@ export class ProductFilterDto {
   @ApiPropertyOptional({
     description: 'Sort field',
     example: 'price_asc',
+    enum: [
+      'price_asc',
+      'price_desc',
+      'name_asc',
+      'name_desc',
+      'discount_asc',
+      'discount_desc',
+      'created_asc',
+      'created_desc',
+    ],
   })
   @IsOptional()
   @IsString()
