@@ -11,6 +11,8 @@ export class EmailService {
   constructor(private configService: ConfigService) {
     const email = this.configService.get<string>('GOOGLE_EMAIL');
     const password = this.configService.get<string>('GOOGLE_PASSWORD');
+    const isProduction =
+      this.configService.get<string>('NODE_ENV') === 'production';
 
     if (!email || !password) {
       this.logger.error(
@@ -19,13 +21,41 @@ export class EmailService {
       throw new Error('Email configuration is missing');
     }
 
-    this.transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: email,
-        pass: password,
-      },
-    });
+    // Different configuration for production (Render.com) vs development
+    const transporterConfig = isProduction
+      ? {
+          host: 'smtp.gmail.com',
+          port: 587,
+          secure: false,
+          auth: {
+            user: email,
+            pass: password,
+          },
+          tls: {
+            rejectUnauthorized: false,
+            ciphers: 'SSLv3',
+          },
+          connectionTimeout: 120000, // 2 minutes for cloud
+          greetingTimeout: 60000, // 1 minute for cloud
+          socketTimeout: 120000, // 2 minutes for cloud
+          debug: true, // Enable debug logging
+          logger: true, // Enable logging
+        }
+      : {
+          service: 'gmail',
+          auth: {
+            user: email,
+            pass: password,
+          },
+          connectionTimeout: 60000,
+          greetingTimeout: 30000,
+          socketTimeout: 60000,
+        };
+
+    this.transporter = nodemailer.createTransport(transporterConfig);
+    this.logger.log(
+      `Email service initialized for ${isProduction ? 'production' : 'development'} environment`,
+    );
 
     // Verify connection configuration on startup
     this.verifyConnection();
@@ -33,10 +63,51 @@ export class EmailService {
 
   private async verifyConnection(): Promise<void> {
     try {
+      this.logger.log('Verifying email service connection...');
       await this.transporter.verify();
       this.logger.log('Email service connection verified successfully');
     } catch (error) {
       this.logger.error('Email service connection verification failed:', error);
+      this.logger.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response,
+      });
+
+      // Try alternative configuration with port 465 (SSL)
+      this.logger.log('Attempting fallback to port 465 (SSL)...');
+      await this.tryFallbackConnection();
+    }
+  }
+
+  private async tryFallbackConnection(): Promise<void> {
+    const email = this.configService.get<string>('GOOGLE_EMAIL');
+    const password = this.configService.get<string>('GOOGLE_PASSWORD');
+
+    const fallbackConfig = {
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: email,
+        pass: password,
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+      connectionTimeout: 120000,
+      greetingTimeout: 60000,
+      socketTimeout: 120000,
+      debug: true,
+      logger: true,
+    };
+
+    try {
+      this.transporter = nodemailer.createTransport(fallbackConfig);
+      await this.transporter.verify();
+      this.logger.log('Fallback connection (port 465) verified successfully');
+    } catch (fallbackError) {
+      this.logger.error('Fallback connection also failed:', fallbackError);
     }
   }
 
@@ -45,6 +116,12 @@ export class EmailService {
     token: string,
     condition: ECondition,
   ): Promise<void> {
+    // Log current transporter configuration for debugging
+    this.logger.log('Current transporter config:', {
+      host: (this.transporter.options as any).host,
+      port: (this.transporter.options as any).port,
+      secure: (this.transporter.options as any).secure,
+    });
     let subject: string;
     let html: string;
     const frontendUrl = this.configService.get<string>(
@@ -102,10 +179,17 @@ export class EmailService {
     };
 
     try {
+      this.logger.log(`Attempting to send ${subject} email to ${email}...`);
       const info = await this.transporter.sendMail(mailOptions);
       this.logger.log(`${subject} email sent to ${email}: ` + info.response);
     } catch (error) {
       this.logger.error(`Failed to send ${subject} email to ${email}:`, error);
+      this.logger.error('Email error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response,
+        command: error.command,
+      });
       throw new Error(`Email sending failed: ${error.message}`);
     }
   }
