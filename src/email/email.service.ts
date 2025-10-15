@@ -1,6 +1,7 @@
 import { ECondition } from '@/common';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as axios from 'axios';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
@@ -107,6 +108,114 @@ export class EmailService {
     }
   }
 
+  private async sendEmailWithFallback(
+    email: string,
+    subject: string,
+    html: string,
+    from: string = `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
+  ): Promise<void> {
+    const mailOptions = {
+      from,
+      to: email,
+      subject,
+      html,
+    };
+
+    try {
+      this.logger.log(`Attempting to send ${subject} email to ${email}...`);
+      const info = await this.transporter.sendMail(mailOptions);
+      this.logger.log(`${subject} email sent to ${email}: ` + info.response);
+    } catch (error) {
+      this.logger.error(`Failed to send ${subject} email to ${email}:`, error);
+      this.logger.error('Email error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response,
+        command: error.command,
+      });
+
+      // Try HTTP API as fallback for connection timeout errors
+      if (
+        error.code === 'ETIMEDOUT' ||
+        error.message.includes('Connection timeout')
+      ) {
+        this.logger.log(
+          `Attempting HTTP API fallback for ${subject} email to ${email}...`,
+        );
+        try {
+          await this.sendEmailViaHTTP(email, subject, html);
+          this.logger.log(`${subject} email sent via HTTP API to ${email}`);
+          return;
+        } catch (httpError) {
+          this.logger.error(
+            `HTTP API fallback also failed for ${email}:`,
+            httpError.message,
+          );
+          throw new Error(
+            `Both SMTP and HTTP API email sending failed: ${error.message}`,
+          );
+        }
+      }
+
+      throw new Error(`Email sending failed: ${error.message}`);
+    }
+  }
+
+  private async sendEmailViaHTTP(
+    to: string,
+    subject: string,
+    html: string,
+  ): Promise<void> {
+    const email = this.configService.get<string>('GOOGLE_EMAIL');
+    const password = this.configService.get<string>('GOOGLE_PASSWORD');
+
+    // Create base64 encoded auth string
+    const auth = Buffer.from(`${email}:${password}`).toString('base64');
+
+    // Create email message in RFC 2822 format
+    const message = [
+      `To: ${to}`,
+      `From: Your Sparklory <${email}>`,
+      `Subject: ${subject}`,
+      `Content-Type: text/html; charset=UTF-8`,
+      ``,
+      html,
+    ].join('\r\n');
+
+    // Encode message in base64url format
+    const encodedMessage = Buffer.from(message)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    try {
+      this.logger.log(`Attempting to send email via Gmail API to ${to}...`);
+
+      const response = await axios.default.post(
+        'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
+        {
+          raw: encodedMessage,
+        },
+        {
+          headers: {
+            Authorization: `Basic ${auth}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 30000,
+        },
+      );
+
+      this.logger.log(`Email sent via Gmail API to ${to}: ${response.status}`);
+    } catch (error) {
+      this.logger.error(
+        `Gmail API email sending failed to ${to}:`,
+        error.response?.data || error.message,
+      );
+      throw new Error(`Gmail API email sending failed: ${error.message}`);
+    }
+  }
+
   async sendEmail(
     email: string,
     token: string,
@@ -161,27 +270,12 @@ export class EmailService {
         throw new Error('Unknown email condition');
     }
 
-    const mailOptions = {
-      from: process.env.GOOGLE_EMAIL,
-      to: email,
+    await this.sendEmailWithFallback(
+      email,
       subject,
       html,
-    };
-
-    try {
-      this.logger.log(`Attempting to send ${subject} email to ${email}...`);
-      const info = await this.transporter.sendMail(mailOptions);
-      this.logger.log(`${subject} email sent to ${email}: ` + info.response);
-    } catch (error) {
-      this.logger.error(`Failed to send ${subject} email to ${email}:`, error);
-      this.logger.error('Email error details:', {
-        message: error.message,
-        code: error.code,
-        response: error.response,
-        command: error.command,
-      });
-      throw new Error(`Email sending failed: ${error.message}`);
-    }
+      process.env.GOOGLE_EMAIL,
+    );
   }
 
   async sendCartReminder(email: string, cart: any): Promise<void> {
@@ -197,25 +291,7 @@ export class EmailService {
       <p>Best regards,<br/>Your Sparklory</p>
     `;
 
-    try {
-      this.logger.log(`Attempting to send ${subject} email to ${email}...`);
-      const info = await this.transporter.sendMail({
-        from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
-        to: email,
-        subject,
-        html,
-      });
-      this.logger.log(`${subject} email sent to ${email}: ` + info.response);
-    } catch (error) {
-      this.logger.error(`Failed to send ${subject} email to ${email}:`, error);
-      this.logger.error('Cart reminder error details:', {
-        message: error.message,
-        code: error.code,
-        response: error.response,
-        command: error.command,
-      });
-      throw new Error(`Cart reminder email sending failed: ${error.message}`);
-    }
+    await this.sendEmailWithFallback(email, subject, html);
   }
 
   async sendPaymentCreated(email: string, payment: any): Promise<void> {
@@ -229,25 +305,7 @@ export class EmailService {
       <p>Best regards,<br/>Your Sparklory</p>
     `;
 
-    try {
-      this.logger.log(`Attempting to send ${subject} email to ${email}...`);
-      const info = await this.transporter.sendMail({
-        from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
-        to: email,
-        subject,
-        html,
-      });
-      this.logger.log(`${subject} email sent to ${email}: ` + info.response);
-    } catch (error) {
-      this.logger.error(`Failed to send ${subject} email to ${email}:`, error);
-      this.logger.error('Payment created error details:', {
-        message: error.message,
-        code: error.code,
-        response: error.response,
-        command: error.command,
-      });
-      throw new Error(`Payment created email sending failed: ${error.message}`);
-    }
+    await this.sendEmailWithFallback(email, subject, html);
   }
 
   async sendPaymentResult(
@@ -265,25 +323,7 @@ export class EmailService {
       <p>Best regards,<br/>Your Sparklory</p>
     `;
 
-    try {
-      this.logger.log(`Attempting to send ${subject} email to ${email}...`);
-      const info = await this.transporter.sendMail({
-        from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
-        to: email,
-        subject,
-        html,
-      });
-      this.logger.log(`${subject} email sent to ${email}: ` + info.response);
-    } catch (error) {
-      this.logger.error(`Failed to send ${subject} email to ${email}:`, error);
-      this.logger.error('Payment result error details:', {
-        message: error.message,
-        code: error.code,
-        response: error.response,
-        command: error.command,
-      });
-      throw new Error(`Payment result email sending failed: ${error.message}`);
-    }
+    await this.sendEmailWithFallback(email, subject, html);
   }
 
   async sendProductInStock(email: string, product: any): Promise<void> {
@@ -296,27 +336,7 @@ export class EmailService {
       <p>Best regards,<br/>Your Sparklory</p>
     `;
 
-    try {
-      this.logger.log(`Attempting to send ${subject} email to ${email}...`);
-      const info = await this.transporter.sendMail({
-        from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
-        to: email,
-        subject,
-        html,
-      });
-      this.logger.log(`${subject} email sent to ${email}: ` + info.response);
-    } catch (error) {
-      this.logger.error(`Failed to send ${subject} email to ${email}:`, error);
-      this.logger.error('Product in stock error details:', {
-        message: error.message,
-        code: error.code,
-        response: error.response,
-        command: error.command,
-      });
-      throw new Error(
-        `Product in stock email sending failed: ${error.message}`,
-      );
-    }
+    await this.sendEmailWithFallback(email, subject, html);
   }
 
   async sendSubscriptionCreated(email: string, product: any): Promise<void> {
@@ -330,26 +350,6 @@ export class EmailService {
       <p>Best regards,<br/>Your Sparklory</p>
     `;
 
-    try {
-      this.logger.log(`Attempting to send ${subject} email to ${email}...`);
-      const info = await this.transporter.sendMail({
-        from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
-        to: email,
-        subject,
-        html,
-      });
-      this.logger.log(`${subject} email sent to ${email}: ` + info.response);
-    } catch (error) {
-      this.logger.error(`Failed to send ${subject} email to ${email}:`, error);
-      this.logger.error('Subscription created error details:', {
-        message: error.message,
-        code: error.code,
-        response: error.response,
-        command: error.command,
-      });
-      throw new Error(
-        `Subscription created email sending failed: ${error.message}`,
-      );
-    }
+    await this.sendEmailWithFallback(email, subject, html);
   }
 }
