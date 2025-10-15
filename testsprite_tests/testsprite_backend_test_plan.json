@@ -1,0 +1,52 @@
+[
+  {
+    "id": "TC001",
+    "title": "post api v1 auth register register new user",
+    "description": "Test user registration with valid and invalid data, including email verification trigger and duplicate email handling."
+  },
+  {
+    "id": "TC002",
+    "title": "post api v1 auth verify email verify email with code",
+    "description": "Verify email using a valid and invalid verification code, ensuring proper activation and error handling."
+  },
+  {
+    "id": "TC003",
+    "title": "post api v1 auth login user login",
+    "description": "Test user login with correct and incorrect credentials, including unverified email and OAuth user scenarios."
+  },
+  {
+    "id": "TC004",
+    "title": "get api v1 products get all products with filters and pagination",
+    "description": "Retrieve products with various filters, sorting options, and pagination parameters to validate correct filtering and response structure."
+  },
+  {
+    "id": "TC005",
+    "title": "post api v1 products create one or multiple products",
+    "description": "Create single and multiple products with valid and invalid data, verifying product variants, categories, and discount dates."
+  },
+  {
+    "id": "TC006",
+    "title": "get api v1 cart get user cart",
+    "description": "Retrieve authenticated user's cart, verifying cart contents, pricing calculations, and coupon/bonus applications."
+  },
+  {
+    "id": "TC007",
+    "title": "post api v1 cart add add item to cart auth",
+    "description": "Add items to authenticated user's cart with stock validation, variant pricing, and error handling for out-of-stock items."
+  },
+  {
+    "id": "TC008",
+    "title": "post api v1 payment create create payment auth",
+    "description": "Create payment for authenticated user, verifying LiqPay integration, payment data correctness, and cart clearance after payment."
+  },
+  {
+    "id": "TC009",
+    "title": "get api v1 nova poshta cities get cities list",
+    "description": "Retrieve list of cities from Nova Poshta API with partial matching and caching verification."
+  },
+  {
+    "id": "TC010",
+    "title": "post api v1 coupon create coupon admin",
+    "description": "Create promotional coupons with valid and invalid data, ensuring admin authorization and validation of coupon usage limits and dates."
+  }
+]

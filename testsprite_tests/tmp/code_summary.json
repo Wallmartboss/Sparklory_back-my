@@ -1,0 +1,705 @@
+{
+  "tech_stack": [
+    "TypeScript",
+    "NestJS",
+    "MongoDB",
+    "Mongoose ODM",
+    "JWT Authentication",
+    "Passport (Local, JWT, Facebook, Google OAuth)",
+    "Swagger/OpenAPI",
+    "Cache Manager (Redis)",
+    "Nodemailer",
+    "Axios",
+    "Bcrypt",
+    "Class Validator & Transformer"
+  ],
+  "features": [
+    {
+      "name": "Authentication API",
+      "description": "Complete authentication system with email verification, OAuth, password reset and refresh tokens",
+      "files": [
+        "src/auth/auth.controller.ts",
+        "src/auth/auth.service.ts",
+        "src/auth/auth.module.ts",
+        "src/auth/strategies/jwt.strategy.ts",
+        "src/auth/strategies/local.strategy.ts",
+        "src/auth/strategies/facebook.strategy.ts",
+        "src/auth/strategies/google.strategy.ts",
+        "src/auth/guards/jwt.guard.ts",
+        "src/auth/guards/local.guard.ts"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/auth/register": {
+            "post": {
+              "summary": "Register new user",
+              "tags": ["Auth"],
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "properties": {
+                        "email": { "type": "string" },
+                        "password": { "type": "string" },
+                        "name": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "201": { "description": "User created successfully" }
+              }
+            }
+          },
+          "/auth/verify-email": {
+            "post": {
+              "summary": "Verify email with code",
+              "tags": ["Auth"],
+              "responses": {
+                "200": { "description": "Email verified, returns JWT tokens" }
+              }
+            }
+          },
+          "/auth/login": {
+            "post": {
+              "summary": "User login",
+              "tags": ["Auth"],
+              "responses": {
+                "200": { "description": "Returns user and JWT tokens" }
+              }
+            }
+          },
+          "/auth/facebook": {
+            "get": {
+              "summary": "Facebook OAuth login",
+              "tags": ["Auth"],
+              "responses": {
+                "302": { "description": "Redirects to Facebook" }
+              }
+            }
+          },
+          "/auth/google": {
+            "get": {
+              "summary": "Google OAuth login",
+              "tags": ["Auth"],
+              "responses": {
+                "302": { "description": "Redirects to Google" }
+              }
+            }
+          },
+          "/auth/forgot-password": {
+            "post": {
+              "summary": "Request password reset code",
+              "tags": ["Auth"]
+            }
+          },
+          "/auth/reset-password": {
+            "post": {
+              "summary": "Reset password with code",
+              "tags": ["Auth"]
+            }
+          },
+          "/auth/refresh": {
+            "post": {
+              "summary": "Refresh access token",
+              "tags": ["Auth"]
+            }
+          },
+          "/auth/logout": {
+            "post": {
+              "summary": "Logout user",
+              "tags": ["Auth"],
+              "security": [{ "JWT": [] }]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Product API",
+      "description": "Comprehensive product management with filtering, sorting, reviews, discounts, and subscriptions",
+      "files": [
+        "src/product/product.controller.ts",
+        "src/product/product.service.ts",
+        "src/product/product.module.ts",
+        "src/product/product.schema.ts",
+        "src/product/dto/create-product.dto.ts",
+        "src/product/dto/update-product.dto.ts",
+        "src/product/dto/product-filter.dto.ts"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/products": {
+            "get": {
+              "summary": "Get all products with filtering, sorting, and pagination",
+              "tags": ["Products"],
+              "parameters": [
+                { "name": "page", "in": "query", "schema": { "type": "number" } },
+                { "name": "limit", "in": "query", "schema": { "type": "number" } },
+                { "name": "category", "in": "query", "schema": { "type": "string" } },
+                { "name": "subcategory", "in": "query", "schema": { "type": "string" } },
+                { "name": "material", "in": "query", "schema": { "type": "string" } },
+                { "name": "insert", "in": "query", "schema": { "type": "string" } },
+                { "name": "size", "in": "query", "schema": { "type": "string" } },
+                { "name": "gender", "in": "query", "schema": { "type": "string" } },
+                { "name": "minPrice", "in": "query", "schema": { "type": "number" } },
+                { "name": "maxPrice", "in": "query", "schema": { "type": "number" } },
+                { "name": "search", "in": "query", "schema": { "type": "string" } },
+                { "name": "sortBy", "in": "query", "schema": { "type": "string" } }
+              ],
+              "responses": {
+                "200": { "description": "Returns paginated products" }
+              }
+            },
+            "post": {
+              "summary": "Create one or multiple products",
+              "tags": ["Products"],
+              "responses": {
+                "201": { "description": "Product(s) created" }
+              }
+            }
+          },
+          "/products/{id}": {
+            "get": {
+              "summary": "Get product by ID",
+              "tags": ["Products"],
+              "responses": {
+                "200": { "description": "Returns product details" }
+              }
+            },
+            "patch": {
+              "summary": "Update product",
+              "tags": ["Products"],
+              "responses": {
+                "200": { "description": "Product updated" }
+              }
+            },
+            "delete": {
+              "summary": "Delete product",
+              "tags": ["Products"],
+              "responses": {
+                "200": { "description": "Product deleted" }
+              }
+            }
+          },
+          "/products/category/{category}": {
+            "get": {
+              "summary": "Get products by category",
+              "tags": ["Products"]
+            }
+          },
+          "/products/action/{action}": {
+            "get": {
+              "summary": "Get products by action",
+              "tags": ["Products"]
+            }
+          },
+          "/products/discounts": {
+            "get": {
+              "summary": "Get all discounted products",
+              "tags": ["Products"]
+            }
+          },
+          "/products/counts": {
+            "get": {
+              "summary": "Get product counts grouped by parameters",
+              "tags": ["Products"]
+            }
+          },
+          "/products/categories": {
+            "get": {
+              "summary": "Get all categories with subcategories",
+              "tags": ["Products"]
+            }
+          },
+          "/products/{id}/reviews": {
+            "get": {
+              "summary": "Get paginated product reviews",
+              "tags": ["Products"]
+            },
+            "post": {
+              "summary": "Create product review",
+              "tags": ["Products"]
+            }
+          },
+          "/products/subscribe": {
+            "post": {
+              "summary": "Subscribe to back-in-stock notification (guest)",
+              "tags": ["Products"]
+            }
+          },
+          "/products/subscribe/auth": {
+            "post": {
+              "summary": "Subscribe to back-in-stock notification (auth)",
+              "tags": ["Products"],
+              "security": [{ "JWT": [] }]
+            }
+          },
+          "/products/subscriptions": {
+            "get": {
+              "summary": "Get all subscriptions",
+              "tags": ["Products"]
+            }
+          },
+          "/products/compare": {
+            "post": {
+              "summary": "Compare up to 3 products",
+              "tags": ["Products"]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Cart API",
+      "description": "Shopping cart management for authenticated users and guests with coupon/bonus support",
+      "files": [
+        "src/cart/cart.controller.ts",
+        "src/cart/cart.service.ts",
+        "src/cart/cart.module.ts",
+        "src/cart/cart.schema.ts",
+        "src/cart/dto/add-to-cart.dto.ts"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/cart": {
+            "get": {
+              "summary": "Get user cart",
+              "tags": ["Cart"],
+              "security": [{ "JWT": [] }],
+              "responses": {
+                "200": { "description": "Returns cart with items and totals" }
+              }
+            }
+          },
+          "/cart/add": {
+            "post": {
+              "summary": "Add item to cart (authenticated)",
+              "tags": ["Cart"],
+              "security": [{ "JWT": [] }],
+              "responses": {
+                "201": { "description": "Item added to cart" }
+              }
+            }
+          },
+          "/cart/remove": {
+            "post": {
+              "summary": "Remove item from cart",
+              "tags": ["Cart"],
+              "security": [{ "JWT": [] }]
+            }
+          },
+          "/cart/clear": {
+            "post": {
+              "summary": "Clear cart",
+              "tags": ["Cart"],
+              "security": [{ "JWT": [] }]
+            }
+          },
+          "/cart/guest": {
+            "get": {
+              "summary": "Get guest cart by guestId",
+              "tags": ["Cart"]
+            }
+          },
+          "/cart/add-guest": {
+            "post": {
+              "summary": "Add item to guest cart",
+              "tags": ["Cart"]
+            }
+          },
+          "/cart/remove-guest": {
+            "post": {
+              "summary": "Remove item from guest cart",
+              "tags": ["Cart"]
+            }
+          },
+          "/cart/clear-guest": {
+            "post": {
+              "summary": "Clear guest cart",
+              "tags": ["Cart"]
+            }
+          },
+          "/cart/apply-coupon": {
+            "post": {
+              "summary": "Apply coupon to cart",
+              "tags": ["Cart"],
+              "security": [{ "JWT": [] }]
+            }
+          },
+          "/cart/apply-bonus": {
+            "post": {
+              "summary": "Apply bonuses to cart",
+              "tags": ["Cart"],
+              "security": [{ "JWT": [] }]
+            }
+          },
+          "/cart/apply-coupon-guest": {
+            "post": {
+              "summary": "Apply coupon to guest cart",
+              "tags": ["Cart"]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "User API",
+      "description": "User profile management, wishlist operations, and password change",
+      "files": [
+        "src/user/user.controller.ts",
+        "src/user/user.service.ts",
+        "src/user/user.module.ts",
+        "src/user/schema/user.schema.ts",
+        "src/user/dto/update-me.dto.ts",
+        "src/user/dto/change-password.dto.ts"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/user/me": {
+            "get": {
+              "summary": "Get current user profile",
+              "tags": ["User"],
+              "security": [{ "JWT": [] }],
+              "responses": {
+                "200": { "description": "Returns user profile" }
+              }
+            },
+            "patch": {
+              "summary": "Update current user profile",
+              "tags": ["User"],
+              "security": [{ "JWT": [] }]
+            }
+          },
+          "/user/me/password": {
+            "patch": {
+              "summary": "Change password",
+              "tags": ["User"],
+              "security": [{ "JWT": [] }]
+            }
+          },
+          "/user/wishlist": {
+            "get": {
+              "summary": "Get all products from wishlist",
+              "tags": ["User"],
+              "security": [{ "JWT": [] }]
+            },
+            "delete": {
+              "summary": "Clear wishlist",
+              "tags": ["User"],
+              "security": [{ "JWT": [] }]
+            }
+          },
+          "/user/wishlist/{productId}": {
+            "post": {
+              "summary": "Add product to wishlist",
+              "tags": ["User"],
+              "security": [{ "JWT": [] }]
+            },
+            "delete": {
+              "summary": "Remove product from wishlist",
+              "tags": ["User"],
+              "security": [{ "JWT": [] }]
+            }
+          },
+          "/user/set-role/{userId}": {
+            "post": {
+              "summary": "Change user role (superadmin only)",
+              "tags": ["User"],
+              "security": [{ "JWT": [] }]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Category API",
+      "description": "Category and subcategory management for product organization",
+      "files": [
+        "src/category/category.controller.ts",
+        "src/category/category.service.ts",
+        "src/category/category.module.ts",
+        "src/category/category.schema.ts"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/categories": {
+            "get": {
+              "summary": "Get all categories with subcategories",
+              "tags": ["Categories"],
+              "responses": {
+                "200": { "description": "List of categories" }
+              }
+            },
+            "post": {
+              "summary": "Add one or multiple categories",
+              "tags": ["Categories"],
+              "responses": {
+                "201": { "description": "Category created" }
+              }
+            },
+            "delete": {
+              "summary": "Delete all categories",
+              "tags": ["Categories"],
+              "responses": {
+                "204": { "description": "All categories deleted" }
+              }
+            }
+          },
+          "/categories/{name}": {
+            "get": {
+              "summary": "Get category by name",
+              "tags": ["Categories"]
+            },
+            "patch": {
+              "summary": "Update category by name",
+              "tags": ["Categories"]
+            },
+            "delete": {
+              "summary": "Delete category by name",
+              "tags": ["Categories"]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Payment API",
+      "description": "LiqPay payment integration for authenticated users and guests",
+      "files": [
+        "src/payment/payment.controller.ts",
+        "src/payment/payment.service.ts",
+        "src/payment/payment.module.ts",
+        "src/payment/dto/create-payment.dto.ts"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/payment/create": {
+            "post": {
+              "summary": "Create payment for authenticated user",
+              "tags": ["Payment"],
+              "security": [{ "JWT": [] }],
+              "responses": {
+                "201": { "description": "Payment created" }
+              }
+            }
+          },
+          "/payment/create-guest": {
+            "post": {
+              "summary": "Create payment for guest",
+              "tags": ["Payment"],
+              "responses": {
+                "201": { "description": "Payment created" }
+              }
+            }
+          },
+          "/payment/callback": {
+            "get": {
+              "summary": "Get payment callback result",
+              "tags": ["Payment"]
+            },
+            "post": {
+              "summary": "Handle LiqPay payment callback",
+              "tags": ["Payment"],
+              "responses": {
+                "200": { "description": "Callback processed" }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Coupon API",
+      "description": "Coupon management and validation system",
+      "files": [
+        "src/coupon/coupon.controller.ts",
+        "src/coupon/coupon.service.ts",
+        "src/coupon/coupon.module.ts",
+        "src/coupon/coupon.schema.ts"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/coupon": {
+            "get": {
+              "summary": "Get all coupons (admin)",
+              "tags": ["Coupons"],
+              "security": [{ "JWT": [] }],
+              "responses": {
+                "200": { "description": "List of coupons" }
+              }
+            },
+            "post": {
+              "summary": "Create coupon (admin)",
+              "tags": ["Coupons"],
+              "security": [{ "JWT": [] }],
+              "responses": {
+                "201": { "description": "Coupon created" }
+              }
+            }
+          },
+          "/coupon/{code}": {
+            "get": {
+              "summary": "Get coupon by code",
+              "tags": ["Coupons"],
+              "security": [{ "JWT": [] }]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Loyalty API",
+      "description": "Customer loyalty program with bonus points and levels",
+      "files": [
+        "src/loyalty/loyalty.controller.ts",
+        "src/loyalty/loyalty.service.ts",
+        "src/loyalty/loyalty.module.ts",
+        "src/loyalty/loyalty.schema.ts",
+        "src/loyalty/dto/create-loyalty-level.dto.ts"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/loyalty/history": {
+            "get": {
+              "summary": "Get user purchase history",
+              "tags": ["Loyalty"],
+              "security": [{ "JWT": [] }]
+            }
+          },
+          "/loyalty/bonus": {
+            "get": {
+              "summary": "Get user bonus balance",
+              "tags": ["Loyalty"],
+              "security": [{ "JWT": [] }]
+            }
+          },
+          "/loyalty/card": {
+            "post": {
+              "summary": "Bind loyalty card to user",
+              "tags": ["Loyalty"],
+              "security": [{ "JWT": [] }]
+            }
+          },
+          "/loyalty/add-purchase": {
+            "post": {
+              "summary": "Add purchase to history",
+              "tags": ["Loyalty"],
+              "security": [{ "JWT": [] }]
+            }
+          },
+          "/loyalty/level": {
+            "post": {
+              "summary": "Create loyalty level (admin)",
+              "tags": ["Loyalty"],
+              "security": [{ "JWT": [] }]
+            }
+          },
+          "/loyalty/level/{id}": {
+            "patch": {
+              "summary": "Update loyalty level (admin)",
+              "tags": ["Loyalty"],
+              "security": [{ "JWT": [] }]
+            }
+          },
+          "/loyalty/levels": {
+            "get": {
+              "summary": "Get all loyalty levels",
+              "tags": ["Loyalty"],
+              "security": [{ "JWT": [] }]
+            }
+          },
+          "/loyalty/assign-level/{levelId}": {
+            "patch": {
+              "summary": "Assign loyalty level to user (admin)",
+              "tags": ["Loyalty"],
+              "security": [{ "JWT": [] }]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Nova Poshta API",
+      "description": "Nova Poshta delivery service integration for cities, warehouses, and cost calculation",
+      "files": [
+        "src/nova-poshta/nova-poshta.controller.ts",
+        "src/nova-poshta/nova-poshta.service.ts",
+        "src/nova-poshta/nova-poshta.module.ts",
+        "src/nova-poshta/dto/delivery-cost-response.dto.ts"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/nova-poshta/cities": {
+            "get": {
+              "summary": "Get Nova Poshta cities list",
+              "tags": ["Nova Poshta"],
+              "parameters": [
+                { "name": "cityName", "in": "query", "schema": { "type": "string" } },
+                { "name": "limit", "in": "query", "schema": { "type": "number" } }
+              ],
+              "responses": {
+                "200": { "description": "List of cities" }
+              }
+            }
+          },
+          "/nova-poshta/warehouses": {
+            "get": {
+              "summary": "Get warehouses by city",
+              "tags": ["Nova Poshta"],
+              "parameters": [
+                { "name": "cityRef", "in": "query", "required": true, "schema": { "type": "string" } },
+                { "name": "type", "in": "query", "schema": { "type": "string" } },
+                { "name": "search", "in": "query", "schema": { "type": "string" } },
+                { "name": "page", "in": "query", "schema": { "type": "number" } },
+                { "name": "limit", "in": "query", "schema": { "type": "number" } }
+              ],
+              "responses": {
+                "200": { "description": "List of warehouses" }
+              }
+            }
+          },
+          "/nova-poshta/delivery-cost": {
+            "get": {
+              "summary": "Calculate delivery cost with insurance",
+              "tags": ["Nova Poshta"],
+              "parameters": [
+                { "name": "cityRef", "in": "query", "required": true, "schema": { "type": "string" } },
+                { "name": "warehouseRef", "in": "query", "required": true, "schema": { "type": "string" } },
+                { "name": "weight", "in": "query", "required": true, "schema": { "type": "number" } },
+                { "name": "cartTotal", "in": "query", "schema": { "type": "number" } }
+              ],
+              "responses": {
+                "200": { "description": "Delivery cost calculated" }
+              }
+            }
+          },
+          "/nova-poshta/preload-cache": {
+            "post": {
+              "summary": "Preload cache for popular cities",
+              "tags": ["Nova Poshta"]
+            }
+          },
+          "/nova-poshta/clear-cache": {
+            "post": {
+              "summary": "Clear Nova Poshta cache",
+              "tags": ["Nova Poshta"]
+            }
+          }
+        }
+      }
+    }
+  ]
+}
+
+

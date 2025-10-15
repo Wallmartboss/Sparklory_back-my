@@ -1,0 +1,242 @@
+{
+  "projectName": "Sparklory E-commerce Backend API",
+  "description": "A comprehensive NestJS backend API for an e-commerce jewelry store with product management, shopping cart, payment processing, loyalty program, and delivery integration",
+  "techStack": [
+    "TypeScript",
+    "NestJS",
+    "MongoDB",
+    "Mongoose",
+    "JWT Authentication",
+    "Passport (Local/OAuth)",
+    "Swagger/OpenAPI",
+    "Cache Manager",
+    "Nodemailer",
+    "LiqPay Payment",
+    "Nova Poshta API"
+  ],
+  "features": [
+    {
+      "name": "User Authentication & Authorization",
+      "description": "Complete authentication system with email verification, OAuth social login, password reset, and JWT token management",
+      "priority": "high",
+      "endpoints": [
+        "POST /api/v1/auth/register - Register new user",
+        "POST /api/v1/auth/verify-email - Verify email with code",
+        "GET /api/v1/auth/verify-email - Verify email by link",
+        "POST /api/v1/auth/login - User login",
+        "GET /api/v1/auth/facebook - Facebook OAuth login",
+        "GET /api/v1/auth/google - Google OAuth login",
+        "POST /api/v1/auth/forgot-password - Request password reset",
+        "POST /api/v1/auth/reset-password - Reset password with code",
+        "POST /api/v1/auth/refresh - Refresh access token",
+        "POST /api/v1/auth/logout - Logout user"
+      ],
+      "businessRules": [
+        "Users must verify email before accessing protected resources",
+        "OAuth users are automatically verified",
+        "Password reset codes expire after use",
+        "JWT tokens have expiration times",
+        "Refresh tokens can be used to get new access tokens"
+      ]
+    },
+    {
+      "name": "Product Management",
+      "description": "Comprehensive product catalog with filtering, sorting, reviews, discounts, and stock notifications",
+      "priority": "high",
+      "endpoints": [
+        "GET /api/v1/products - Get all products with filters and pagination",
+        "POST /api/v1/products - Create one or multiple products",
+        "GET /api/v1/products/{id} - Get product by ID",
+        "PATCH /api/v1/products/{id} - Update product",
+        "DELETE /api/v1/products/{id} - Delete product",
+        "GET /api/v1/products/category/{category} - Get products by category",
+        "GET /api/v1/products/action/{action} - Get products by action",
+        "GET /api/v1/products/discounts - Get discounted products",
+        "GET /api/v1/products/counts - Get product counts by parameters",
+        "GET /api/v1/products/categories - Get categories with subcategories",
+        "GET /api/v1/products/{id}/reviews - Get product reviews",
+        "POST /api/v1/products/{id}/reviews - Create product review",
+        "POST /api/v1/products/subscribe - Subscribe to stock notification (guest)",
+        "POST /api/v1/products/subscribe/auth - Subscribe to stock notification (auth)",
+        "GET /api/v1/products/subscriptions - Get all subscriptions",
+        "DELETE /api/v1/products/subscriptions/{id} - Unsubscribe",
+        "POST /api/v1/products/compare - Compare up to 3 products"
+      ],
+      "businessRules": [
+        "Products have variants with different materials, sizes, and prices",
+        "Discounts have start and end dates",
+        "Products can belong to categories and subcategories",
+        "Reviews include ratings from 1-5",
+        "Stock notifications sent when product back in stock",
+        "Product search is case-insensitive and normalized",
+        "Filtering supports multiple parameters"
+      ]
+    },
+    {
+      "name": "Shopping Cart",
+      "description": "Cart management for authenticated users and guests with coupon and bonus support",
+      "priority": "high",
+      "endpoints": [
+        "GET /api/v1/cart - Get user cart",
+        "POST /api/v1/cart/add - Add item to cart (auth)",
+        "POST /api/v1/cart/remove - Remove item from cart (auth)",
+        "POST /api/v1/cart/clear - Clear cart (auth)",
+        "GET /api/v1/cart/guest - Get guest cart",
+        "POST /api/v1/cart/add-guest - Add item to guest cart",
+        "POST /api/v1/cart/remove-guest - Remove item from guest cart",
+        "POST /api/v1/cart/clear-guest - Clear guest cart",
+        "POST /api/v1/cart/apply-coupon - Apply coupon (auth)",
+        "POST /api/v1/cart/apply-bonus - Apply bonus points (auth)",
+        "POST /api/v1/cart/apply-coupon-guest - Apply coupon (guest)"
+      ],
+      "businessRules": [
+        "Guests use guestId to maintain cart session",
+        "Cart items have variant-specific pricing",
+        "Prices calculated server-side including discounts",
+        "Stock validation on add to cart",
+        "Coupons have validity periods and usage limits",
+        "Bonus points can be applied up to available balance",
+        "Cart totals recalculated on any change"
+      ]
+    },
+    {
+      "name": "User Profile & Wishlist",
+      "description": "User profile management with wishlist functionality",
+      "priority": "medium",
+      "endpoints": [
+        "GET /api/v1/user/me - Get current user profile",
+        "PATCH /api/v1/user/me - Update profile",
+        "PATCH /api/v1/user/me/password - Change password",
+        "GET /api/v1/user/wishlist - Get wishlist",
+        "POST /api/v1/user/wishlist/{productId} - Add to wishlist",
+        "DELETE /api/v1/user/wishlist/{productId} - Remove from wishlist",
+        "DELETE /api/v1/user/wishlist - Clear wishlist",
+        "POST /api/v1/user/set-role/{userId} - Change user role (superadmin)"
+      ],
+      "businessRules": [
+        "Password change requires current password verification",
+        "Wishlist items are product IDs",
+        "Only superadmin can change roles",
+        "Profile updates validated before saving"
+      ]
+    },
+    {
+      "name": "Category Management",
+      "description": "Product category and subcategory organization",
+      "priority": "medium",
+      "endpoints": [
+        "GET /api/v1/categories - Get all categories",
+        "POST /api/v1/categories - Create category or categories",
+        "GET /api/v1/categories/{name} - Get category by name",
+        "PATCH /api/v1/categories/{name} - Update category",
+        "DELETE /api/v1/categories/{name} - Delete category",
+        "DELETE /api/v1/categories - Delete all categories"
+      ],
+      "businessRules": [
+        "Categories can have parent-child relationships",
+        "Subcategories linked to parent categories",
+        "Categories have unique names",
+        "Categories can have images"
+      ]
+    },
+    {
+      "name": "Payment Processing",
+      "description": "LiqPay payment integration for authenticated users and guests",
+      "priority": "high",
+      "endpoints": [
+        "POST /api/v1/payment/create - Create payment (auth)",
+        "POST /api/v1/payment/create-guest - Create payment (guest)",
+        "POST /api/v1/payment/callback - Handle LiqPay callback",
+        "GET /api/v1/payment/callback - Get callback result"
+      ],
+      "businessRules": [
+        "Payments processed through LiqPay gateway",
+        "Callback verifies signature for security",
+        "Payment status updates on callback",
+        "Guest payments use email for identification",
+        "Cart cleared after successful payment"
+      ]
+    },
+    {
+      "name": "Coupon Management",
+      "description": "Promotional coupon system with validation",
+      "priority": "medium",
+      "endpoints": [
+        "GET /api/v1/coupon - Get all coupons (admin)",
+        "POST /api/v1/coupon - Create coupon (admin)",
+        "GET /api/v1/coupon/{code} - Get coupon by code"
+      ],
+      "businessRules": [
+        "Coupons have validity dates",
+        "Coupons can be percentage or fixed amount",
+        "Coupons may have usage limits",
+        "Only valid coupons can be applied",
+        "Admin role required for coupon management"
+      ]
+    },
+    {
+      "name": "Loyalty Program",
+      "description": "Customer loyalty system with bonus points and tiered levels",
+      "priority": "medium",
+      "endpoints": [
+        "GET /api/v1/loyalty/history - Get purchase history",
+        "GET /api/v1/loyalty/bonus - Get bonus balance",
+        "POST /api/v1/loyalty/card - Bind loyalty card",
+        "POST /api/v1/loyalty/add-purchase - Add purchase",
+        "POST /api/v1/loyalty/level - Create loyalty level (admin)",
+        "PATCH /api/v1/loyalty/level/{id} - Update level (admin)",
+        "GET /api/v1/loyalty/levels - Get all levels",
+        "PATCH /api/v1/loyalty/assign-level/{levelId} - Assign level (admin)"
+      ],
+      "businessRules": [
+        "Bonus points earned based on loyalty level percentage",
+        "Purchase history tracks earned bonuses",
+        "Loyalty cards can be bound to user accounts",
+        "Levels have different bonus percentages",
+        "Admin can manage levels and assignments"
+      ]
+    },
+    {
+      "name": "Delivery Integration (Nova Poshta)",
+      "description": "Nova Poshta API integration for delivery options and cost calculation",
+      "priority": "high",
+      "endpoints": [
+        "GET /api/v1/nova-poshta/cities - Get cities list",
+        "GET /api/v1/nova-poshta/warehouses - Get warehouses by city",
+        "GET /api/v1/nova-poshta/delivery-cost - Calculate delivery cost",
+        "POST /api/v1/nova-poshta/preload-cache - Preload cache",
+        "POST /api/v1/nova-poshta/clear-cache - Clear cache"
+      ],
+      "businessRules": [
+        "Cities searchable with partial matching",
+        "Warehouses filtered by type (Branch/Postomat)",
+        "Delivery cost includes insurance (0.5% of cart total)",
+        "Results cached for performance",
+        "Popular cities preloaded in cache"
+      ]
+    }
+  ],
+  "apiVersion": "v1",
+  "baseUrl": "http://localhost:5000/api/v1",
+  "authentication": {
+    "type": "JWT Bearer Token",
+    "description": "Most endpoints require JWT authentication via Authorization header"
+  },
+  "database": {
+    "type": "MongoDB",
+    "collections": [
+      "users",
+      "products",
+      "categories",
+      "carts",
+      "coupons",
+      "loyalty_levels",
+      "purchase_history",
+      "sessions",
+      "devices",
+      "product_subscriptions"
+    ]
+  }
+}
+
+
