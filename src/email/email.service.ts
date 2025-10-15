@@ -5,18 +5,46 @@ import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class EmailService {
-  constructor(private configService: ConfigService) {}
   private logger = new Logger('EmailService');
+  private transporter: nodemailer.Transporter;
 
-  private transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: this.configService.get<string>('GOOGLE_EMAIL'),
-      pass: this.configService.get<string>('GOOGLE_PASSWORD'),
-    },
-  });
+  constructor(private configService: ConfigService) {
+    const email = this.configService.get<string>('GOOGLE_EMAIL');
+    const password = this.configService.get<string>('GOOGLE_PASSWORD');
 
-  async sendEmail(email: string, token: string, condition: ECondition) {
+    if (!email || !password) {
+      this.logger.error(
+        'GOOGLE_EMAIL or GOOGLE_PASSWORD environment variables are not set',
+      );
+      throw new Error('Email configuration is missing');
+    }
+
+    this.transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: email,
+        pass: password,
+      },
+    });
+
+    // Verify connection configuration on startup
+    this.verifyConnection();
+  }
+
+  private async verifyConnection(): Promise<void> {
+    try {
+      await this.transporter.verify();
+      this.logger.log('Email service connection verified successfully');
+    } catch (error) {
+      this.logger.error('Email service connection verification failed:', error);
+    }
+  }
+
+  async sendEmail(
+    email: string,
+    token: string,
+    condition: ECondition,
+  ): Promise<void> {
     let subject: string;
     let html: string;
     const frontendUrl = this.configService.get<string>(
@@ -73,13 +101,13 @@ export class EmailService {
       html,
     };
 
-    this.transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        this.logger.error(error);
-      } else {
-        this.logger.log(`${subject} email sent to ${email}: ` + info.response);
-      }
-    });
+    try {
+      const info = await this.transporter.sendMail(mailOptions);
+      this.logger.log(`${subject} email sent to ${email}: ` + info.response);
+    } catch (error) {
+      this.logger.error(`Failed to send ${subject} email to ${email}:`, error);
+      throw new Error(`Email sending failed: ${error.message}`);
+    }
   }
 
   async sendCartReminder(email: string, cart: any): Promise<void> {

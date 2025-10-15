@@ -194,8 +194,15 @@ export class AuthController {
     const code = randomBytes(3).toString('hex');
     user.resetPasswordCode = code;
     await this.userService.saveUser(user);
-    await this.emailService.sendEmail(email, code, ECondition.ResetPassword);
-    return { message: 'Код для скидання пароля надіслано на email' };
+
+    try {
+      await this.emailService.sendEmail(email, code, ECondition.ResetPassword);
+      return { message: 'Код для скидання пароля надіслано на email' };
+    } catch (error) {
+      throw new BadRequestException(
+        `Помилка відправки email: ${error.message}`,
+      );
+    }
   }
 
   @Post('reset-password')
