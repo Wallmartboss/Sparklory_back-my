@@ -292,4 +292,25 @@ export class AuthController {
     const user = req.user as any;
     return await this.authService.logout(user.sub, user.sessionId);
   }
+
+  @Get('email-status')
+  @ApiOperation({ summary: 'Check email service status' })
+  @ApiResponse({ status: 200, description: 'Email service status' })
+  async checkEmailStatus() {
+    try {
+      // This will trigger the verification process
+      await this.emailService.sendEmail(
+        'test@example.com',
+        'TEST123',
+        ECondition.ResetPassword,
+      );
+      return { status: 'Email service is working' };
+    } catch (error) {
+      return {
+        status: 'Email service error',
+        error: error.message,
+        details: error.stack,
+      };
+    }
+  }
 }
