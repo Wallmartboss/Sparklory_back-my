@@ -38,8 +38,6 @@ export class EmailService {
           connectionTimeout: 120000, // 2 minutes for cloud
           greetingTimeout: 60000, // 1 minute for cloud
           socketTimeout: 120000, // 2 minutes for cloud
-          debug: true, // Enable debug logging
-          logger: true, // Enable logging
         }
       : {
           service: 'gmail',
@@ -98,8 +96,6 @@ export class EmailService {
       connectionTimeout: 120000,
       greetingTimeout: 60000,
       socketTimeout: 120000,
-      debug: true,
-      logger: true,
     };
 
     try {
@@ -116,12 +112,6 @@ export class EmailService {
     token: string,
     condition: ECondition,
   ): Promise<void> {
-    // Log current transporter configuration for debugging
-    this.logger.log('Current transporter config:', {
-      host: (this.transporter.options as any).host,
-      port: (this.transporter.options as any).port,
-      secure: (this.transporter.options as any).secure,
-    });
     let subject: string;
     let html: string;
     const frontendUrl = this.configService.get<string>(
@@ -206,13 +196,26 @@ export class EmailService {
       <br/>
       <p>Best regards,<br/>Your Sparklory</p>
     `;
-    await this.transporter.sendMail({
-      from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
-      to: email,
-      subject,
-      html,
-    });
-    this.logger.log(`Cart reminder sent to ${email}`);
+
+    try {
+      this.logger.log(`Attempting to send ${subject} email to ${email}...`);
+      const info = await this.transporter.sendMail({
+        from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
+        to: email,
+        subject,
+        html,
+      });
+      this.logger.log(`${subject} email sent to ${email}: ` + info.response);
+    } catch (error) {
+      this.logger.error(`Failed to send ${subject} email to ${email}:`, error);
+      this.logger.error('Cart reminder error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response,
+        command: error.command,
+      });
+      throw new Error(`Cart reminder email sending failed: ${error.message}`);
+    }
   }
 
   async sendPaymentCreated(email: string, payment: any): Promise<void> {
@@ -225,13 +228,26 @@ export class EmailService {
       <br/>
       <p>Best regards,<br/>Your Sparklory</p>
     `;
-    await this.transporter.sendMail({
-      from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
-      to: email,
-      subject,
-      html,
-    });
-    this.logger.log(`Payment created email sent to ${email}`);
+
+    try {
+      this.logger.log(`Attempting to send ${subject} email to ${email}...`);
+      const info = await this.transporter.sendMail({
+        from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
+        to: email,
+        subject,
+        html,
+      });
+      this.logger.log(`${subject} email sent to ${email}: ` + info.response);
+    } catch (error) {
+      this.logger.error(`Failed to send ${subject} email to ${email}:`, error);
+      this.logger.error('Payment created error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response,
+        command: error.command,
+      });
+      throw new Error(`Payment created email sending failed: ${error.message}`);
+    }
   }
 
   async sendPaymentResult(
@@ -248,13 +264,26 @@ export class EmailService {
       <br/>
       <p>Best regards,<br/>Your Sparklory</p>
     `;
-    await this.transporter.sendMail({
-      from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
-      to: email,
-      subject,
-      html,
-    });
-    this.logger.log(`Payment result email sent to ${email}`);
+
+    try {
+      this.logger.log(`Attempting to send ${subject} email to ${email}...`);
+      const info = await this.transporter.sendMail({
+        from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
+        to: email,
+        subject,
+        html,
+      });
+      this.logger.log(`${subject} email sent to ${email}: ` + info.response);
+    } catch (error) {
+      this.logger.error(`Failed to send ${subject} email to ${email}:`, error);
+      this.logger.error('Payment result error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response,
+        command: error.command,
+      });
+      throw new Error(`Payment result email sending failed: ${error.message}`);
+    }
   }
 
   async sendProductInStock(email: string, product: any): Promise<void> {
@@ -266,13 +295,28 @@ export class EmailService {
       <br/>
       <p>Best regards,<br/>Your Sparklory</p>
     `;
-    await this.transporter.sendMail({
-      from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
-      to: email,
-      subject,
-      html,
-    });
-    this.logger.log(`Product in stock notification sent to ${email}`);
+
+    try {
+      this.logger.log(`Attempting to send ${subject} email to ${email}...`);
+      const info = await this.transporter.sendMail({
+        from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
+        to: email,
+        subject,
+        html,
+      });
+      this.logger.log(`${subject} email sent to ${email}: ` + info.response);
+    } catch (error) {
+      this.logger.error(`Failed to send ${subject} email to ${email}:`, error);
+      this.logger.error('Product in stock error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response,
+        command: error.command,
+      });
+      throw new Error(
+        `Product in stock email sending failed: ${error.message}`,
+      );
+    }
   }
 
   async sendSubscriptionCreated(email: string, product: any): Promise<void> {
@@ -285,12 +329,27 @@ export class EmailService {
       <br/>
       <p>Best regards,<br/>Your Sparklory</p>
     `;
-    await this.transporter.sendMail({
-      from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
-      to: email,
-      subject,
-      html,
-    });
-    this.logger.log(`Subscription created email sent to ${email}`);
+
+    try {
+      this.logger.log(`Attempting to send ${subject} email to ${email}...`);
+      const info = await this.transporter.sendMail({
+        from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
+        to: email,
+        subject,
+        html,
+      });
+      this.logger.log(`${subject} email sent to ${email}: ` + info.response);
+    } catch (error) {
+      this.logger.error(`Failed to send ${subject} email to ${email}:`, error);
+      this.logger.error('Subscription created error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response,
+        command: error.command,
+      });
+      throw new Error(
+        `Subscription created email sending failed: ${error.message}`,
+      );
+    }
   }
 }
