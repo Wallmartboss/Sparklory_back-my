@@ -1,7 +1,6 @@
 import { ECondition } from '@/common';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as axios from 'axios';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
@@ -23,33 +22,34 @@ export class EmailService {
     }
 
     // Different configuration for production (Render.com) vs development
-    const transporterConfig = isProduction
-      ? {
-          host: 'smtp.gmail.com',
-          port: 587,
-          secure: false,
-          auth: {
-            user: email,
-            pass: password,
-          },
-          tls: {
-            rejectUnauthorized: false,
-            ciphers: 'SSLv3',
-          },
-          connectionTimeout: 120000, // 2 minutes for cloud
-          greetingTimeout: 60000, // 1 minute for cloud
-          socketTimeout: 120000, // 2 minutes for cloud
-        }
-      : {
-          service: 'gmail',
-          auth: {
-            user: email,
-            pass: password,
-          },
-          connectionTimeout: 60000,
-          greetingTimeout: 30000,
-          socketTimeout: 60000,
-        };
+    const sendgridApiKey = this.configService.get<string>('SENDGRID_API_KEY');
+    const transporterConfig =
+      isProduction && sendgridApiKey
+        ? {
+            host: 'smtp.sendgrid.net',
+            port: 587,
+            secure: false,
+            auth: {
+              user: 'apikey',
+              pass: sendgridApiKey,
+            },
+            tls: {
+              rejectUnauthorized: false,
+            },
+            connectionTimeout: 30000,
+            greetingTimeout: 15000,
+            socketTimeout: 30000,
+          }
+        : {
+            service: 'gmail',
+            auth: {
+              user: email,
+              pass: password,
+            },
+            connectionTimeout: 60000,
+            greetingTimeout: 30000,
+            socketTimeout: 60000,
+          };
 
     this.transporter = nodemailer.createTransport(transporterConfig);
     this.logger.log(
@@ -83,6 +83,7 @@ export class EmailService {
     const email = this.configService.get<string>('GOOGLE_EMAIL');
     const password = this.configService.get<string>('GOOGLE_PASSWORD');
 
+    // Try Gmail with different settings as fallback
     const fallbackConfig = {
       host: 'smtp.gmail.com',
       port: 465,
@@ -94,15 +95,15 @@ export class EmailService {
       tls: {
         rejectUnauthorized: false,
       },
-      connectionTimeout: 120000,
-      greetingTimeout: 60000,
-      socketTimeout: 120000,
+      connectionTimeout: 30000,
+      greetingTimeout: 15000,
+      socketTimeout: 30000,
     };
 
     try {
       this.transporter = nodemailer.createTransport(fallbackConfig);
       await this.transporter.verify();
-      this.logger.log('Fallback connection (port 465) verified successfully');
+      this.logger.log('Fallback connection (Gmail SSL) verified successfully');
     } catch (fallbackError) {
       this.logger.error('Fallback connection also failed:', fallbackError);
     }
@@ -112,7 +113,7 @@ export class EmailService {
     email: string,
     subject: string,
     html: string,
-    from: string = `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
+    from: string = `Your Sparklory <${this.configService.get<string>('SENDGRID_FROM_EMAIL') || process.env.GOOGLE_EMAIL}>`,
   ): Promise<void> {
     const mailOptions = {
       from,
@@ -166,54 +167,14 @@ export class EmailService {
     subject: string,
     html: string,
   ): Promise<void> {
-    const email = this.configService.get<string>('GOOGLE_EMAIL');
-    const password = this.configService.get<string>('GOOGLE_PASSWORD');
-
-    // Create base64 encoded auth string
-    const auth = Buffer.from(`${email}:${password}`).toString('base64');
-
-    // Create email message in RFC 2822 format
-    const message = [
-      `To: ${to}`,
-      `From: Your Sparklory <${email}>`,
-      `Subject: ${subject}`,
-      `Content-Type: text/html; charset=UTF-8`,
-      ``,
-      html,
-    ].join('\r\n');
-
-    // Encode message in base64url format
-    const encodedMessage = Buffer.from(message)
-      .toString('base64')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-
-    try {
-      this.logger.log(`Attempting to send email via Gmail API to ${to}...`);
-
-      const response = await axios.default.post(
-        'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
-        {
-          raw: encodedMessage,
-        },
-        {
-          headers: {
-            Authorization: `Basic ${auth}`,
-            'Content-Type': 'application/json',
-          },
-          timeout: 30000,
-        },
-      );
-
-      this.logger.log(`Email sent via Gmail API to ${to}: ${response.status}`);
-    } catch (error) {
-      this.logger.error(
-        `Gmail API email sending failed to ${to}:`,
-        error.response?.data || error.message,
-      );
-      throw new Error(`Gmail API email sending failed: ${error.message}`);
-    }
+    // Try using a simple email service that works via HTTP
+    // For now, let's use a webhook-based approach or disable HTTP fallback
+    this.logger.log(
+      `HTTP fallback not available - Gmail API requires OAuth 2.0`,
+    );
+    throw new Error(
+      'HTTP email sending not configured - requires OAuth 2.0 setup',
+    );
   }
 
   async sendEmail(
