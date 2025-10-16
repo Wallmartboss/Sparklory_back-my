@@ -67,19 +67,18 @@ export class EmailService {
     }
 
     const mailOptions = {
-      from: process.env.GOOGLE_EMAIL,
+      from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
       to: email,
       subject,
       html,
     };
 
-    this.transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        this.logger.error(error);
-      } else {
-        this.logger.log(`${subject} email sent to ${email}: ` + info.response);
-      }
-    });
+    try {
+      const info = await this.transporter.sendMail(mailOptions);
+      this.logger.log(`${subject} email sent to ${email}: ` + info.response);
+    } catch (error) {
+      this.logger.error(error);
+    }
   }
 
   async sendCartReminder(email: string, cart: any): Promise<void> {
