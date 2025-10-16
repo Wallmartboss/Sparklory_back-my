@@ -9,14 +9,6 @@ import { Category, CategoryDocument } from './category.schema';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
-interface CategoryPaginationResult {
-  total: number;
-  page: number;
-  limit: number;
-  pages: number;
-  categories: any[];
-}
-
 @Injectable()
 export class CategoryService {
   constructor(
@@ -127,10 +119,8 @@ export class CategoryService {
    * Get all categories with their subcategories (where parentCategory equals the category name)
    */
   async findAllWithSubcategories(
-    limit?: number,
-    page?: number,
     parentCategory?: string,
-  ): Promise<CategoryPaginationResult> {
+  ): Promise<{ total: number; categories: any[] }> {
     const categoriesQuery: any = {};
     if (parentCategory === 'null') {
       categoriesQuery.parentCategory = null;
@@ -139,23 +129,15 @@ export class CategoryService {
     }
     const allCategories = await this.categoryModel.find(categoriesQuery).lean();
     const total = allCategories.length;
-    const usedLimit = limit !== undefined ? Number(limit) : total;
-    const usedPage = page !== undefined ? Number(page) : 1;
-    let paged = allCategories;
-    if (limit !== undefined && page !== undefined) {
-      const skip = (usedPage - 1) * usedLimit;
-      paged = allCategories.slice(skip, skip + usedLimit);
-    }
     const categories = await Promise.all(
-      paged.map(async cat => {
+      allCategories.map(async cat => {
         const subcategories = await this.categoryModel
           .find({ parentCategory: cat.name })
           .lean();
         return { ...cat, subcategories };
       }),
     );
-    const pages = Math.ceil(total / usedLimit) || 1;
-    return { total, page: usedPage, limit: usedLimit, pages, categories };
+    return { total, categories };
   }
 
   /**

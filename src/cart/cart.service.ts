@@ -116,6 +116,9 @@ export class CartService {
     // Get product and find the specific variant
     const product = await this.productModel.findById(productId);
     if (!product) throw new Error('Product not found');
+    if (!product.variants || product.variants.length === 0) {
+      throw new Error('No variants available');
+    }
 
     // Find the appropriate variant based on material, size, and insert
     const variant = product.variants.find(

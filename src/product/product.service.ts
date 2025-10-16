@@ -13,6 +13,10 @@ import { EmailService } from '../email/email.service';
 import { BulkProductQueryDto } from './dto/bulk-product-query.dto';
 import { CreateProductDto } from './dto/create-product.dto';
 import { OptimizedProductQueryDto } from './dto/optimized-product-query.dto';
+import {
+  ProductCountsQueryDto,
+  ProductCountsResponseDto,
+} from './dto/product-counts.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import {
   BulkProductResult,
@@ -28,11 +32,22 @@ import { Product, ProductDocument } from './schema/product.schema';
 interface FindAllProductsParams {
   limit?: number;
   page?: number;
-  category?: string;
-  material?: string;
-  insert?: string;
+  category?: string[];
+  subcategory?: string[];
+  material?: string[];
+  insert?: string[];
   inStock?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  gender?: string[];
+  collection?: string[];
+  size?: string[];
+  engraving?: boolean;
+  action?: string[];
+  hasDiscount?: boolean;
+  search?: string;
   sort?: string;
+  fields?: string[];
 }
 
 interface ReviewPaginationResult {
@@ -48,14 +63,6 @@ interface ProductPaginationResult {
   limit: number;
   pages: number;
   products: Product[];
-}
-
-interface CategoryPaginationResult {
-  total: number;
-  page: number;
-  limit: number;
-  pages: number;
-  categories: any[];
 }
 
 @Injectable()
@@ -118,39 +125,20 @@ export class ProductService {
   async findAll(
     params?: FindAllProductsParams,
   ): Promise<ProductPaginationResult> {
-    const filter: any = {};
-    if (params?.category) {
-      filter.category = { $regex: `^${params.category}$`, $options: 'i' };
-    }
-    if (params?.material) {
-      filter['variants.material'] = {
-        $regex: `^${params.material}$`,
-        $options: 'i',
-      };
-    }
-    if (params?.insert) {
-      filter['variants.insert'] = {
-        $regex: `^${params.insert}$`,
-        $options: 'i',
-      };
-    }
-    if (params?.inStock !== undefined) {
-      filter['variants.inStock'] = { $gte: Number(params.inStock) };
-    }
-    const sortOption: any = {};
-    if (params?.sort) {
-      if (params.sort === 'price_desc') {
-        sortOption['variants.price'] = -1;
-      } else if (params.sort === 'price_asc') {
-        sortOption['variants.price'] = 1;
-      }
-    }
+    // Use the same filter logic as buildOptimizedFilter
+    const filter = this.buildOptimizedFilter(
+      params as OptimizedProductQueryDto,
+    );
+    const projection = this.buildProjection(params?.fields);
+    const sortOption = this.buildSort(params?.sort);
+
     const limit = params?.limit ? Number(params.limit) : 16;
     const page = params?.page ? Number(params.page) : 1;
     const skip = (page - 1) * limit;
+
     const [products, total] = await Promise.all([
       this.productModel
-        .find(filter)
+        .find(filter, projection)
         .sort(sortOption)
         .skip(skip)
         .limit(limit)
@@ -159,6 +147,36 @@ export class ProductService {
         .exec(),
       this.productModel.countDocuments(filter),
     ]);
+
+    // Strip out-of-range variants if price bounds are provided
+    if (
+      (params?.minPrice !== undefined && params?.minPrice !== null) ||
+      (params?.maxPrice !== undefined && params?.maxPrice !== null)
+    ) {
+      products.forEach((product: any) => {
+        if (Array.isArray(product?.variants)) {
+          const min =
+            params?.minPrice !== undefined && params?.minPrice !== null
+              ? Number(params.minPrice)
+              : undefined;
+          const max =
+            params?.maxPrice !== undefined && params?.maxPrice !== null
+              ? Number(params.maxPrice)
+              : undefined;
+          const filtered = product.variants.filter((v: any) => {
+            if (v == null || typeof v.price !== 'number') {
+              if (min == null && max == null) return true;
+              return false;
+            }
+            if (min != null && v.price < min) return false;
+            if (max != null && v.price > max) return false;
+            return true;
+          });
+          // For mongoose docs and lean objects assignment both work
+          product.variants = filtered;
+        }
+      });
+    }
     const pages = Math.ceil(total / limit) || 1;
     return { total, page, limit, pages, products };
   }
@@ -484,10 +502,10 @@ export class ProductService {
   /**
    * Get all categories with their subcategories and image
    */
-  async getCategoriesWithSubcategories(
-    limit?: number,
-    page?: number,
-  ): Promise<CategoryPaginationResult> {
+  async getCategoriesWithSubcategories(): Promise<{
+    total: number;
+    categories: any[];
+  }> {
     const categories = await this.categoryService['categoryModel']
       .find()
       .lean();
@@ -510,22 +528,7 @@ export class ProductService {
       }
     });
     const result = Object.values(categoryMap);
-    const total = result.length;
-    const usedLimit = limit !== undefined ? Number(limit) : total;
-    const usedPage = page !== undefined ? Number(page) : 1;
-    let paged = result;
-    if (limit !== undefined && page !== undefined) {
-      const skip = (usedPage - 1) * usedLimit;
-      paged = result.slice(skip, skip + usedLimit);
-    }
-    const pages = Math.ceil(total / usedLimit) || 1;
-    return {
-      total,
-      page: usedPage,
-      limit: usedLimit,
-      pages,
-      categories: paged,
-    };
+    return { total: result.length, categories: result };
   }
 
   /**
@@ -572,6 +575,34 @@ export class ProductService {
           .exec(),
         this.productModel.countDocuments(filter).exec(),
       ]);
+
+      // Strip out-of-range variants if price bounds are provided
+      if (
+        (query.minPrice !== undefined && query.minPrice !== null) ||
+        (query.maxPrice !== undefined && query.maxPrice !== null)
+      ) {
+        const min =
+          query.minPrice !== undefined && query.minPrice !== null
+            ? Number(query.minPrice)
+            : undefined;
+        const max =
+          query.maxPrice !== undefined && query.maxPrice !== null
+            ? Number(query.maxPrice)
+            : undefined;
+        products.forEach((product: any) => {
+          if (Array.isArray(product?.variants)) {
+            product.variants = product.variants.filter((v: any) => {
+              if (v == null || typeof v.price !== 'number') {
+                if (min == null && max == null) return true;
+                return false;
+              }
+              if (min != null && v.price < min) return false;
+              if (max != null && v.price > max) return false;
+              return true;
+            });
+          }
+        });
+      }
 
       // Calculate pagination info
       const pages = Math.ceil(total / limit);
@@ -681,7 +712,7 @@ export class ProductService {
     options: {
       limit?: number;
       page?: number;
-      category?: string;
+      category?: string[];
       useCache?: boolean;
     } = {},
   ): Promise<OptimizedProductResult> {
@@ -711,8 +742,16 @@ export class ProductService {
         ],
       };
 
-      if (options.category) {
-        filter.category = { $regex: `^${options.category}$`, $options: 'i' };
+      if (options.category && options.category.length > 0) {
+        const normalizedCategories = options.category.map(category =>
+          this.normalizeSearchTerm(category),
+        );
+        filter.category = {
+          $in: normalizedCategories.map(
+            category =>
+              new RegExp(`^${this.escapeRegexString(category)}$`, 'i'),
+          ),
+        };
       }
 
       // Pagination
@@ -767,9 +806,13 @@ export class ProductService {
       query.material || 'all',
       query.insert || 'all',
       query.inStock || 'all',
+      query.minPrice ?? 'all',
+      query.maxPrice ?? 'all',
       query.gender || 'all',
       query.collection || 'all',
-      query.action || 'all',
+      query.size || 'all',
+      query.engraving || 'all',
+      query.action ? query.action.sort().join(',') : 'all',
       query.hasDiscount || 'all',
       query.search || 'all',
       query.sort || 'default',
@@ -782,45 +825,160 @@ export class ProductService {
   private buildOptimizedFilter(query: OptimizedProductQueryDto): any {
     const filter: any = {};
 
+    // Validate price range
+    if (
+      query.minPrice !== undefined &&
+      query.minPrice !== null &&
+      query.maxPrice !== undefined &&
+      query.maxPrice !== null &&
+      Number(query.minPrice) > Number(query.maxPrice)
+    ) {
+      throw new BadRequestException('minPrice must be less than maxPrice');
+    }
+
+    // Helper for null/empty filter
+    function buildNullOrValuesFilter(
+      field: string,
+      values: string[],
+      isVariant = false,
+    ) {
+      const hasNull = values.some(v => v === null || v === 'null');
+      const notNullValues = values.filter(v => v !== null && v !== 'null');
+      const regexValues = notNullValues.map(
+        v =>
+          new RegExp(
+            `^${this.escapeRegexString(this.normalizeSearchTerm(v))}$`,
+            'i',
+          ),
+      );
+      const fieldName = isVariant ? `variants.${field}` : field;
+      // Для action, subcategory, category, insert, prod_collection, size добавляем строгую фильтрацию по отсутствию/пустоте
+      // Только для массивов: action
+      const arrayFields = ['action'];
+      const strictNullFields = [
+        'action',
+        'subcategory',
+        'category',
+        'insert',
+        'prod_collection',
+        'size',
+      ];
+      if (strictNullFields.includes(field) && hasNull) {
+        const baseOr = {
+          $or: [
+            { [fieldName]: { $exists: false } },
+            { [fieldName]: null },
+            { [fieldName]: '' },
+            { [fieldName]: [] },
+          ],
+        };
+        if (arrayFields.includes(field)) {
+          // Только для action добавляем $not/$elemMatch
+          return {
+            ...baseOr,
+            [fieldName]: { $not: { $elemMatch: { $exists: true } } },
+          };
+        } else {
+          // Для строк — только $or
+          return baseOr;
+        }
+      }
+      // Для остальных полей
+      if (hasNull && regexValues.length > 0) {
+        return {
+          $or: [
+            { [fieldName]: { $in: regexValues } },
+            { [fieldName]: { $exists: false } },
+            { [fieldName]: null },
+            { [fieldName]: '' },
+          ],
+        };
+      } else if (hasNull) {
+        return {
+          $or: [
+            { [fieldName]: { $exists: false } },
+            { [fieldName]: null },
+            { [fieldName]: '' },
+          ],
+        };
+      } else if (regexValues.length > 0) {
+        return {
+          [fieldName]: { $in: regexValues },
+        };
+      } else {
+        return {};
+      }
+    }
+
     // Only add filters if they are provided
-    if (query.category && query.category.trim()) {
-      filter.category = { $regex: query.category, $options: 'i' };
+    if (query.category && query.category.length > 0) {
+      Object.assign(
+        filter,
+        buildNullOrValuesFilter.call(this, 'category', query.category),
+      );
     }
-
-    if (query.subcategory && query.subcategory.trim()) {
-      filter.subcategory = { $regex: query.subcategory, $options: 'i' };
+    if (query.subcategory && query.subcategory.length > 0) {
+      Object.assign(
+        filter,
+        buildNullOrValuesFilter.call(this, 'subcategory', query.subcategory),
+      );
     }
-
-    if (query.material && query.material.trim()) {
-      filter['variants.material'] = {
-        $regex: query.material,
-        $options: 'i',
-      };
+    if (query.material && query.material.length > 0) {
+      Object.assign(
+        filter,
+        buildNullOrValuesFilter.call(this, 'material', query.material, true),
+      );
     }
-
-    if (query.insert && query.insert.trim()) {
-      filter['variants.insert'] = {
-        $regex: query.insert,
-        $options: 'i',
-      };
+    if (query.insert && query.insert.length > 0) {
+      Object.assign(
+        filter,
+        buildNullOrValuesFilter.call(this, 'insert', query.insert, true),
+      );
+    }
+    if (query.gender && query.gender.length > 0) {
+      Object.assign(
+        filter,
+        buildNullOrValuesFilter.call(this, 'gender', query.gender),
+      );
+    }
+    if (query.collection && query.collection.length > 0) {
+      Object.assign(
+        filter,
+        buildNullOrValuesFilter.call(this, 'prod_collection', query.collection),
+      );
+    }
+    if (query.size && query.size.length > 0) {
+      Object.assign(
+        filter,
+        buildNullOrValuesFilter.call(this, 'size', query.size, true),
+      );
+    }
+    if (query.action && query.action.length > 0) {
+      Object.assign(
+        filter,
+        buildNullOrValuesFilter.call(this, 'action', query.action),
+      );
     }
 
     if (query.inStock !== undefined && query.inStock !== null) {
       filter['variants.inStock'] = { $gte: Number(query.inStock) };
     }
-
-    if (query.gender && query.gender.trim()) {
-      filter.gender = { $regex: query.gender, $options: 'i' };
+    if (query.engraving !== undefined && query.engraving !== null) {
+      filter.engraving = query.engraving;
     }
-
-    if (query.collection && query.collection.trim()) {
-      filter.prod_collection = { $regex: query.collection, $options: 'i' };
+    if (
+      (query.minPrice !== undefined && query.minPrice !== null) ||
+      (query.maxPrice !== undefined && query.maxPrice !== null)
+    ) {
+      const priceCond: any = {};
+      if (query.minPrice !== undefined && query.minPrice !== null) {
+        priceCond.$gte = Number(query.minPrice);
+      }
+      if (query.maxPrice !== undefined && query.maxPrice !== null) {
+        priceCond.$lte = Number(query.maxPrice);
+      }
+      filter['variants.price'] = priceCond;
     }
-
-    if (query.action && query.action.trim()) {
-      filter.action = { $regex: query.action, $options: 'i' };
-    }
-
     if (query.hasDiscount === true) {
       filter.$or = [
         { discount: { $gt: 0 } },
@@ -832,7 +990,6 @@ export class ProductService {
         },
       ];
     }
-
     if (query.search && query.search.trim()) {
       filter.$or = [
         { name: { $regex: query.search, $options: 'i' } },
@@ -841,7 +998,6 @@ export class ProductService {
         { subcategory: { $regex: query.search, $options: 'i' } },
       ];
     }
-
     return filter;
   }
 
@@ -875,8 +1031,14 @@ export class ProductService {
         case 'name_desc':
           sortOption.name = -1;
           break;
+        case 'discount_asc':
+          sortOption.discount = 1;
+          break;
         case 'discount_desc':
           sortOption.discount = -1;
+          break;
+        case 'created_asc':
+          sortOption._id = 1; // Older first assuming lower ObjectIds are older
           break;
         case 'created_desc':
           sortOption._id = -1; // Assuming newer documents have higher ObjectIds
@@ -889,6 +1051,577 @@ export class ProductService {
     }
 
     return sortOption;
+  }
+
+  /**
+   * Get product counts grouped by different parameters
+   * Returns counts for category, subcategory, material, insert, size, and engraving
+   * Counts unique products, not variants - if a product has multiple variants with the same parameter, it counts as 1
+   */
+  async getProductCounts(
+    query: ProductCountsQueryDto = {},
+  ): Promise<ProductCountsResponseDto> {
+    const startTime = Date.now();
+    const cacheKey = `product-counts:${JSON.stringify(query)}`;
+
+    // Try to get from cache first
+    const cached = await this.cacheManager.get(cacheKey);
+    if (cached) {
+      return {
+        ...(cached as ProductCountsResponseDto),
+        executionTime: Date.now() - startTime,
+        cacheHit: true,
+      } as ProductCountsResponseDto & {
+        executionTime: number;
+        cacheHit: boolean;
+      };
+    }
+
+    try {
+      // Validate price range if both provided
+      if (
+        query.minPrice !== undefined &&
+        query.minPrice !== null &&
+        query.maxPrice !== undefined &&
+        query.maxPrice !== null &&
+        Number(query.minPrice) > Number(query.maxPrice)
+      ) {
+        throw new BadRequestException(
+          'minPrice must be less than or equal to maxPrice',
+        );
+      }
+      // Build base filter from query parameters
+      const filter: any = {};
+
+      if (query.category) {
+        const normalizedCategory = this.normalizeSearchTerm(query.category);
+        filter.category = {
+          $regex: new RegExp(
+            `^${this.escapeRegexString(normalizedCategory)}$`,
+            'i',
+          ),
+        };
+      }
+
+      if (query.subcategory) {
+        const normalizedSubcategory = this.normalizeSearchTerm(
+          query.subcategory,
+        );
+        filter.subcategory = {
+          $regex: new RegExp(
+            `^${this.escapeRegexString(normalizedSubcategory)}$`,
+            'i',
+          ),
+        };
+      }
+
+      if (query.material) {
+        const normalizedMaterial = this.normalizeSearchTerm(query.material);
+        filter['variants.material'] = {
+          $regex: new RegExp(
+            `^${this.escapeRegexString(normalizedMaterial)}$`,
+            'i',
+          ),
+        };
+      }
+
+      if (query.insert) {
+        const normalizedInsert = this.normalizeSearchTerm(query.insert);
+        filter['variants.insert'] = {
+          $regex: new RegExp(
+            `^${this.escapeRegexString(normalizedInsert)}$`,
+            'i',
+          ),
+        };
+      }
+
+      if (query.size) {
+        const normalizedSize = this.normalizeSearchTerm(query.size);
+        filter['variants.size'] = {
+          $regex: new RegExp(
+            `^${this.escapeRegexString(normalizedSize)}$`,
+            'i',
+          ),
+        };
+      }
+
+      if (query.engraving !== undefined) {
+        filter.engraving = query.engraving;
+      }
+
+      if (query.gender) {
+        const normalizedGender = this.normalizeSearchTerm(query.gender);
+        filter.gender = {
+          $regex: new RegExp(
+            `^${this.escapeRegexString(normalizedGender)}$`,
+            'i',
+          ),
+        };
+      }
+
+      if (query.action && query.action.length > 0) {
+        const actions = query.action
+          .filter(action => action && action.trim())
+          .map(action => action.trim());
+
+        if (actions.length > 0) {
+          // Since action is an array field, we need to check if any of the actions
+          // are contained in the product's action array (case-insensitive)
+          filter.action = {
+            $in: actions.map(
+              action => new RegExp(`^${this.escapeRegexString(action)}$`, 'i'),
+            ),
+          };
+        }
+      }
+
+      if (query.prod_collection) {
+        const normalizedCollection = this.normalizeSearchTerm(
+          query.prod_collection,
+        );
+        filter.prod_collection = {
+          $regex: new RegExp(
+            `^${this.escapeRegexString(normalizedCollection)}$`,
+            'i',
+          ),
+        };
+      }
+
+      // Prepare price condition and a base filter without price for price range facet
+      const priceCond: any = {};
+      const hasPriceBounds =
+        (query.minPrice !== undefined && query.minPrice !== null) ||
+        (query.maxPrice !== undefined && query.maxPrice !== null);
+      if (hasPriceBounds) {
+        if (query.minPrice !== undefined && query.minPrice !== null) {
+          priceCond.$gte = Number(query.minPrice);
+        }
+        if (query.maxPrice !== undefined && query.maxPrice !== null) {
+          priceCond.$lte = Number(query.maxPrice);
+        }
+      }
+
+      const baseFilterWithoutPrice = { ...filter };
+      if (hasPriceBounds) {
+        filter['variants.price'] = priceCond;
+      }
+
+      // Execute aggregation pipeline to get counts and price range
+      const pipeline: any[] = [
+        { $match: baseFilterWithoutPrice },
+        {
+          $facet: {
+            // Count by category
+            category: [
+              ...(hasPriceBounds
+                ? [
+                    {
+                      $match: { 'variants.price': priceCond },
+                    },
+                  ]
+                : []),
+              { $group: { _id: '$category', count: { $sum: 1 } } },
+              { $sort: { _id: 1 } },
+            ],
+            // Count by subcategory
+            subcategory: [
+              ...(hasPriceBounds
+                ? [
+                    {
+                      $match: { 'variants.price': priceCond },
+                    },
+                  ]
+                : []),
+              { $match: { subcategory: { $exists: true, $ne: null } } },
+              { $group: { _id: '$subcategory', count: { $sum: 1 } } },
+              { $sort: { _id: 1 } },
+            ],
+            // Count by material from variants - count unique products
+            material: [
+              {
+                $unwind: {
+                  path: '$variants',
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
+              ...(hasPriceBounds
+                ? [
+                    {
+                      $match: { 'variants.price': priceCond },
+                    },
+                  ]
+                : []),
+              { $match: { 'variants.material': { $exists: true, $ne: null } } },
+              {
+                $group: {
+                  _id: {
+                    productId: '$_id',
+                    material: '$variants.material',
+                  },
+                },
+              },
+              { $group: { _id: '$_id.material', count: { $sum: 1 } } },
+              { $sort: { _id: 1 } },
+            ],
+            // Count by insert from variants - count unique products
+            insert: [
+              {
+                $unwind: {
+                  path: '$variants',
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
+              ...(hasPriceBounds
+                ? [
+                    {
+                      $match: { 'variants.price': priceCond },
+                    },
+                  ]
+                : []),
+              { $match: { 'variants.insert': { $exists: true, $ne: null } } },
+              {
+                $group: {
+                  _id: {
+                    productId: '$_id',
+                    insert: '$variants.insert',
+                  },
+                },
+              },
+              { $group: { _id: '$_id.insert', count: { $sum: 1 } } },
+              { $sort: { _id: 1 } },
+            ],
+            // Count by size from variants - count unique products
+            size: [
+              {
+                $unwind: {
+                  path: '$variants',
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
+              ...(hasPriceBounds
+                ? [
+                    {
+                      $match: { 'variants.price': priceCond },
+                    },
+                  ]
+                : []),
+              { $match: { 'variants.size': { $exists: true, $ne: null } } },
+              {
+                $group: {
+                  _id: {
+                    productId: '$_id',
+                    size: '$variants.size',
+                  },
+                },
+              },
+              { $group: { _id: '$_id.size', count: { $sum: 1 } } },
+              { $sort: { _id: 1 } },
+            ],
+            // Count by engraving
+            engraving: [
+              ...(hasPriceBounds
+                ? [
+                    {
+                      $match: { 'variants.price': priceCond },
+                    },
+                  ]
+                : []),
+              { $group: { _id: '$engraving', count: { $sum: 1 } } },
+              { $sort: { _id: 1 } },
+            ],
+            // Count by gender
+            gender: [
+              ...(hasPriceBounds
+                ? [
+                    {
+                      $match: { 'variants.price': priceCond },
+                    },
+                  ]
+                : []),
+              { $match: { gender: { $exists: true, $ne: null } } },
+              { $group: { _id: '$gender', count: { $sum: 1 } } },
+              { $sort: { _id: 1 } },
+            ],
+            // Count by action
+            action: [
+              ...(hasPriceBounds
+                ? [
+                    {
+                      $match: { 'variants.price': priceCond },
+                    },
+                  ]
+                : []),
+              { $match: { action: { $exists: true, $ne: null } } },
+              { $group: { _id: '$action', count: { $sum: 1 } } },
+              { $sort: { _id: 1 } },
+            ],
+            // Count by prod_collection
+            prod_collection: [
+              ...(hasPriceBounds
+                ? [
+                    {
+                      $match: { 'variants.price': priceCond },
+                    },
+                  ]
+                : []),
+              { $match: { prod_collection: { $exists: true, $ne: null } } },
+              { $group: { _id: '$prod_collection', count: { $sum: 1 } } },
+              { $sort: { _id: 1 } },
+            ],
+            // Total count
+            total: [
+              ...(hasPriceBounds
+                ? [
+                    {
+                      $match: { 'variants.price': priceCond },
+                    },
+                  ]
+                : []),
+              { $count: 'total' },
+            ],
+            // Price range across matching products ignoring requested price bounds
+            price: [
+              {
+                $unwind: {
+                  path: '$variants',
+                  preserveNullAndEmptyArrays: false,
+                },
+              },
+              { $match: { 'variants.price': { $type: 'number' } } },
+              {
+                $group: {
+                  _id: null,
+                  min: { $min: '$variants.price' },
+                  max: { $max: '$variants.price' },
+                },
+              },
+            ],
+          },
+        },
+      ];
+
+      const [result] = await this.productModel.aggregate(pipeline);
+
+      // Transform the results into the expected format with normalization
+      const response: ProductCountsResponseDto = {
+        category: this.transformCounts(result.category),
+        subcategory: this.normalizeAndTransformCounts(result.subcategory),
+        material: this.normalizeAndTransformCounts(result.material),
+        insert: this.normalizeAndTransformCounts(result.insert),
+        size: this.transformCounts(result.size),
+        action: this.transformCounts(result.action),
+        prod_collection: this.transformCounts(result.prod_collection),
+        engraving: {
+          true: result.engraving.find(item => item._id === true)?.count || 0,
+          false: result.engraving.find(item => item._id === false)?.count || 0,
+        },
+        gender: this.transformCounts(result.gender),
+        total: result.total[0]?.total || 0,
+        price: {
+          min: result.price[0]?.min ?? 0,
+          max: result.price[0]?.max ?? 0,
+        },
+      };
+
+      // Cache the result for 30 minutes
+      await this.cacheManager.set(cacheKey, response, 1800);
+
+      return response;
+    } catch (error) {
+      console.error('Error in getProductCounts:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Transform aggregation results into a simple key-value object
+   */
+  private transformCounts(
+    counts: Array<{ _id: string; count: number }>,
+  ): Record<string, number> {
+    return counts.reduce(
+      (acc, item) => {
+        acc[item._id] = item.count;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+  }
+
+  /**
+   * Normalize and transform counts, combining similar values (case-insensitive, language variants)
+   */
+  private normalizeAndTransformCounts(
+    counts: Array<{ _id: string; count: number }>,
+  ): Record<string, number> {
+    const normalized: Record<string, number> = {};
+
+    // Define normalization rules for common variations
+    const normalizationRules: Record<string, string> = {
+      // Materials
+      срібло: 'Silver',
+      золото: 'Gold',
+      'біле золото': 'White Gold',
+      платина: 'Platinum',
+      platina: 'Platinum',
+      lether: 'Leather',
+
+      // Inserts
+      diamond: 'Diamond',
+      pearl: 'Pearl',
+      pearls: 'Pearl',
+      perl: 'Pearl',
+      sapphire: 'Sapphire',
+      emerald: 'Emerald',
+      ruby: 'Ruby',
+      amethyst: 'Amethyst',
+      opal: 'Opal',
+      onyx: 'Onyx',
+      topaz: 'Topaz',
+      moonstone: 'Moonstone',
+      crystal: 'Crystal',
+      zirconia: 'Zirconia',
+      'cubic zirconia': 'Cubic Zirconia',
+      enamel: 'Enamel',
+      silver: 'Silver',
+      gold: 'Gold',
+      'white gold': 'White Gold',
+
+      // Subcategories
+      'drop earrings': 'Drop Earrings',
+      'hoop earrings': 'Hoop Earrings',
+      'long earrings': 'Long Earrings',
+      'wide rings': 'Wide Rings',
+      'wedding ring': 'Wedding Ring',
+      'ear cuffs': 'Ear Cuffs',
+      studs: 'Studs',
+      stud: 'Studs',
+      threader: 'Threader',
+    };
+
+    counts.forEach(item => {
+      const originalValue = item._id;
+      const normalizedValue = this.normalizeValue(
+        originalValue,
+        normalizationRules,
+      );
+
+      if (normalized[normalizedValue]) {
+        normalized[normalizedValue] += item.count;
+      } else {
+        normalized[normalizedValue] = item.count;
+      }
+    });
+
+    return normalized;
+  }
+
+  /**
+   * Normalize a single value using the normalization rules
+   */
+  private normalizeValue(value: string, rules: Record<string, string>): string {
+    if (!value) return value;
+
+    // First check exact match in rules
+    const lowerValue = value.toLowerCase().trim();
+    if (rules[lowerValue]) {
+      return rules[lowerValue];
+    }
+
+    // Check if any rule key is contained in the value (for compound values)
+    for (const [ruleKey, ruleValue] of Object.entries(rules)) {
+      if (lowerValue.includes(ruleKey.toLowerCase())) {
+        return ruleValue;
+      }
+    }
+
+    // If no rule matches, return the original value with proper capitalization
+    return this.capitalizeFirstLetter(value.trim());
+  }
+
+  /**
+   * Capitalize the first letter of a string
+   */
+  private capitalizeFirstLetter(str: string): string {
+    if (!str) return str;
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  }
+
+  /**
+   * Escape special regex characters in a string
+   */
+  private escapeRegexString(str: string): string {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  /**
+   * Normalize a search term for consistent filtering across all endpoints
+   * Converts to lowercase and applies normalization rules
+   */
+  private normalizeSearchTerm(term: string): string {
+    if (!term) return term;
+
+    const trimmedTerm = term.trim().toLowerCase();
+
+    // Define normalization rules for search terms (convert to lowercase)
+    const searchNormalizationRules: Record<string, string> = {
+      // Materials
+      срібло: 'silver',
+      золото: 'gold',
+      'біле золото': 'white gold',
+      платина: 'platinum',
+      platina: 'platinum',
+      lether: 'leather',
+
+      // Inserts
+      diamond: 'diamond',
+      pearl: 'pearl',
+      pearls: 'pearl',
+      perl: 'pearl',
+      sapphire: 'sapphire',
+      emerald: 'emerald',
+      ruby: 'ruby',
+      amethyst: 'amethyst',
+      opal: 'opal',
+      onyx: 'onyx',
+      topaz: 'topaz',
+      moonstone: 'moonstone',
+      crystal: 'crystal',
+      zirconia: 'zirconia',
+      'cubic zirconia': 'cubic zirconia',
+      enamel: 'enamel',
+      silver: 'silver',
+      gold: 'gold',
+      'white gold': 'white gold',
+
+      // Subcategories
+      'drop earrings': 'drop earrings',
+      'hoop earrings': 'hoop earrings',
+      'long earrings': 'long earrings',
+      'wide rings': 'wide rings',
+      'wedding ring': 'wedding ring',
+      'ear cuffs': 'ear cuffs',
+      studs: 'studs',
+      stud: 'studs',
+      threader: 'threader',
+    };
+
+    // Check if we have a normalization rule for this term
+    if (searchNormalizationRules[trimmedTerm]) {
+      return searchNormalizationRules[trimmedTerm];
+    }
+
+    // Check for partial matches (for compound values)
+    for (const [ruleKey, ruleValue] of Object.entries(
+      searchNormalizationRules,
+    )) {
+      if (trimmedTerm.includes(ruleKey)) {
+        return ruleValue;
+      }
+    }
+
+    // Return the original term in lowercase
+    return trimmedTerm;
   }
 
   /**
@@ -905,7 +1638,11 @@ export class ProductService {
     try {
       // Get all cache keys (this is a simplified approach)
       // In a production environment, you might want to use a more sophisticated cache key management system
-      const cachePatterns = ['products:compare:*', 'products:optimized:*'];
+      const cachePatterns = [
+        'products:compare:*',
+        'products:optimized:*',
+        'product-counts:*',
+      ];
 
       // Clear cache entries matching patterns
       for (const pattern of cachePatterns) {

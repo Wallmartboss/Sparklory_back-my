@@ -8,10 +8,12 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
   ApiOperation,
@@ -19,7 +21,10 @@ import {
   ApiProperty,
   ApiResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateMeDto } from './dto/update-me.dto';
 import { UserService } from './user.service';
 
 class SetUserRoleDto {
@@ -55,12 +60,69 @@ export class UserController {
         facebookId: '1234567890',
         googleId: 'abcdefg123456',
         resetPasswordCode: '123456',
+        loyaltyLevel: {
+          id: '67c73504f555f43ff7a6ab8f',
+          name: 'Default',
+          bonusPercent: 0,
+        },
+        bonusBalance: 0,
       },
     },
   })
   @Get('me')
   async me(@UserDecorator('sub') sub: string) {
     return this.userService.me(sub);
+  }
+
+  /**
+   * Update current user profile (full name, email, password)
+   */
+  @Patch('me')
+  @ApiOperation({ summary: 'Update current user profile' })
+  @ApiBody({ type: UpdateMeDto })
+  @ApiResponse({ status: 200, description: 'Updated user profile' })
+  async updateMe(@UserDecorator('sub') sub: string, @Body() body: UpdateMeDto) {
+    return this.userService.updateMe(sub, body);
+  }
+
+  /**
+   * Change current user's password with previous password verification
+   */
+  @Patch('me/password')
+  @ApiOperation({ summary: 'Change password (requires previous password)' })
+  @ApiBody({ type: ChangePasswordDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Password changed successfully',
+    schema: {
+      example: { success: true },
+    },
+  })
+  @ApiBadRequestResponse({
+    description:
+      'Previous password incorrect, new password too short, or validation error',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Previous password is incorrect',
+        error: 'Bad Request',
+      },
+    },
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Missing or invalid JWT',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'Unauthorized',
+      },
+    },
+  })
+  async changeMyPassword(
+    @UserDecorator('sub') sub: string,
+    @Body() body: ChangePasswordDto,
+  ) {
+    return this.userService.changePassword(sub, body);
   }
 
   /**

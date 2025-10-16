@@ -11,7 +11,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { randomBytes } from 'crypto';
+import * as crypto from 'crypto';
 import { Types } from 'mongoose';
 
 @Injectable()
@@ -81,7 +81,7 @@ export class AuthService {
   }
 
   async createNewDevice(user: User) {
-    const verifyDeviceCode = randomBytes(2).toString('hex');
+    const verifyDeviceCode = crypto.randomBytes(2).toString('hex');
     user.verifyDeviceCode = verifyDeviceCode;
 
     return await this.userService.addNewDevice(user);

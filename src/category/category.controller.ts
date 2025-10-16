@@ -66,13 +66,10 @@ export class CategoryController {
   @ApiOperation({ summary: 'Get all categories with their subcategories' })
   @ApiResponse({
     status: 200,
-    description: 'Paginated list of categories with their subcategories',
+    description: 'List of categories with their subcategories',
     schema: {
       example: {
-        total: 10,
-        page: 1,
-        limit: 5,
-        pages: 2,
+        total: 5,
         categories: [
           {
             name: 'earrings',
@@ -91,33 +88,15 @@ export class CategoryController {
     },
   })
   @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Number of categories per page',
-  })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    description: 'Page number',
-  })
-  @ApiQuery({
     name: 'parentCategory',
     required: false,
     type: String,
     description: 'Filter by parent category name (null for root categories)',
   })
   async findAll(
-    @Query('limit') limit?: number,
-    @Query('page') page?: number,
     @Query('parentCategory') parentCategory?: string,
   ): Promise<any> {
-    return this.categoryService.findAllWithSubcategories(
-      limit,
-      page,
-      parentCategory,
-    );
+    return this.categoryService.findAllWithSubcategories(parentCategory);
   }
 
   @Get(':name')

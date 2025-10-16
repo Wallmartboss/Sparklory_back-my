@@ -36,7 +36,7 @@ export class Category {
     nullable: true,
   })
   @Prop({ type: String, default: null })
-  parentCategory: string | null;
+  parentCategory?: string | null;
 }
 
 export const CategorySchema = SchemaFactory.createForClass(Category);

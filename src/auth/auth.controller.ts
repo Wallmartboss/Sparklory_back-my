@@ -24,7 +24,6 @@ import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 
 import { ApiCustomResponse } from '@/common/decorators/swagger-res.decorator';
-import { ECondition } from '@/common/enum/email.enum';
 import { EmailService } from '@/email/email.service';
 import { CreateUserDto } from '@/user/dto/create-user.dto';
 import { VerifyEmailDto } from '@/user/dto/verify-email.dto';
@@ -144,10 +143,8 @@ export class AuthController {
   async facebookLoginCallback(@Req() req: Request, @Res() res: Response) {
     const result = await this.authService.login(req.user as any);
     // Redirect to frontend with tokens in query params
-    const frontendUrl = this.configService.get<string>(
-      'FRONTEND_URL',
-      'LOCALHOST_URL',
-    );
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+    // ?? this.configService.get<string>('LOCALHOST_URL') ?? 'http://localhost:3000';
     const params = new URLSearchParams({
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
@@ -170,10 +167,8 @@ export class AuthController {
   async googleLoginCallback(@Req() req: Request, @Res() res: Response) {
     const result = await this.authService.login(req.user as any);
     // Redirect to frontend with tokens in query params
-    const frontendUrl = this.configService.get<string>(
-      'FRONTEND_URL',
-      'LOCALHOST_URL',
-    );
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+    // ?? this.configService.get<string>('LOCALHOST_URL') ?? 'http://localhost:3000';
     const params = new URLSearchParams({
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
@@ -198,7 +193,7 @@ export class AuthController {
     const code = randomBytes(3).toString('hex');
     user.resetPasswordCode = code;
     await this.userService.saveUser(user);
-    await this.emailService.sendEmail(email, code, ECondition.ResetPassword);
+    await this.emailService.sendResetPassword(email, code);
     return { message: 'Код для скидання пароля надіслано на email' };
   }
 

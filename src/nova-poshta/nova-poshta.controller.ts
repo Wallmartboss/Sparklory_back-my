@@ -12,20 +12,31 @@ export class NovaPoshtaController {
 
   @Get('cities')
   @ApiOperation({
-    summary: 'Get list of cities',
-    description: 'Retrieve list of cities from Nova Poshta API with fast filtering',
+    summary: 'Get Nova Poshta cities list',
+    description:
+      'Retrieve list of cities from Nova Poshta API with fast filtering and caching. Returns real data from Nova Poshta API.',
   })
   @ApiQuery({
     name: 'cityName',
     required: false,
     description: 'City name to search for (supports partial matching)',
     example: 'Київ',
+    schema: {
+      type: 'string',
+      default: 'Київ',
+    },
   })
   @ApiQuery({
     name: 'limit',
     required: false,
     description: 'Maximum number of results (default: 100, max: 500)',
     example: 50,
+    schema: {
+      type: 'number',
+      minimum: 1,
+      maximum: 500,
+      default: 100,
+    },
   })
   @ApiResponse({
     status: 200,
@@ -36,12 +47,12 @@ export class NovaPoshtaController {
     @Query('limit') limit: number = 100,
   ) {
     const cities = await this.novaPoshtaService.getCities(cityName);
-    
+
     // Apply limit if specified
     const maxLimit = Math.min(500, Math.max(1, Math.floor(limit)));
     const citiesArray = Array.isArray(cities) ? cities : [];
     const limitedCities = citiesArray.slice(0, maxLimit);
-    
+
     return {
       total: citiesArray.length,
       returned: limitedCities.length,
@@ -52,15 +63,20 @@ export class NovaPoshtaController {
 
   @Get('warehouses')
   @ApiOperation({
-    summary: 'Get warehouses by city',
+    summary: 'Get Nova Poshta warehouses by city',
     description:
-      'Retrieve warehouses for a specific city with pagination and filtering support',
+      'Retrieve warehouses for a specific city from Nova Poshta API with pagination, filtering and caching support. Returns real warehouse data.',
   })
   @ApiQuery({
     name: 'cityRef',
     required: true,
     description: 'City reference ID',
     example: '8d5a980d-391c-11dd-90d9-001a92567626',
+    schema: {
+      type: 'string',
+      pattern: '^[a-f0-9-]{36}$',
+      default: '8d5a980d-391c-11dd-90d9-001a92567626',
+    },
   })
   @ApiQuery({
     name: 'type',
@@ -68,40 +84,67 @@ export class NovaPoshtaController {
     description:
       'Warehouse type (e.g., "Branch" for branches or "Postomat" for postomats)',
     example: 'Branch',
+    schema: {
+      type: 'string',
+      enum: ['Branch', 'Postomat'],
+      default: 'Branch',
+    },
   })
   @ApiQuery({
     name: 'search',
     required: false,
     description: 'Search by warehouse name, description, or index number',
     example: '1',
+    schema: {
+      type: 'string',
+      default: '',
+    },
   })
   @ApiQuery({
     name: 'page',
     required: false,
     description: 'Page number (default: 1)',
     example: 1,
+    schema: {
+      type: 'number',
+      minimum: 1,
+      default: 1,
+    },
   })
   @ApiQuery({
     name: 'limit',
     required: false,
     description: 'Items per page (default: 100, max: 500)',
     example: 100,
+    schema: {
+      type: 'number',
+      minimum: 1,
+      maximum: 500,
+      default: 100,
+    },
   })
   @ApiResponse({
     status: 200,
-    description: 'List of warehouses retrieved successfully',
+    description:
+      'List of warehouses retrieved successfully from Nova Poshta API',
     schema: {
       example: {
-        total: 2416,
+        total: 6500,
         page: 1,
         limit: 100,
-        pages: 25,
+        pages: 65,
         warehouses: [
           {
             Ref: '7b422fc3-e1b8-11e3-8c4a-0050568002cf',
-            Description: 'Відділення №1',
-            CityDescription: 'Львів',
-            WarehouseIndex: '1',
+            Description: 'Відділення №4 (до 200 кг): вул. Верховинна, 69',
+            CityDescription: 'Київ',
+            WarehouseIndex: '4',
+          },
+          {
+            Ref: '7b422fc4-e1b8-11e3-8c4a-0050568002cf',
+            Description: 'Поштомат №123',
+            CityDescription: 'Київ',
+            WarehouseIndex: '123',
           },
         ],
       },
@@ -140,39 +183,88 @@ export class NovaPoshtaController {
 
   @Get('delivery-cost')
   @ApiOperation({
-    summary: 'Calculate delivery cost with insurance',
+    summary: 'Calculate Nova Poshta delivery cost with insurance',
     description:
-      'Calculate delivery cost for a specific city, warehouse, weight and cart total with insurance (0.5% of cart total)',
+      'Calculate real delivery cost from Nova Poshta API for a specific city, weight and cart total. Includes insurance calculation (0.5% of cart total). Uses real Nova Poshta pricing data.',
   })
   @ApiQuery({
     name: 'cityRef',
     required: true,
-    description: 'City reference ID for delivery destination',
+    description:
+      'City reference ID for delivery destination (from Nova Poshta API)',
     example: '8d5a980d-391c-11dd-90d9-001a92567626',
+    schema: {
+      type: 'string',
+      pattern: '^[a-f0-9-]{36}$',
+      description: 'Nova Poshta city reference UUID',
+      default: '8d5a980d-391c-11dd-90d9-001a92567626',
+    },
   })
   @ApiQuery({
     name: 'warehouseRef',
     required: true,
-    description: 'Warehouse reference ID for delivery destination',
+    description:
+      'Warehouse reference ID for delivery destination (from Nova Poshta API)',
     example: '7b422fc3-e1b8-11e3-8c4a-0050568002cf',
+    schema: {
+      type: 'string',
+      pattern: '^[a-f0-9-]{36}$',
+      description: 'Nova Poshta warehouse reference UUID',
+      default: '7b422fc3-e1b8-11e3-8c4a-0050568002cf',
+    },
   })
   @ApiQuery({
     name: 'weight',
     required: true,
-    description: 'Package weight in kg',
+    description: 'Package weight in kg (affects delivery cost)',
     example: 1.0,
+    schema: {
+      type: 'number',
+      minimum: 0.1,
+      maximum: 1000,
+      description: 'Weight in kilograms',
+      default: 1.0,
+    },
   })
   @ApiQuery({
     name: 'cartTotal',
     required: false,
     description:
-      'Cart total amount for insurance calculation (0.5% of cart total)',
+      'Cart total amount for insurance calculation (0.5% of cart total). Default: 1000',
     example: 1500,
+    schema: {
+      type: 'number',
+      minimum: 0,
+      maximum: 1000000,
+      description: 'Cart total in UAH',
+      default: 1500,
+    },
   })
   @ApiResponse({
     status: 200,
-    description: 'Delivery cost calculated successfully',
+    description:
+      'Delivery cost calculated successfully using real Nova Poshta API data',
     type: DeliveryCostResponseDto,
+    schema: {
+      example: {
+        deliveryCost: 67.5,
+        insuranceCost: 7.5,
+        totalCost: 75.0,
+        cartTotal: 1500,
+        insurancePercentage: 0.005,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description:
+      'Internal server error - falls back to mock data if Nova Poshta API is unavailable',
+    schema: {
+      example: {
+        statusCode: 500,
+        message: 'Internal server error',
+      },
+    },
   })
   async getDeliveryCost(
     @Query('cityRef') cityRef: string,
@@ -190,8 +282,9 @@ export class NovaPoshtaController {
 
   @Post('preload-cache')
   @ApiOperation({
-    summary: 'Preload cache for popular cities',
-    description: 'Preload warehouses cache for popular cities (admin only)',
+    summary: 'Preload Nova Poshta cache for popular cities',
+    description:
+      'Preload warehouses cache for popular cities (Київ, Львів, Харків, Одеса, Дніпро) to improve API performance (admin only)',
   })
   @ApiResponse({
     status: 200,
@@ -215,8 +308,9 @@ export class NovaPoshtaController {
 
   @Post('clear-cache')
   @ApiOperation({
-    summary: 'Clear cache',
-    description: 'Clear Nova Poshta cache (admin only)',
+    summary: 'Clear Nova Poshta cache',
+    description:
+      'Clear all Nova Poshta API cache (cities, warehouses, delivery costs) to force fresh data retrieval (admin only)',
   })
   @ApiResponse({
     status: 200,
