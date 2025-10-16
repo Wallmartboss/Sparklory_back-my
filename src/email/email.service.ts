@@ -1,16 +1,20 @@
 import { ECondition } from '@/common';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as net from 'net';
+import * as https from 'https';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class EmailService {
   constructor(private configService: ConfigService) {
-    // Test SMTP connectivity on startup
-    this.testSMTPConnectivity();
+    const apiKey = this.configService.get<string>('SENDGRID_API_KEY');
+    this.useSendGrid = Boolean(apiKey);
+    this.logger.log(
+      `EmailService: using ${this.useSendGrid ? 'SendGrid HTTP' : 'Gmail SMTP'} transport`,
+    );
   }
   private logger = new Logger('EmailService');
+  private useSendGrid: boolean = false;
 
   private transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -20,33 +24,83 @@ export class EmailService {
     },
   });
 
-  private testSMTPConnectivity(): void {
-    const hosts = [
-      { host: 'smtp.gmail.com', port: 587 },
-      { host: 'smtp.gmail.com', port: 465 },
-      { host: 'smtp.sendgrid.net', port: 587 },
-      { host: 'smtp.sendgrid.net', port: 465 },
-    ];
+  private async sendMail(options: {
+    to: string;
+    subject: string;
+    html: string;
+    from?: string;
+  }): Promise<void> {
+    const fromEmail =
+      options.from ||
+      this.configService.get<string>('SENDGRID_FROM_EMAIL') ||
+      (process.env.GOOGLE_EMAIL as string);
 
-    this.logger.log('Testing SMTP connectivity on Render...');
+    if (this.useSendGrid) {
+      // Extract email from "Name <email>" format for SendGrid
+      const cleanFromEmail = fromEmail.includes('<')
+        ? fromEmail.match(/<(.+)>/)?.[1] || fromEmail
+        : fromEmail;
 
-    hosts.forEach(({ host, port }) => {
-      const socket = new net.Socket();
-      const timeout = setTimeout(() => {
-        socket.destroy();
-        this.logger.error(`❌ ${host}:${port} - TIMEOUT`);
-      }, 5000);
+      this.logger.log(
+        `SendGrid: sending from ${cleanFromEmail} to ${options.to}`,
+      );
 
-      socket.connect(port, host, () => {
-        clearTimeout(timeout);
-        this.logger.log(`✅ ${host}:${port} - CONNECTED`);
-        socket.destroy();
+      await new Promise<void>((resolve, reject) => {
+        const payload = JSON.stringify({
+          personalizations: [
+            {
+              to: [{ email: options.to }],
+              subject: options.subject,
+            },
+          ],
+          from: { email: cleanFromEmail },
+          content: [{ type: 'text/html', value: options.html }],
+        });
+
+        const req = https.request(
+          {
+            hostname: 'api.sendgrid.com',
+            path: '/v3/mail/send',
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${this.configService.get<string>('SENDGRID_API_KEY')}`,
+              'Content-Type': 'application/json',
+              'Content-Length': Buffer.byteLength(payload),
+            },
+          },
+          res => {
+            if (
+              res.statusCode &&
+              res.statusCode >= 200 &&
+              res.statusCode < 300
+            ) {
+              resolve();
+            } else {
+              const chunks: Buffer[] = [];
+              res.on('data', d => chunks.push(d as Buffer));
+              res.on('end', () => {
+                const body = Buffer.concat(chunks).toString('utf8');
+                reject(
+                  new Error(
+                    `SendGrid HTTP error ${res.statusCode}: ${body || 'no body'}`,
+                  ),
+                );
+              });
+            }
+          },
+        );
+        req.on('error', reject);
+        req.write(payload);
+        req.end();
       });
+      return;
+    }
 
-      socket.on('error', err => {
-        clearTimeout(timeout);
-        this.logger.error(`❌ ${host}:${port} - ERROR: ${err.message}`);
-      });
+    await this.transporter.sendMail({
+      from: fromEmail,
+      to: options.to,
+      subject: options.subject,
+      html: options.html,
     });
   }
 
@@ -100,20 +154,12 @@ export class EmailService {
         throw new Error('Unknown email condition');
     }
 
-    const mailOptions = {
-      from: process.env.GOOGLE_EMAIL,
-      to: email,
-      subject,
-      html,
-    };
-
-    this.transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        this.logger.error(error);
-      } else {
-        this.logger.log(`${subject} email sent to ${email}: ` + info.response);
-      }
-    });
+    try {
+      await this.sendMail({ to: email, subject, html });
+      this.logger.log(`${subject} email sent to ${email}`);
+    } catch (error) {
+      this.logger.error(error);
+    }
   }
 
   async sendResetPassword(email: string, token: string): Promise<void> {
@@ -134,7 +180,7 @@ export class EmailService {
           <p>If you did not request a password reset, please ignore this email.</p>
           <p>Thank you!</p>
         `;
-    await this.transporter.sendMail({
+    await this.sendMail({
       from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
       to: email,
       subject,
@@ -155,7 +201,7 @@ export class EmailService {
       <br/>
       <p>Best regards,<br/>Your Sparklory</p>
     `;
-    await this.transporter.sendMail({
+    await this.sendMail({
       from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
       to: email,
       subject,
@@ -174,7 +220,7 @@ export class EmailService {
       <br/>
       <p>Best regards,<br/>Your Sparklory</p>
     `;
-    await this.transporter.sendMail({
+    await this.sendMail({
       from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
       to: email,
       subject,
@@ -197,7 +243,7 @@ export class EmailService {
       <br/>
       <p>Best regards,<br/>Your Sparklory</p>
     `;
-    await this.transporter.sendMail({
+    await this.sendMail({
       from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
       to: email,
       subject,
