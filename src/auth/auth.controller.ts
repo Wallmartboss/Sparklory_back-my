@@ -292,4 +292,14 @@ export class AuthController {
     const user = req.user as any;
     return await this.authService.logout(user.sub, user.sessionId);
   }
+   @Get('env-check')
+  @ApiOperation({ summary: 'Check environment variables (temporary)' })
+  async checkEnv() {
+    return {
+      NODE_ENV: process.env.NODE_ENV,
+      GOOGLE_EMAIL: !!process.env.GOOGLE_EMAIL,
+      SENDGRID_API_KEY: !!process.env.SENDGRID_API_KEY,
+      SENDGRID_FROM_EMAIL: !!process.env.SENDGRID_FROM_EMAIL,
+    };
+  }
 }
