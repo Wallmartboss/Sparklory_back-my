@@ -292,8 +292,7 @@ export class AuthController {
     const user = req.user as any;
     return await this.authService.logout(user.sub, user.sessionId);
   }
-
-  @Get('env-check')
+   @Get('env-check')
   @ApiOperation({ summary: 'Check environment variables (temporary)' })
   async checkEnv() {
     return {
