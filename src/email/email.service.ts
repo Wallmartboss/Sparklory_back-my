@@ -1,11 +1,15 @@
 import { ECondition } from '@/common';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as net from 'net';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class EmailService {
-  constructor(private configService: ConfigService) {}
+  constructor(private configService: ConfigService) {
+    // Test SMTP connectivity on startup
+    this.testSMTPConnectivity();
+  }
   private logger = new Logger('EmailService');
 
   private transporter = nodemailer.createTransport({
@@ -15,6 +19,36 @@ export class EmailService {
       pass: this.configService.get<string>('GOOGLE_PASSWORD'),
     },
   });
+
+  private testSMTPConnectivity(): void {
+    const hosts = [
+      { host: 'smtp.gmail.com', port: 587 },
+      { host: 'smtp.gmail.com', port: 465 },
+      { host: 'smtp.sendgrid.net', port: 587 },
+      { host: 'smtp.sendgrid.net', port: 465 },
+    ];
+
+    this.logger.log('Testing SMTP connectivity on Render...');
+
+    hosts.forEach(({ host, port }) => {
+      const socket = new net.Socket();
+      const timeout = setTimeout(() => {
+        socket.destroy();
+        this.logger.error(`❌ ${host}:${port} - TIMEOUT`);
+      }, 5000);
+
+      socket.connect(port, host, () => {
+        clearTimeout(timeout);
+        this.logger.log(`✅ ${host}:${port} - CONNECTED`);
+        socket.destroy();
+      });
+
+      socket.on('error', err => {
+        clearTimeout(timeout);
+        this.logger.error(`❌ ${host}:${port} - ERROR: ${err.message}`);
+      });
+    });
+  }
 
   async sendEmail(email: string, token: string, condition: ECondition) {
     let subject: string;
