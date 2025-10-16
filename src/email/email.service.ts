@@ -13,7 +13,7 @@ export class EmailService {
     const password = this.configService.get<string>('GOOGLE_PASSWORD');
     const isProduction =
       this.configService.get<string>('NODE_ENV') === 'production';
-    
+
     this.logger.log(`NODE_ENV: ${this.configService.get<string>('NODE_ENV')}`);
     this.logger.log(`Is Production: ${isProduction}`);
 
@@ -27,7 +27,7 @@ export class EmailService {
     // Different configuration for production (Render.com) vs development
     const sendgridApiKey = this.configService.get<string>('SENDGRID_API_KEY');
     this.logger.log(`SendGrid API Key present: ${!!sendgridApiKey}`);
-    
+
     const transporterConfig =
       isProduction && sendgridApiKey
         ? {
@@ -60,7 +60,9 @@ export class EmailService {
     this.logger.log(
       `Email service initialized for ${isProduction ? 'production' : 'development'} environment`,
     );
-    this.logger.log(`Using ${sendgridApiKey ? 'SendGrid' : 'Gmail'} for email sending`);
+    this.logger.log(
+      `Using ${sendgridApiKey ? 'SendGrid' : 'Gmail'} for email sending`,
+    );
 
     // Verify connection configuration on startup
     this.verifyConnection();
