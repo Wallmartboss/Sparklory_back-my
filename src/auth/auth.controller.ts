@@ -24,7 +24,6 @@ import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 
 import { ApiCustomResponse } from '@/common/decorators/swagger-res.decorator';
-import { ECondition } from '@/common/enum/email.enum';
 import { EmailService } from '@/email/email.service';
 import { CreateUserDto } from '@/user/dto/create-user.dto';
 import { VerifyEmailDto } from '@/user/dto/verify-email.dto';
@@ -194,7 +193,7 @@ export class AuthController {
     const code = randomBytes(3).toString('hex');
     user.resetPasswordCode = code;
     await this.userService.saveUser(user);
-    await this.emailService.sendEmail(email, code, ECondition.ResetPassword);
+    await this.emailService.sendResetPassword(email, code);
     return { message: 'Код для скидання пароля надіслано на email' };
   }
 

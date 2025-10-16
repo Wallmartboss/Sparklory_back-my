@@ -67,18 +67,46 @@ export class EmailService {
     }
 
     const mailOptions = {
-      from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
+      from: process.env.GOOGLE_EMAIL,
       to: email,
       subject,
       html,
     };
 
-    try {
-      const info = await this.transporter.sendMail(mailOptions);
-      this.logger.log(`${subject} email sent to ${email}: ` + info.response);
-    } catch (error) {
-      this.logger.error(error);
-    }
+    this.transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        this.logger.error(error);
+      } else {
+        this.logger.log(`${subject} email sent to ${email}: ` + info.response);
+      }
+    });
+  }
+
+  async sendResetPassword(email: string, token: string): Promise<void> {
+    const frontendUrl = this.configService.get<string>(
+      'FRONTEND_URL',
+      'http://localhost:3000',
+    );
+    const subject = 'Password Reset Request';
+    const resetLink = `${frontendUrl}/reset-password?email=${encodeURIComponent(
+      email,
+    )}&code=${token}`;
+    const html = `
+          <p>Hello,</p>
+          <p>We received a request to reset your password. Please use the following confirmation code to proceed:</p>
+          <p style="text-align: center; font-weight: bold; font-size: 30px;">${token}</p>
+          <p>Or click the link below to reset your password:</p>
+          <p style="text-align: center; font-weight: bold; font-size: 18px;"><a href="${resetLink}">${resetLink}</a></p>
+          <p>If you did not request a password reset, please ignore this email.</p>
+          <p>Thank you!</p>
+        `;
+    await this.transporter.sendMail({
+      from: `Your Sparklory <${process.env.GOOGLE_EMAIL}>`,
+      to: email,
+      subject,
+      html,
+    });
+    this.logger.log(`${subject} email sent to ${email}`);
   }
 
   async sendCartReminder(email: string, cart: any): Promise<void> {
