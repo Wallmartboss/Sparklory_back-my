@@ -1,24 +1,24 @@
 import {
-  BadRequestException,
-  Body,
-  Controller,
-  Get,
-  HttpStatus,
-  Post,
-  Query,
-  Req,
-  Res,
-  UnauthorizedException,
-  UseGuards,
+    BadRequestException,
+    Body,
+    Controller,
+    Get,
+    HttpStatus,
+    Post,
+    Query,
+    Req,
+    Res,
+    UnauthorizedException,
+    UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
 import {
-  ApiBearerAuth,
-  ApiBody,
-  ApiOperation,
-  ApiProperty,
-  ApiResponse,
+    ApiBearerAuth,
+    ApiBody,
+    ApiOperation,
+    ApiProperty,
+    ApiResponse,
 } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';

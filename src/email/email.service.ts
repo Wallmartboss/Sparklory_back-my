@@ -1,8 +1,8 @@
 import { ECondition } from '@/common';
 import {
-  AccountApi,
-  SendSmtpEmail,
-  TransactionalEmailsApi,
+    AccountApi,
+    SendSmtpEmail,
+    TransactionalEmailsApi,
 } from '@getbrevo/brevo';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
