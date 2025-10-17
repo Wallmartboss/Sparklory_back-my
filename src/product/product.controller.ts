@@ -521,7 +521,7 @@ export class ProductController {
   async uploadReviewImage(
     @Param('productId') productId: string,
     @Param('reviewId') reviewId: string,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
   ) {
     if (!file) {
       throw new BadRequestException('File not uploaded');

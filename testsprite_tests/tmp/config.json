@@ -2,7 +2,7 @@
   "status": "commited",
   "type": "backend",
   "scope": "codebase",
-  "localEndpoint": "http://localhost:5000",
+  "localEndpoint": "http://localhost:3000",
   "backendAuthType": "public",
   "executionArgs": {
     "projectName": "Sparklory_back-my",
@@ -12,5 +12,6 @@
     "envs": {
       "API_KEY": "sk-user-Y5u0M4J_O7P5g16Le947H2OFXkWhOcZ3HVNnpjzjc_4SQLsLA2ws4eYHXocstPuAhZteUkMk9sxIFxHxQHGfJNHlvO1d-tUicmvO-myMJohjD6nLSe6RgGWCNUkjfDA8p-4"
     }
-  }
+  },
+  "proxy": "http://ed0683c0-c660-42ba-8d9c-f6d6ccfdb861:xuYh9fbQn7APw0CQ609AXiyXyUy4S1xo@tun.testsprite.com:8080"
 }
