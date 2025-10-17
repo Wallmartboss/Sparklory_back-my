@@ -169,7 +169,6 @@ export class EmailService {
       this.logger.error('Fallback connection also failed:', fallbackError);
     }
   }
-
   private async sendEmailWithFallback(
     email: string,
     subject: string,
