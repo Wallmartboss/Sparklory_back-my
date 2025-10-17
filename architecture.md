@@ -104,7 +104,7 @@ sequenceDiagram
 
 ## 10. External Integrations
 
-- **Email Service:** Used for sending notifications, verification emails, and order confirmations. Encapsulated in the `email` module, can be replaced or extended for different providers (SMTP, SendGrid, etc.).
+- **Email Service:** Used for sending notifications, verification emails, and order confirmations. Encapsulated in the `email` module, can be replaced or extended for different providers (SMTP, Brevo, Sendgrid, etc.).
 - **Payment Providers:** The `payment` module abstracts payment processing. Integration with external payment gateways (e.g., LiqPay) is handled via service classes and callbacks.
 - **Device Management:** The `device` module can be used for tracking user devices, useful for security and analytics.
 - **Session Management:** The `session` module manages user sessions, can be extended for distributed session storage. 

@@ -1,4 +1,9 @@
 import { ECondition } from '@/common';
+import {
+  AccountApi,
+  SendSmtpEmail,
+  TransactionalEmailsApi,
+} from '@getbrevo/brevo';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
@@ -7,6 +12,7 @@ import * as nodemailer from 'nodemailer';
 export class EmailService {
   private logger = new Logger('EmailService');
   private transporter: nodemailer.Transporter;
+  private brevoApiInstance: TransactionalEmailsApi;
 
   constructor(private configService: ConfigService) {
     const email = this.configService.get<string>('GOOGLE_EMAIL');
@@ -17,6 +23,55 @@ export class EmailService {
     this.logger.log(`NODE_ENV: ${this.configService.get<string>('NODE_ENV')}`);
     this.logger.log(`Is Production: ${isProduction}`);
 
+    // Check for Brevo configuration (API or SMTP)
+    const brevoApiKey = this.configService.get<string>('BREVO_API_KEY');
+    const brevoSmtpLogin = this.configService.get<string>('BREVO_SMTP_LOGIN');
+    const brevoSmtpPassword = this.configService.get<string>(
+      'BREVO_SMTP_PASSWORD',
+    );
+
+    this.logger.log(`Brevo API Key present: ${!!brevoApiKey}`);
+    this.logger.log(`Brevo SMTP Login present: ${!!brevoSmtpLogin}`);
+
+    if (isProduction && brevoApiKey) {
+      // Initialize Brevo API for production
+      this.brevoApiInstance = new TransactionalEmailsApi();
+      this.brevoApiInstance.setApiKey(0, brevoApiKey); // 0 = apiKey
+
+      this.logger.log(
+        'Email service initialized with Brevo API for production',
+      );
+      this.verifyBrevoConnection();
+      return;
+    }
+
+    if (isProduction && brevoSmtpLogin && brevoSmtpPassword) {
+      // Initialize Brevo SMTP for production
+      const transporterConfig = {
+        host: 'smtp-relay.brevo.com',
+        port: 587,
+        secure: false,
+        auth: {
+          user: brevoSmtpLogin,
+          pass: brevoSmtpPassword,
+        },
+        tls: {
+          rejectUnauthorized: false,
+        },
+        connectionTimeout: 30000,
+        greetingTimeout: 15000,
+        socketTimeout: 30000,
+      };
+
+      this.transporter = nodemailer.createTransport(transporterConfig);
+      this.logger.log(
+        'Email service initialized with Brevo SMTP for production',
+      );
+      this.verifyConnection();
+      return;
+    }
+
+    // Fallback to Gmail for development or when Brevo is not configured
     if (!email || !password) {
       this.logger.error(
         'GOOGLE_EMAIL or GOOGLE_PASSWORD environment variables are not set',
@@ -24,48 +79,46 @@ export class EmailService {
       throw new Error('Email configuration is missing');
     }
 
-    // Different configuration for production (Render.com) vs development
-    const sendgridApiKey = this.configService.get<string>('SENDGRID_API_KEY');
-    this.logger.log(`SendGrid API Key present: ${!!sendgridApiKey}`);
-
-    const transporterConfig =
-      isProduction && sendgridApiKey
-        ? {
-            host: 'smtp.sendgrid.net',
-            port: 587,
-            secure: false,
-            auth: {
-              user: 'apikey',
-              pass: sendgridApiKey,
-            },
-            tls: {
-              rejectUnauthorized: false,
-            },
-            connectionTimeout: 30000,
-            greetingTimeout: 15000,
-            socketTimeout: 30000,
-          }
-        : {
-            service: 'gmail',
-            auth: {
-              user: email,
-              pass: password,
-            },
-            connectionTimeout: 60000,
-            greetingTimeout: 30000,
-            socketTimeout: 60000,
-          };
+    const transporterConfig = {
+      service: 'gmail',
+      auth: {
+        user: email,
+        pass: password,
+      },
+      connectionTimeout: 60000,
+      greetingTimeout: 30000,
+      socketTimeout: 60000,
+    };
 
     this.transporter = nodemailer.createTransport(transporterConfig);
     this.logger.log(
       `Email service initialized for ${isProduction ? 'production' : 'development'} environment`,
     );
-    this.logger.log(
-      `Using ${sendgridApiKey ? 'SendGrid' : 'Gmail'} for email sending`,
-    );
+    this.logger.log('Using Gmail for email sending');
 
     // Verify connection configuration on startup
     this.verifyConnection();
+  }
+
+  private async verifyBrevoConnection(): Promise<void> {
+    try {
+      this.logger.log('Verifying Brevo API connection...');
+      // Test Brevo API connection by getting account info
+      const accountApi = new AccountApi();
+      // Get the API key from the email API instance
+      const apiKey = this.configService.get<string>('BREVO_API_KEY');
+      accountApi.setApiKey(0, apiKey);
+      const accountInfo = await accountApi.getAccount();
+      this.logger.log('Brevo API connection verified successfully');
+      this.logger.log(`Account email: ${accountInfo.body.email}`);
+    } catch (error) {
+      this.logger.error('Brevo API connection verification failed:', error);
+      this.logger.error('Error details:', {
+        message: error.message,
+        status: error.status,
+        response: error.response?.text,
+      });
+    }
   }
 
   private async verifyConnection(): Promise<void> {
@@ -121,8 +174,33 @@ export class EmailService {
     email: string,
     subject: string,
     html: string,
-    from: string = `Your Sparklory <${this.configService.get<string>('SENDGRID_FROM_EMAIL') || process.env.GOOGLE_EMAIL}>`,
+    from: string = `Your Sparklory <${this.configService.get<string>('BREVO_FROM_EMAIL') || process.env.GOOGLE_EMAIL}>`,
   ): Promise<void> {
+    // Use Brevo API if available (production)
+    if (this.brevoApiInstance) {
+      try {
+        this.logger.log(
+          `Attempting to send ${subject} email to ${email} via Brevo API...`,
+        );
+        await this.sendEmailViaBrevo(email, subject, html, from);
+        this.logger.log(`${subject} email sent to ${email} via Brevo API`);
+        return;
+      } catch (error) {
+        this.logger.error(
+          `Failed to send ${subject} email to ${email} via Brevo API:`,
+          error,
+        );
+        this.logger.error('Brevo API error details:', {
+          message: error.message,
+          status: error.status,
+          response: error.response?.text,
+        });
+        // Fallback to SMTP if Brevo fails
+        this.logger.log('Falling back to SMTP...');
+      }
+    }
+
+    // Use SMTP (Gmail or other SMTP provider)
     const mailOptions = {
       from,
       to: email,
@@ -131,7 +209,9 @@ export class EmailService {
     };
 
     try {
-      this.logger.log(`Attempting to send ${subject} email to ${email}...`);
+      this.logger.log(
+        `Attempting to send ${subject} email to ${email} via SMTP...`,
+      );
       const info = await this.transporter.sendMail(mailOptions);
       this.logger.log(`${subject} email sent to ${email}: ` + info.response);
     } catch (error) {
@@ -170,15 +250,41 @@ export class EmailService {
     }
   }
 
-  private async sendEmailViaHTTP(
+  private async sendEmailViaBrevo(
     to: string,
     subject: string,
     html: string,
+    from: string,
+  ): Promise<void> {
+    const sendSmtpEmail = new SendSmtpEmail();
+
+    // Extract email address from "Name <email>" format
+    const fromEmail = from.match(/<(.+)>/) ? from.match(/<(.+)>/)[1] : from;
+
+    sendSmtpEmail.sender = { name: 'Sparklory', email: fromEmail };
+    sendSmtpEmail.to = [{ email: to }];
+    sendSmtpEmail.subject = subject;
+    sendSmtpEmail.htmlContent = html;
+
+    try {
+      const response =
+        await this.brevoApiInstance.sendTransacEmail(sendSmtpEmail);
+      this.logger.log(`Brevo API response: ${JSON.stringify(response.body)}`);
+    } catch (error) {
+      this.logger.error('Brevo API send error:', error);
+      throw error;
+    }
+  }
+
+  private async sendEmailViaHTTP(
+    to: string,
+    subject: string,
+    _html: string,
   ): Promise<void> {
     // Try using a simple email service that works via HTTP
     // For now, let's use a webhook-based approach or disable HTTP fallback
     this.logger.log(
-      `HTTP fallback not available - Gmail API requires OAuth 2.0`,
+      `HTTP fallback not available for ${to} - ${subject} - Gmail API requires OAuth 2.0`,
     );
     throw new Error(
       'HTTP email sending not configured - requires OAuth 2.0 setup',
